@@ -19,9 +19,12 @@ def init_db(conn):
        sentence_id INTEGER
     );
     """,
-#    """
-#    CREATE UNIQUE INDEX tok_sent ON token_index(token,sentence_id);
-#    """\
+    """
+    CREATE TABLE IF NOT EXISTS lemma_index (
+       lemma TEXT,
+       sentence_id INTEGER
+    );
+    """
     ]
     
     for q in build:
@@ -31,6 +34,7 @@ def init_db(conn):
 
 def init_indices(conn):
     conn.execute("CREATE UNIQUE INDEX tok_sent ON token_index(token,sentence_id);")
+    conn.execute("CREATE UNIQUE INDEX lemma_sent ON lemma_index(lemma,sentence_id);")
     conn.execute("CREATE UNIQUE INDEX sid ON sentence(sentence_id);")
 
 
@@ -57,6 +61,7 @@ def fill_db(conn,src_data):
         spickle=pickle.dumps(sent,pickle.HIGHEST_PROTOCOL)
         conn.execute('INSERT OR IGNORE INTO sentence VALUES(?,?)', [sent_idx,buffer(spickle)])
         tokens=set()
+        lemmas=set()
         for cols in sent:
             token=cols[1]
             if token in tokens: #Try not to write duplicates into the DB top make its life easier
@@ -64,11 +69,19 @@ def fill_db(conn,src_data):
             else:
                 tokens.add(token)
             conn.execute('INSERT OR IGNORE INTO token_index VALUES(?,?)', [token,sent_idx])
+
+            lemma=cols[2]
+            if lemma in lemmas: #Try not to write duplicates into the DB top make its life easier
+                continue
+            else:
+                lemmas.add(lemma)
+            conn.execute('INSERT OR IGNORE INTO lemma_index VALUES(?,?)', [lemma,sent_idx])
+
+
         if sent_idx%10000==0:
             print str(datetime.now()), sent_idx
-        if sent_idx>=2000000:
-            break
-
+        if sent_idx%1000000==0:
+            conn.commit()
     conn.commit()
 
 def query_on_words(conn,wlist):
@@ -85,12 +98,12 @@ def query_on_words(conn,wlist):
 
 if __name__=="__main__":
     conn=sqlite3.connect("/mnt/ssd/sdata/sdata.db")
-#    init_db(conn)
-#    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin))
-#    fill_db(conn,src_data)
-#    init_indices(conn)
+    init_db(conn)
+    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin))
+    fill_db(conn,src_data)
+    init_indices(conn)
 
-    out8=codecs.getwriter("utf-8")(sys.stdout)
-    for sent in query_on_words(conn,[u"kovalevy"]):
-        print >> out8, u" ".join(cols[1] for cols in sent)
+#    out8=codecs.getwriter("utf-8")(sys.stdout)
+#    for sent in query_on_words(conn,[u"tietokone"]):
+#        print >> out8, u" ".join(cols[1] for cols in sent)
     conn.close()
