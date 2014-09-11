@@ -33,13 +33,13 @@ def search_ptv(t):
     _ >nsubj (N+Par !>num !Par) >dobj _ !<xcomp _ !<ccomp _ 
     """
 
-     if u"dobj" not in t.d_govs or u"nsubj" not in t.d_govs or u"N" not in t.tags or u"CASE_Par" not in t.tags:
+    if u"dobj" not in t.d_govs or u"nsubj" not in t.d_govs or u"N" not in t.tags or u"CASE_Par" not in t.tags:
          return False
 
-     s_N_Par=t.tags[u"CASE_Par"]&t.tags[u"N"]
+    s_N_Par=t.tags[u"CASE_Par"]&t.tags[u"N"]
 
 
-     if u"num" in t.d_govs:
+    if u"num" in t.d_govs:
          s_N_Par-=(t.d_govs["num"]-t.tags[u"CASE_Par"])
     #s_N_Par is now nouns in partitive not governing num
 

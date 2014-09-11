@@ -1,3 +1,4 @@
+import cPickle as pickle
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
 class Tree(object):
@@ -33,12 +34,85 @@ class Tree(object):
     def __init__(self):
         self.tokens=[] #list of tokens
         self.lemmas=[] #list of lemmas
-        self.d_govs={}  #deptype -> set of token ids (0-based)
-        self.d_deps={}  #deptype -> set of token ids (0-based)
-        self.tags={}  #morhotag -> set of token ids (0-based)
+        self.d_govs=OnDemandDict()  #deptype -> set of token ids (0-based)
+        self.d_deps=OnDemandDict()  #deptype -> set of token ids (0-based)
+        self.tags=OnDemandDict()  #morhotag -> set of token ids (0-based)
         self.govs=[] #[set(),...]
         self.deps=[] #[set(),...]
-        self.dict_tokens={} #token: set()
-        self.dict_lemmas={} #lemma: set()
+        self.dict_tokens=OnDemandDict() #token: set()
+        self.dict_lemmas=OnDemandDict() #lemma: set()
     
             
+
+class P(object):
+
+    def __init__(self,obj):
+        self.s=pickle.dumps(obj,pickle.HIGHEST_PROTOCOL)
+
+    def __repr__(self):
+        return "P("+self.s+")"
+
+class OnDemandDict(object):
+
+    def __init__(self):
+        self.d={}
+
+    def __getstate__(self):
+        """Pickle every item separately"""
+        x={}
+        for k,v in self.d.iteritems():
+            x[k]=P(v)
+        return x
+
+    def __setstate__(self,s):
+        """Simply stores the dictionary with every item separately pickled"""
+        self.d=s
+
+    def __getitem__(self,key):
+        """Unpickles on-demand"""
+        v=self.d[key]
+        if isinstance(v,P):
+            o=pickle.loads(v.s)
+            self.d[key]=o
+            return o
+        else:
+            return v
+    
+    def __setitem__(self,key,value):
+        self.d[key]=value
+
+    
+    def setdefault(self,key,value):
+        return self.d.setdefault(key,value)
+
+    def __contains__(self,key):
+        return key in self.d
+
+class OnDemandList(object):
+
+    def __init__(self):
+        self.l=[]
+
+    def __getstate__(self):
+        """Pickle every item separately"""
+        x=[]
+        for v in self.l:
+            x.append(P(v))
+        return x
+
+    def __setstate__(self,s):
+        """Simply stores the dictionary with every item separately pickled"""
+        self.l=s
+
+
+    def append(self,x):
+        self.l.append(x)
+
+    def __getitem__(self,i):
+        v=self.l[i]
+        if isinstance(v,P):
+            o=pickle.loads(v)
+            self.l[i]=o
+            return o
+        else:
+            return o

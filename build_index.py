@@ -91,15 +91,17 @@ def fill_db(conn,src_data):
 
         if sent_idx%10000==0:
             print str(datetime.now()), sent_idx
-        if sent_idx%100000==0:
+        if sent_idx%10000==0:
             conn.commit()
+        if sent_idx>=50000:
+            break
     conn.commit()
 
 
 if __name__=="__main__":
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata2.db")
-#    wipe_db(conn)
-#    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin))
-#    fill_db(conn,src_data)
+    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_tmp.db")
+    wipe_db(conn)
+    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin))
+    fill_db(conn,src_data)
     build_indices(conn)
     conn.close()
