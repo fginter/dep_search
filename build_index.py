@@ -5,8 +5,17 @@ import codecs
 from datetime import datetime
 from tree import Tree
 
-def init_db(conn):
+def wipe_db(conn):
     build=[\
+    """
+    DROP TABLE IF EXISTS sentence;
+    """,
+    """
+    DROP TABLE IF EXISTS token_index;
+    """,
+    """
+    DROP TABLE IF EXISTS lemma_index;
+    """,
     """
     CREATE TABLE IF NOT EXISTS sentence (
        sentence_id INTEGER,
@@ -29,10 +38,9 @@ def init_db(conn):
     
     for q in build:
         conn.execute(q)
-    
     conn.commit()
 
-def init_indices(conn):
+def build_indices(conn):
     conn.execute("CREATE UNIQUE INDEX tok_sent ON token_index(token,sentence_id);")
     conn.execute("CREATE UNIQUE INDEX lemma_sent ON lemma_index(lemma,sentence_id);")
     conn.execute("CREATE UNIQUE INDEX sid ON sentence(sentence_id);")
@@ -46,6 +54,8 @@ def get_sentences(inp):
     for line in inp:
         line=line.strip()
         if not line:
+            continue
+        if line.startswith(u"#"):
             continue
         if line.startswith(u"1\t"):
             if curr_sent:
@@ -85,32 +95,11 @@ def fill_db(conn,src_data):
             conn.commit()
     conn.commit()
 
-from test_search import search_koska, search_ptv
-def query_on_words(conn,word,match_pred):
-    BATCH=1000
-    if word is not None:
-        q=u"SELECT sentence.* from sentence JOIN token_index ti ON ti.sentence_id=sentence.sentence_id WHERE TI.token=?"
-        rset=conn.execute(q,(word,))
-    else:
-        q=u"SELECT sentence.* from sentence"
-        rset=conn.execute(q)
-    while True:
-        rows=rset.fetchmany(BATCH)
-        if not rows:
-            break
-        for _,sent_pickle in rows:
-            tree=pickle.loads(str(sent_pickle))
-            if match_pred(tree):
-                yield tree
 
 if __name__=="__main__":
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata.db")
-#    init_db(conn)
+    conn=sqlite3.connect("/mnt/ssd/sdata/sdata2.db")
+#    wipe_db(conn)
 #    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin))
 #    fill_db(conn,src_data)
-#    init_indices(conn)
-
-    out8=codecs.getwriter("utf-8")(sys.stdout)
-    for t in query_on_words(conn,None,search_ptv):
-        t.to_conll(out8)
+    build_indices(conn)
     conn.close()
