@@ -28,18 +28,19 @@ def search_koska(t):
 
     return False
 
-
 def search_ptv(t):
     """
-    _ >nsubj (N+Par !>num _) >dobj _ !<xcomp _ !<ccomp _ 
+    _ >nsubj (N+Par !>num !Par) >dobj _ !<xcomp _ !<ccomp _ 
     """
-    
-    if u"dobj" not in t.d_govs or u"nsubj" not in t.d_govs or u"N" not in t.tags or u"CASE_Par" not in t.tags:
-        return False
 
-    s_N_Par=t.tags[u"CASE_Par"]&t.tags[u"N"]
-    if u"num" in t.d_govs:
-        s_N_Par-=t.d_govs[u"num"]
+     if u"dobj" not in t.d_govs or u"nsubj" not in t.d_govs or u"N" not in t.tags or u"CASE_Par" not in t.tags:
+         return False
+
+     s_N_Par=t.tags[u"CASE_Par"]&t.tags[u"N"]
+
+
+     if u"num" in t.d_govs:
+         s_N_Par-=(t.d_govs["num"]-t.tags[u"CASE_Par"])
     #s_N_Par is now nouns in partitive not governing num
 
     s_N_Par&=t.d_deps[u"nsubj"] #...and only those which are governed by a subject
@@ -63,7 +64,3 @@ def search_ptv(t):
         if t.govs[subj]&s_nsubj_dobj:
             return True
     return False
-
-        
-    
-    
