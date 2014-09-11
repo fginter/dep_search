@@ -24,7 +24,7 @@ def query_on_words(conn,word,match_pred):
                 yield tree
 
 if __name__=="__main__":
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata.db")
+    conn=sqlite3.connect("/mnt/ssd/sdata/sdata2.db")
 
     out8=codecs.getwriter("utf-8")(sys.stdout)
     for t in query_on_words(conn,u"koska",search_koska):
