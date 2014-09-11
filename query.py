@@ -26,7 +26,7 @@ def query_on_words(conn,word,match_pred):
 if __name__=="__main__":
     conn=sqlite3.connect("/mnt/ssd/sdata/sdata2.db")
 
-    out8=codecs.getwriter("utf-8")(sys.stdout)
-    for t in query_on_words(conn,u"koska",search_koska):
-        t.to_conll(out8)
+    # out8=codecs.getwriter("utf-8")(sys.stdout)
+    # for t in query_on_words(conn,None,search_ptv):
+    #     t.to_conll(out8)
     conn.close()
