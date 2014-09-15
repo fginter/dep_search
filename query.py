@@ -26,7 +26,10 @@ def query_on_words(conn,word,match_pred):
 if __name__=="__main__":
     conn=sqlite3.connect("/mnt/ssd/sdata/sdata2.db")
 
-    # out8=codecs.getwriter("utf-8")(sys.stdout)
-    # for t in query_on_words(conn,None,search_ptv):
-    #     t.to_conll(out8)
+    out8=codecs.getwriter("utf-8")(sys.stdout)
+    count=0
+    for t in query_on_words(conn,None,search_ptv):
+        t.to_conll(out8)
+        count+=1
+        if count>=500: break
     conn.close()
