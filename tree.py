@@ -24,6 +24,8 @@ class Tree(object):
                     t.tags.setdefault(f,set()).add(id)
         return t
 
+
+
     def to_conll(self,out):
         for idx,(token,lemma) in enumerate(zip(self.tokens,self.lemmas)):
             g=list(self.govs[idx])[0]+1
