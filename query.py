@@ -141,4 +141,12 @@ if __name__=="__main__":
 
     #for t in query(conn,[u"."],[],[]):
     #    print t
+# =======
+#     out8=codecs.getwriter("utf-8")(sys.stdout)
+#     count=0
+#     for t in query_on_words(conn,None,search_ptv):
+#         t.to_conll(out8)
+#         count+=1
+#         if count>=500: break
+# >>>>>>> master
     conn.close()

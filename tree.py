@@ -36,7 +36,12 @@ class Tree(object):
     def to_conll(self,out):
         for idx,(token,lemma) in enumerate(zip(self.tokens,self.lemmas)):
             g=list(self.govs[idx])[0]+1
-            print >> out, u"\t".join((unicode(idx+1),token,lemma,lemma,u"_",u"_",u"_",u"_",unicode(g),unicode(g),u"_",u"_",u"_",u"_"))
+            dtype=u"ROOT"
+            for key,value in self.d_deps.iteritems():
+                if idx in value:
+                    dtype=key
+                    break
+            print >> out, u"\t".join((unicode(idx+1),token,lemma,lemma,u"_",u"_",u"_",u"_",unicode(g),unicode(g),dtype,dtype,u"_",u"_"))
         print >> out
     
     def __init__(self):
