@@ -7,12 +7,14 @@ class Tree(object):
         t=cls()
         t.govs=[set() for _ in range(len(conll))]
         t.deps=[set() for _ in range(len(conll))]
+        t.heads=[] #For every token its conll (head,deprel) fields: TODO non-tree
         for cols in conll:
             t.tokens.append(cols[FORM])
             t.lemmas.append(cols[LEMMA])
             id=int(cols[ID])-1
             t.dict_tokens.setdefault(cols[FORM],set()).add(id)
             t.dict_lemmas.setdefault(cols[LEMMA],set()).add(id)
+            t.heads.append((int(cols[HEAD])-1,cols[DEPREL]))
 
             t.govs[id].add(int(cols[HEAD])-1)
             t.deps[int(cols[HEAD])-1].add(id)
@@ -24,15 +26,18 @@ class Tree(object):
                     t.tags.setdefault(f,set()).add(id)
         return t
 
+    def __getstate__(self):
+        """
+        Pickle uses this to serialize. Because the way this works, we will only
+        serialize .tokens and .lemmas and nothing else. The rest will be fetched
+        from the DB on a need-to-know basis. This method returns a dictionary
+        which pickle will then set to be the de-serialized object's __dict__
+        """
+        return {"tokens":self.tokens, "lemmas":self.lemmas, "heads":self.heads, "dict_tokens":self.dict_tokens, "dict_lemmas":self.dict_lemmas}
+
     def to_conll(self,out):
-        for idx,(token,lemma) in enumerate(zip(self.tokens,self.lemmas)):
-            g=list(self.govs[idx])[0]+1
-            dtype=u"ROOT"
-            for key,value in self.d_deps.iteritems():
-                if idx in value:
-                    dtype=key
-                    break
-            print >> out, u"\t".join((unicode(idx+1),token,lemma,lemma,u"_",u"_",u"_",u"_",unicode(g),unicode(g),dtype,dtype,u"_",u"_"))
+        for idx,(token,lemma,(head,deprel)) in enumerate(zip(self.tokens,self.lemmas,self.heads)):
+            print >> out, u"\t".join((unicode(idx+1),token,lemma,lemma,u"_",u"_",u"_",u"_",unicode(head+1),unicode(head+1),deprel,deprel,u"_",u"_"))
         print >> out
     
     def __init__(self):
