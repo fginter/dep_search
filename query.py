@@ -96,7 +96,8 @@ def query(conn,words=None,lemmas=None,data=[]):
     q=u"SELECT %s"%(u", ".join(select_c))
     q+=u"\n"+from_c
     q+=u"\n"+(u"\n".join(j for j in joins))
-    q+=u"\nWHERE\n"+(u" and ".join(w for w in where_c))
+    if where_c:
+        q+=u"\nWHERE\n"+(u" and ".join(w for w in where_c))
     q+=u"\n"
 
     print >> sys.stderr, q, join_args+where_args
@@ -133,8 +134,8 @@ if __name__=="__main__":
     # for t in query_on_words(conn,None,search_ptv):
     #     t.to_conll(out8)
 
-    
-    for x in query(conn,lemmas=[u"olla"],data=[u"d_govs_nsubj",u"d_deps_nsubj",u"!d_govs_dobj",u"!tags_N"]):
+    #_ >nsubj (N+Par !>num !Par) >dobj _ !<xcomp _ !<ccomp _ 
+    for x in query(conn,data=[u"!d_govs_nsubj",u"!d_deps_nsubj",u"!d_govs_dobj",u"!d_deps_dobj",u"!tags_N",u"!tags_CASE_Par",u"d_govs_num",u"d_deps_xcomp",u"d_deps_ccomp"]):
         print x
 
 
