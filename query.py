@@ -35,6 +35,7 @@ def query(conn,words=None,lemmas=None,data=[]):
     joins=[] #list of join statements
     join_args=[] #list of arguments to supply for the SQL query execute, these are in the JOINS and will come first
     where_args=[] #list of arguments to supply for the SQL query execute, there are in the WHERE and will come second
+    columns=[] #a list which explains the select results Each item is a tuple. A triple (x,y,z) means set t.x[y]=z, while a pair (x,y) means set t.x=y when deserializing
 
     #This if .. elif .. else chooses the main table in "FROM"
     if words is not None:
@@ -63,7 +64,6 @@ def query(conn,words=None,lemmas=None,data=[]):
             where_args.append(l)
     if sentence_table==u"sentence":
         joins.append("JOIN sentence ON sentence.sentence_id=main.sentence_id")
-    select_c.insert(0,sentence_table+u".*")
 
     for i,d in enumerate(data):
         if u"d_govs" in d or u"d_govs" in d:
@@ -75,6 +75,7 @@ def query(conn,words=None,lemmas=None,data=[]):
             joins.append(u"%s %s %s_%d ON %s_%d.sentence_id=main.sentence_id AND %s_%d.dtype=?"%(join,table,table,i,table,i,table,i))
             join_args.append(val)
             select_c.append("%s_%d.sdata AS %s_%s_sdata"%(table,i,table,val))
+            columns.append((table,val,set()))
         elif u"tags_" in d:
             compulsory,table,val=re.match(ur"^(!?)(tags)_(.*)$",d).groups()
             if compulsory==u"!":
@@ -84,11 +85,14 @@ def query(conn,words=None,lemmas=None,data=[]):
             joins.append(u"%s %s %s_%d ON %s_%d.sentence_id=main.sentence_id AND %s_%d.tag=?"%(join,table,table,i,table,i,table,i))
             join_args.append(val)
             select_c.append("%s_%d.sdata AS %s_%s_sdata"%(table,i,table,val))
+            columns.append((table,val,set()))
         elif d in (u"govs",u"deps"):
             table=d
             joins.append(u"JOIN %s %s_%d ON %s_%d.sentence_id=main.sentence_id"%(table,table,i,table,i))
             select_c.append("%s_%d.sdata AS %s_sdata"%(table,i,table))
+            columns.append((table,None)) #I leave this at none to cause an error if a tree ever needs the default here, which should never happen
 
+    select_c.insert(0,sentence_table+u".sdata AS sentence_sdata") #...always want the sentence
     q=u"SELECT %s"%(u", ".join(select_c))
     q+=u"\n"+from_c
     q+=u"\n"+(u"\n".join(j for j in joins))
@@ -103,8 +107,23 @@ def query(conn,words=None,lemmas=None,data=[]):
         rows=rset.fetchmany(BATCH)
         if not rows:
             break
-        for d in rows:
-            tree=pickle.loads(str(d[1]))
+        for row in rows:
+            tree=pickle.loads(str(row[0])) #The first column is the serialized data
+            for col,data in zip(columns,row[1:]):
+                if len(col)==3: #(x,y,z) tree.x[y]=z
+                    d,key,default=col
+                    if data is not None:
+                        val=pickle.loads(str(data))
+                    else:
+                        val=default
+                    tree.__dict__.setdefault(d,{})[key]=val
+                elif len(col)==2: #(x,y) tree.x=y
+                    d,default=col
+                    if data is not None:
+                        val=pickle.loads(str(data))
+                    else:
+                        val=default
+                    tree.__dict__[d]=val
             yield tree, d
 
 if __name__=="__main__":

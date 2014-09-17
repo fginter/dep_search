@@ -24,7 +24,14 @@ class Tree(object):
                     t.tags.setdefault(f,set()).add(id)
         return t
 
-
+    def __getstate__(self):
+        """
+        Pickle uses this to serialize. Because the way this works, we will only
+        serialize .tokens and .lemmas and nothing else. The rest will be fetched
+        from the DB on a need-to-know basis. This method returns a dictionary
+        which pickle will then set to be the de-serialized object's __dict__
+        """
+        return {"tokens":self.tokens, "lemmas":self.lemmas}
 
     def to_conll(self,out):
         for idx,(token,lemma) in enumerate(zip(self.tokens,self.lemmas)):

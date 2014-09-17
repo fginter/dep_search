@@ -41,7 +41,7 @@ def prepare_tables(conn):
     """
     CREATE TABLE sentence (
        sentence_id INTEGER,
-       serialized_data BLOB
+       sdata BLOB
     );
     CREATE TABLE token_index (
        token TEXT,
@@ -102,10 +102,11 @@ def build_indices(conn):
 
 
 
-def get_sentences(inp):
+def get_sentences(inp,max_rank=None):
     """
     `inp` file for reading unicode lines
     """
+    counter=0
     curr_sent=[]
     for line in inp:
         line=line.strip()
@@ -116,6 +117,9 @@ def get_sentences(inp):
         if line.startswith(u"1\t"):
             if curr_sent:
                 yield curr_sent
+                counter+=1
+                if max_rank is not None and max_rank==counter:
+                    break
                 curr_sent=[]
         curr_sent.append(line.split(u"\t"))
 
@@ -125,7 +129,7 @@ def fill_db(conn,src_data):
     """
     for sent_idx,sent in enumerate(src_data):
         t=Tree.from_conll(sent)
-        tpickle=pickle.dumps((t.tokens,t.lemmas))
+        tpickle=pickle.dumps(t)
         conn.execute('INSERT INTO sentence VALUES(?,?)', [sent_idx,buffer(tpickle)])
         tokens=set()
         lemmas=set()
@@ -162,9 +166,9 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3.db")
-#    prepare_tables(conn)
+    prepare_tables(conn)
 #    wipe_db(conn)
-#    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin))
-#    fill_db(conn,src_data)
+    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin),100000)
+    fill_db(conn,src_data)
     build_indices(conn)
     conn.close()
