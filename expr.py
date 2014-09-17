@@ -23,7 +23,7 @@ class Node(object):
         self.restrictions.append(res) #just a list for now, it will need to change of course
 
     def to_unicode(self):
-        return u"Node(%s)"%(u",".join(r.to_unicode() for r in self.restrictions))
+        return u"Node(%s)"%(u",".join(r.to_unicode() if not isinstance(r,tuple) else u"=".join(c for c in r) for r in self.restrictions))
 
 # one dependency restriction
 class DepRes(object):
