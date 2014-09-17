@@ -6,11 +6,24 @@ from datetime import datetime
 from tree import Tree
 import re
 
-def query(conn,words=None,lemmas=None,data=[]):
+class Query(object):
+
+    def __init__(self):
+        self.query_fields=[]
+        self.words=None
+        self.lemmas=None
+
+    def match(self,tree):
+        assert False #You need to override this in your searches
+
+def query_search(conn,search):
+    return query(conn,search.words,search.lemmas,search.query_fields)
+
+def query(conn,words=None,lemmas=None,query_fields=[]):
     """
     words: a list of words the trees should have, or None
     lemmas: a list of lemmas the trees should have, or None
-    data: A list of strings describing the data to fetch
+    query_fields: A list of strings describing the data to fetch
           Each string names a set to retrieve
           d_govs_*, d_deps_*, and tags_*  can be preceded with
           ! which means that only non-empty sets are of interest
@@ -22,7 +35,7 @@ def query(conn,words=None,lemmas=None,data=[]):
           tags_*     (* is a tag like N or CASE_Gen)
     
     Example:
-    query(conn,words=[u"dog",u"cat"],data=[u"d_govs_nsubj",u"d_deps_nsubj",u"!d_deps_obj"])
+    query(conn,words=[u"dog",u"cat"],query_fields=[u"d_govs_nsubj",u"d_deps_nsubj",u"!d_deps_obj"])
     ...will search for all trees with the words dog and cat in them,
     and will produce a Tree() object for each of them with
     d_govs["nsubj"] and d_deps["nsubj"] set of they are present, and empty set if not.
@@ -65,7 +78,7 @@ def query(conn,words=None,lemmas=None,data=[]):
     if sentence_table==u"sentence":
         joins.append("JOIN sentence ON sentence.sentence_id=main.sentence_id")
 
-    for i,d in enumerate(data):
+    for i,d in enumerate(query_fields):
         if u"d_govs" in d or u"d_govs" in d:
             compulsory,table,val=re.match(ur"^(!?)(d_.*?)_(.*)$",d).groups()
             if compulsory==u"!":
@@ -125,7 +138,9 @@ def query(conn,words=None,lemmas=None,data=[]):
                     else:
                         val=default
                     tree.__dict__[d]=val
-            yield tree, d
+            yield tree
+
+
 
 if __name__=="__main__":
     conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3.db")
@@ -134,19 +149,11 @@ if __name__=="__main__":
     # for t in query_on_words(conn,None,search_ptv):
     #     t.to_conll(out8)
 
-    #_ >nsubj (N+Par !>num !Par) >dobj _ !<xcomp _ !<ccomp _ 
-    for x in query(conn,data=[u"!d_govs_nsubj",u"!d_deps_nsubj",u"!d_govs_dobj",u"!d_deps_dobj",u"!tags_N",u"!tags_CASE_Par",u"d_govs_num",u"d_deps_xcomp",u"d_deps_ccomp"]):
-        print x
-
-
-    #for t in query(conn,[u"."],[],[]):
-    #    print t
-# =======
-#     out8=codecs.getwriter("utf-8")(sys.stdout)
-#     count=0
-#     for t in query_on_words(conn,None,search_ptv):
-#         t.to_conll(out8)
-#         count+=1
-#         if count>=500: break
-# >>>>>>> master
+    from test_search import SearchKoska, SearchPtv
+    s=SearchPtv()
+    out8=codecs.getwriter("utf-8")(sys.stdout)
+    for counter,t in enumerate(query_search(conn,s)):
+        t.to_conll(out8)
+        if counter+1>=500:
+            break
     conn.close()
