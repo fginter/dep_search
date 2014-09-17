@@ -17,7 +17,9 @@ class Query(object):
         assert False #You need to override this in your searches
 
 def query_search(conn,search):
-    return query(conn,search.words,search.lemmas,search.query_fields)
+    for t in query(conn,search.words,search.lemmas,search.query_fields):
+        if search.match(t):
+            yield t
 
 def query(conn,words=None,lemmas=None,query_fields=[]):
     """
@@ -79,7 +81,7 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
         joins.append("JOIN sentence ON sentence.sentence_id=main.sentence_id")
 
     for i,d in enumerate(query_fields):
-        if u"d_govs" in d or u"d_govs" in d:
+        if u"d_govs" in d or u"d_deps" in d:
             compulsory,table,val=re.match(ur"^(!?)(d_.*?)_(.*)$",d).groups()
             if compulsory==u"!":
                 join=u"JOIN"
