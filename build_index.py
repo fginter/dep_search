@@ -165,10 +165,10 @@ def fill_db(conn,src_data):
 
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3.db")
+    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3_4M_trees.db")
     prepare_tables(conn)
 #    wipe_db(conn)
-    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin),100000)
+    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin),4000000)
     fill_db(conn,src_data)
     build_indices(conn)
     conn.close()
