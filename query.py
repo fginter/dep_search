@@ -18,8 +18,9 @@ class Query(object):
 
 def query_search(conn,search):
     for t in query(conn,search.words,search.lemmas,search.query_fields):
-        if search.match(t):
-            yield t
+        res_set=search.match(t)
+        if res_set:
+            yield t,res_set
 
 def query(conn,words=None,lemmas=None,query_fields=[]):
     """
@@ -154,8 +155,8 @@ if __name__=="__main__":
     from test_search import SearchKoska, SearchPtv
     s=SearchPtv()
     out8=codecs.getwriter("utf-8")(sys.stdout)
-    for counter,t in enumerate(query_search(conn,s)):
-        t.to_conll(out8)
+    for counter,(t,res_set) in enumerate(query_search(conn,s)):
+        t.to_conll(out8,highlight=res_set)
         if counter+1>=500:
             break
     conn.close()

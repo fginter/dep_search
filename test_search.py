@@ -18,14 +18,15 @@ class SearchKoska(Query):
         s_N-=t.d_govs[u"cop"] #must not govern cop
 
         if not s_N:
-            return False
+            return set()
 
         #so, now s_N are nouns not governing a cop
         #shit - do I need a for loop here really?
+        result=set()
         for k in s_koska:
             if t.govs[k]&s_N:
-                return True
-        return False
+                result.add(k)
+        return result
 
 class SearchPtv(Query):
     
@@ -48,7 +49,7 @@ class SearchPtv(Query):
         s_N_Par&=t.d_deps[u"nsubj"] #...and only those which are governed by a subject
 
         if not s_N_Par:
-            return False
+            return set()
 
         s_nsubj_dobj=t.d_govs[u"dobj"]&t.d_govs[u"nsubj"] #words that govern both a subject and an object
         s_nsubj_dobj-=t.d_deps[u"xcomp"]
@@ -56,14 +57,15 @@ class SearchPtv(Query):
         #...and are not governed by xcomp & iccomp
 
         if not s_nsubj_dobj:
-            return False
+            return set()
 
         #Again a for loop! Do I really need it?
+        result=set()
         for subj in s_N_Par:
             govs=t.govs[subj]&s_nsubj_dobj # now we have to find all objects and check the word order
             for gov in govs:
                 objs=t.deps[gov]&t.d_deps[u"dobj"]&t.tags[u"CASE_Par"] # only partitive objects
                 for obj in objs:
                     if subj<obj:
-                        return True
-        return False
+                        result.add(gov)
+        return result

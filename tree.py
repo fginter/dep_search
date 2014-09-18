@@ -35,9 +35,16 @@ class Tree(object):
         """
         return {"tokens":self.tokens, "lemmas":self.lemmas, "heads":self.heads, "dict_tokens":self.dict_tokens, "dict_lemmas":self.dict_lemmas}
 
-    def to_conll(self,out):
+    def to_conll(self,out,form=u"conllu",highlight=None):
+        """highlight: set of token indices (0-based) to highlight"""
+        if highlight is not None:
+            for tidx in sorted(highlight):
+                print >> out, u"# visual-style\t%d\tbgColor:green"%(tidx+1)
         for idx,(token,lemma,(head,deprel)) in enumerate(zip(self.tokens,self.lemmas,self.heads)):
-            print >> out, u"\t".join((unicode(idx+1),token,lemma,lemma,u"_",u"_",u"_",u"_",unicode(head+1),unicode(head+1),deprel,deprel,u"_",u"_"))
+            if form==u"conllu":
+                print >> out, u"\t".join((unicode(idx+1),token,lemma,u"_",u"_",u"_",unicode(head+1),deprel,u"_",u"_"))
+            else:
+                print >> out, u"\t".join((unicode(idx+1),token,lemma,lemma,u"_",u"_",u"_",unicode(head+1),unicode(head+1),deprel,deprel,u"_",u"_"))
         print >> out
     
     def __init__(self):
