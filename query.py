@@ -145,18 +145,21 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
 
 
 
+import argparse
 if __name__=="__main__":
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3.db")
+    parser = argparse.ArgumentParser(description='Execute a query against the db')
+    parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
+    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v3_4M_trees.db",help='Name of the database to query. Default: %(default)s.')
 
-    # out8=codecs.getwriter("utf-8")(sys.stdout)
-    # for t in query_on_words(conn,None,search_ptv):
-    #     t.to_conll(out8)
+    args = parser.parse_args()
+    
+    conn=sqlite3.connect(args.database)
 
     from test_search import SearchKoska, SearchPtv
     s=SearchPtv()
     out8=codecs.getwriter("utf-8")(sys.stdout)
     for counter,(t,res_set) in enumerate(query_search(conn,s)):
         t.to_conll(out8,highlight=res_set)
-        if counter+1>=500:
+        if args.max>0 and counter+1>=args.max:
             break
     conn.close()
