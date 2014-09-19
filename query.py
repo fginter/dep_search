@@ -106,6 +106,7 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
             columns.append((table,val,set()))
         elif d in (u"govs",u"deps"):
             table=d
+            table_alias=table+u"_"+unicode(i) #just a unique name for this table
             joins.append(u"JOIN %(table)s %(table_alias)s ON %(table_alias)s.sentence_id=main.sentence_id"%{u"table":table,u"table_alias":table_alias})
             select_c.append("%(table_alias)s.sdata AS %(table_alias)s_sdata"%{"table_alias":table_alias})
             columns.append((table,None)) #I leave this at none to cause an error if a tree ever needs the default here, which should never happen
@@ -158,7 +159,7 @@ if __name__=="__main__":
     conn=sqlite3.connect(args.database)
 
     from test_search import SearchKoska, SearchPtv, SearchNSubjCop
-    s=SearchNSubjCop()
+    s=SearchPtv()
     out8=codecs.getwriter("utf-8")(sys.stdout)
     for counter,(t,res_set) in enumerate(query_search(conn,s)):
         t.to_conll(out8,highlight=res_set)
