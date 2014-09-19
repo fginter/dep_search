@@ -20,6 +20,8 @@ class Tree(object):
             t.deps[int(cols[HEAD])-1].add(id)
             t.d_deps.setdefault(cols[DEPREL],set()).add(id) #this is a DEPREL dependent
             t.d_govs.setdefault(cols[DEPREL],set()).add(int(cols[HEAD])-1) #this is a DEPREL governor
+            t.type_deps.setdefault(cols[DEPREL],{}).setdefault(int(cols[HEAD])-1,set()).add(id) # id is a DEPREL dependent for HEAD
+            t.type_govs.setdefault(cols[DEPREL],{}).setdefault(id,set()).add(int(cols[HEAD])-1) # HEAD is a DEPREL governor for id
             t.tags.setdefault(cols[POS],set()).add(id)
             if cols[FEAT]!=u"_":
                 for f in cols[FEAT].split(u"|"):
@@ -52,6 +54,8 @@ class Tree(object):
         self.lemmas=[] #list of lemmas
         self.d_govs={}  #deptype -> set of token ids (0-based)
         self.d_deps={}  #deptype -> set of token ids (0-based)
+        self.type_govs={} #deptype -> dict of key:token id, value: set of governors with deptype
+        self.type_deps={} #deptype -> dict of key:token id, value: set of dependents with deptype
         self.tags={}  #morhotag -> set of token ids (0-based)
         self.govs=[] #[set(),...]
         self.deps=[] #[set(),...]

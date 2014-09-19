@@ -54,12 +54,14 @@ def prepare_tables(conn):
     CREATE TABLE d_govs (
         sentence_id INTEGER,
         dtype TEXT,
-        sdata BLOB
+        sdata BLOB,
+        type_govs BLOB
     );
     CREATE TABLE d_deps (
         sentence_id INTEGER,
         dtype TEXT,
-        sdata BLOB
+        sdata BLOB,
+        type_deps BLOB
     );
     CREATE TABLE govs (
         sentence_id INTEGER,
@@ -147,11 +149,14 @@ def fill_db(conn,src_data):
             else:
                 lemmas.add(lemma)
             conn.execute('INSERT INTO lemma_index VALUES(?,?)', [lemma,sent_idx])
-            
         for dtype,s in t.d_govs.iteritems():
-            conn.execute('INSERT INTO d_govs VALUES(?,?,?)', [sent_idx,dtype,pickle.dumps(s)])
+            d=t.type_govs.get(dtype,None)
+            assert d is not None
+            conn.execute('INSERT INTO d_govs VALUES(?,?,?,?)', [sent_idx,dtype,pickle.dumps(s),pickle.dumps(d)])
         for dtype,s in t.d_deps.iteritems():
-            conn.execute('INSERT INTO d_deps VALUES(?,?,?)', [sent_idx,dtype,pickle.dumps(s)])
+            d=t.type_deps.get(dtype,None)
+            assert d is not None
+            conn.execute('INSERT INTO d_deps VALUES(?,?,?,?)', [sent_idx,dtype,pickle.dumps(s),pickle.dumps(d)])
         for tag,s in t.tags.iteritems():
             conn.execute('INSERT INTO tags VALUES(?,?,?)', [sent_idx,tag,pickle.dumps(s)])
         conn.execute('INSERT INTO govs VALUES(?,?)', [sent_idx, pickle.dumps(t.govs)])
@@ -165,10 +170,11 @@ def fill_db(conn,src_data):
 
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3_4M_trees.db")
+    #conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3_4M_trees.db")
+    conn=sqlite3.connect("/mnt/ssd/sdata/jennas_test.db")
     prepare_tables(conn)
 #    wipe_db(conn)
-    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin),4000000)
+    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin),1000)
     fill_db(conn,src_data)
     build_indices(conn)
     conn.close()

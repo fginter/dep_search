@@ -33,6 +33,8 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
           Possible values are these strings:
           d_govs_*   (* is a deptype like nsubj)
           d_deps_*   (* is a deptype like nsubj)
+          type_govs_* TODO 
+          type_deps_* TODO
           govs
           deps
           tags_*     (* is a tag like N or CASE_Gen)
