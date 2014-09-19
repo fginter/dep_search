@@ -84,28 +84,30 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
     for i,d in enumerate(query_fields):
         if u"d_govs" in d or u"d_deps" in d:
             compulsory,table,val=re.match(ur"^(!?)(d_.*?)_(.*)$",d).groups()
+            table_alias=table+u"_"+unicode(i) #just a unique name for this table
             if compulsory==u"!":
                 join=u"JOIN"
             else:
                 join=u"LEFT JOIN"
-            joins.append(u"%s %s %s_%d ON %s_%d.sentence_id=main.sentence_id AND %s_%d.dtype=?"%(join,table,table,i,table,i,table,i))
+            joins.append(u"%(join)s %(table)s %(table_alias)s ON %(table_alias)s.sentence_id=main.sentence_id AND %(table_alias)s.dtype=?"%{u"join":join,u"table":table,u"table_alias":table_alias})
             join_args.append(val)
-            select_c.append("%s_%d.sdata AS %s_%s_sdata"%(table,i,table,val))
+            select_c.append("%(table_alias)s.sdata AS %(table_alias)s_sdata"%{u"table_alias":table_alias})
             columns.append((table,val,set()))
         elif u"tags_" in d:
             compulsory,table,val=re.match(ur"^(!?)(tags)_(.*)$",d).groups()
+            table_alias=table+u"_"+unicode(i) #just a unique name for this table
             if compulsory==u"!":
                 join=u"JOIN"
             else:
                 join=u"LEFT JOIN"
-            joins.append(u"%s %s %s_%d ON %s_%d.sentence_id=main.sentence_id AND %s_%d.tag=?"%(join,table,table,i,table,i,table,i))
+            joins.append(u"%(join)s %(table)s %(table_alias)s ON %(table_alias)s.sentence_id=main.sentence_id AND %(table_alias)s.tag=?"%{u"join":join,u"table":table,u"table_alias":table_alias})
             join_args.append(val)
-            select_c.append("%s_%d.sdata AS %s_%s_sdata"%(table,i,table,val))
+            select_c.append("%(table_alias)s.sdata AS %(table_alias)s_sdata"%{u"table_alias":table_alias})
             columns.append((table,val,set()))
         elif d in (u"govs",u"deps"):
             table=d
-            joins.append(u"JOIN %s %s_%d ON %s_%d.sentence_id=main.sentence_id"%(table,table,i,table,i))
-            select_c.append("%s_%d.sdata AS %s_sdata"%(table,i,table))
+            joins.append(u"JOIN %(table)s %(table_alias)s ON %(table_alias)s.sentence_id=main.sentence_id"%{u"table":table,u"table_alias":table_alias})
+            select_c.append("%(table_alias)s.sdata AS %(table_alias)s_sdata"%{"table_alias":table_alias})
             columns.append((table,None)) #I leave this at none to cause an error if a tree ever needs the default here, which should never happen
 
     select_c.insert(0,sentence_table+u".sdata AS sentence_sdata") #...always want the sentence
@@ -155,8 +157,8 @@ if __name__=="__main__":
     
     conn=sqlite3.connect(args.database)
 
-    from test_search import SearchKoska, SearchPtv
-    s=SearchPtv()
+    from test_search import SearchKoska, SearchPtv, SearchNSubjCop
+    s=SearchNSubjCop()
     out8=codecs.getwriter("utf-8")(sys.stdout)
     for counter,(t,res_set) in enumerate(query_search(conn,s)):
         t.to_conll(out8,highlight=res_set)

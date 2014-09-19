@@ -69,3 +69,16 @@ class SearchPtv(Query):
                     if subj<obj:
                         result.add(gov)
         return result
+
+class SearchNSubjCop(Query):
+    
+    def __init__(self):
+        Query.__init__(self)
+        self.query_fields=[u"!d_govs_nsubj-cop"]
+
+    def match(self,t):
+        """
+        _ >nsubj-cop _
+        """
+        govs=t.d_govs[u"nsubj-cop"]
+        return govs
