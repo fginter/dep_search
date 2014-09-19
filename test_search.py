@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from query import Query
 
 class SearchKoska(Query):
@@ -74,11 +75,13 @@ class SearchNSubjCop(Query):
     
     def __init__(self):
         Query.__init__(self)
-        self.query_fields=[u"!d_govs_nsubj-cop"]
+        self.query_fields=[u"!d_deps_nsubj-cop"]
+        self.words=[u"Åbo"]
 
     def match(self,t):
         """
-        _ >nsubj-cop _
+        _ >nsubj-cop Åbo
         """
-        govs=t.d_govs[u"nsubj-cop"]
-        return govs
+        s_abo=t.dict_tokens[u"Åbo"]
+        s_abo&=t.d_deps[u"nsubj-cop"]
+        return s_abo
