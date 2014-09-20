@@ -33,8 +33,8 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
           Possible values are these strings:
           d_govs_*   (* is a deptype like nsubj)
           d_deps_*   (* is a deptype like nsubj)
-          type_govs_* TODO 
-          type_deps_* TODO
+          type_govs_*
+          type_deps_*
           govs
           deps
           tags_*     (* is a tag like N or CASE_Gen)
@@ -95,6 +95,19 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
             join_args.append(val)
             select_c.append("%(table_alias)s.sdata AS %(table_alias)s_sdata"%{u"table_alias":table_alias})
             columns.append((table,val,set()))
+        elif u"type_govs" in d or u"type_deps" in d:
+            compulsory,col_name,val=re.match(ur"^(!?)(type_.*?)_(.*)$",d).groups()
+            table=col_name.replace(u"type",u"d",1)
+            print table,col_name
+            table_alias=table+u"_"+unicode(i) #just a unique name for this table
+            if compulsory==u"!":
+                join=u"JOIN"
+            else:
+                join=u"LEFT JOIN"
+            joins.append(u"%(join)s %(table)s %(table_alias)s ON %(table_alias)s.sentence_id=main.sentence_id AND %(table_alias)s.dtype=?"%{u"join":join,u"table":table,u"table_alias":table_alias})
+            join_args.append(val)
+            select_c.append("%(table_alias)s.%(col_name)s AS %(table_alias)s_%(col_name)s"%{u"table_alias":table_alias,u"col_name":col_name})
+            columns.append((col_name,val,{}))
         elif u"tags_" in d:
             compulsory,table,val=re.match(ur"^(!?)(tags)_(.*)$",d).groups()
             table_alias=table+u"_"+unicode(i) #just a unique name for this table

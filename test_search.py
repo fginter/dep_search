@@ -33,7 +33,7 @@ class SearchPtv(Query):
     
     def __init__(self):
         Query.__init__(self)
-        self.query_fields=[u"govs",u"deps",u"!d_govs_nsubj",u"!d_deps_nsubj",u"!d_govs_dobj",u"!d_deps_dobj",u"!tags_N",u"!tags_CASE_Par",u"d_govs_num",u"d_deps_num",u"d_deps_xcomp",u"d_deps_iccomp"]
+        self.query_fields=[u"govs",u"deps",u"!d_govs_nsubj",u"!d_deps_nsubj",u"!d_govs_dobj",u"!d_deps_dobj",u"!tags_N",u"!tags_CASE_Par",u"d_govs_num",u"d_deps_num",u"d_deps_xcomp",u"d_deps_iccomp",u"!type_deps_nsubj"]
 
     def match(self,t):
         """
