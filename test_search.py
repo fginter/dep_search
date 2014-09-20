@@ -33,7 +33,7 @@ class SearchPtv(Query):
     
     def __init__(self):
         Query.__init__(self)
-        self.query_fields=[u"govs",u"deps",u"!d_govs_nsubj",u"!d_deps_nsubj",u"!d_govs_dobj",u"!d_deps_dobj",u"!tags_N",u"!tags_CASE_Par",u"d_govs_num",u"d_deps_num",u"d_deps_xcomp",u"d_deps_iccomp",u"!type_deps_nsubj"]
+        self.query_fields=[u"!d_govs_nsubj",u"!d_deps_nsubj",u"!type_deps_nsubj",u"!d_govs_dobj",u"!d_deps_dobj",u"!type_deps_dobj",u"!tags_N",u"!tags_CASE_Par",u"d_deps_num",u"type_govs_num",u"d_deps_xcomp",u"d_deps_iccomp"]
 
     def match(self,t):
         """
@@ -44,12 +44,17 @@ class SearchPtv(Query):
 
         num_Par=(t.d_deps["num"]-t.tags[u"CASE_Par"]) # num tokens which are not partitive --> we don't want these
         for num in num_Par:
-            s_N_Par-=t.govs[num]
+            s_N_Par-=t.type_govs.get(u"num",{}).get(num,set()) # oho, this is really complex...
         #s_N_Par is now nouns in partitive not governing num
 
         s_N_Par&=t.d_deps[u"nsubj"] #...and only those which are governed by a subject
 
         if not s_N_Par:
+            return set()
+
+        s_par_obj=t.tags[u"CASE_Par"]&t.d_deps[u"dobj"] # partitive objects
+
+        if not s_par_obj:
             return set()
 
         s_nsubj_dobj=t.d_govs[u"dobj"]&t.d_govs[u"nsubj"] #words that govern both a subject and an object
@@ -60,15 +65,16 @@ class SearchPtv(Query):
         if not s_nsubj_dobj:
             return set()
 
-        #Again a for loop! Do I really need it?
         result=set()
-        for subj in s_N_Par:
-            govs=t.govs[subj]&s_nsubj_dobj # now we have to find all objects and check the word order
-            for gov in govs:
-                objs=t.deps[gov]&t.d_deps[u"dobj"]&t.tags[u"CASE_Par"] # only partitive objects
-                for obj in objs:
-                    if subj<obj:
-                        result.add(gov)
+        for item in s_nsubj_dobj:
+            if t.type_deps[u"nsubj"].get(item,set())&s_N_Par and t.type_deps[u"dobj"].get(item,set())&s_par_obj:
+                # now the word order...
+                max_obj=max(t.type_deps[u"dobj"][item]&s_par_obj)
+                for subj in t.type_deps[u"nsubj"][item]&s_N_Par:
+                    if subj<max_obj: # we found at least one subject which is smaller than one object
+                        result.add(item)
+                        break
+
         return result
 
 class SearchNSubjCop(Query):

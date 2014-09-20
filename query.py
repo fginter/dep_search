@@ -98,7 +98,6 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
         elif u"type_govs" in d or u"type_deps" in d:
             compulsory,col_name,val=re.match(ur"^(!?)(type_.*?)_(.*)$",d).groups()
             table=col_name.replace(u"type",u"d",1)
-            print table,col_name
             table_alias=table+u"_"+unicode(i) #just a unique name for this table
             if compulsory==u"!":
                 join=u"JOIN"
@@ -167,7 +166,7 @@ import argparse
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
-    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v3_4M_trees.db",help='Name of the database to query. Default: %(default)s.')
+    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v5_1M_trees.db",help='Name of the database to query. Default: %(default)s.')
 
     args = parser.parse_args()
     
