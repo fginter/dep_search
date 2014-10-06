@@ -80,8 +80,9 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
             joins.append("JOIN lemma_index li%d ON main.sentence_id=li%d.sentence_id"%(i,i))
             where_c.append("li%d.lemma=?"%i)
             where_args.append(l)
-    if sentence_table==u"sentence":
-        joins.append("JOIN sentence ON sentence.sentence_id=main.sentence_id")
+    ##I won't join the sentence table in, unless I have to
+    #if sentence_table==u"sentence":
+    #    joins.append("JOIN sentence ON sentence.sentence_id=main.sentence_id")
 
     for i,d in enumerate(query_fields):
         if u"d_govs" in d or u"d_deps" in d:
@@ -125,7 +126,7 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
             select_c.append("%(table_alias)s.sdata AS %(table_alias)s_sdata"%{"table_alias":table_alias})
             columns.append((table,None)) #I leave this at none to cause an error if a tree ever needs the default here, which should never happen
 
-    select_c.insert(0,sentence_table+u".sdata AS sentence_sdata") #...always want the sentence
+    #select_c.insert(0,sentence_table+u".sdata AS sentence_sdata") #...don't grab the sentence data
     q=u"SELECT %s"%(u", ".join(select_c))
     q+=u"\n"+from_c
     q+=u"\n"+(u"\n".join(j for j in joins))
@@ -142,8 +143,8 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
         if not rows:
             break
         for row in rows:
-            tree=pickle.loads(str(row[0])) #The first column is the serialized data
-            for col,data in zip(columns,row[1:]):
+            tree=Tree()#pickle.loads(str(row[0])) #The first column is the serialized data
+            for col,data in zip(columns,row):
                 if len(col)==3: #(x,y,z) tree.x[y]=z
                     d,key,default=col
                     if data is not None:
@@ -176,7 +177,7 @@ if __name__=="__main__":
     s=SearchPtv()
     out8=codecs.getwriter("utf-8")(sys.stdout)
     for counter,(t,res_set) in enumerate(query_search(conn,s)):
-        t.to_conll(out8,highlight=res_set)
+        #t.to_conll(out8,highlight=res_set)
         if args.max>0 and counter+1>=args.max:
             break
     conn.close()

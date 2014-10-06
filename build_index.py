@@ -7,33 +7,8 @@ from tree import Tree
 import json
 import re
 
-
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
-def gather_tbl_names(inp):
-    deprel_s,pos_s,feat_s=set(),set(),set()
-    for line_no,line in enumerate(inp):
-        line=line.strip()
-        if not line or line.startswith(u"#"):
-            continue
-        cols=line.split(u"\t")
-        deprel,pos,feat=cols[DEPREL],cols[POS],cols[FEAT]
-        if feat=="_":
-            feat=[]
-        else:
-            feat=feat.split(u"|")
-        deprel_s.add(deprel)
-        pos_s.add(pos)
-        for f in feat:
-            feat_s.add(f)
-        if line_no>10000000:
-            break
-        if line_no%100000==0:
-            print >> sys.stderr, line_no
-    s=json.dumps((sorted(deprel_s),sorted(pos_s),sorted(feat_s)))
-    print s
-
-        
 symbs=re.compile(ur"[^A-Za-z0-9_]",re.U)
 
 def prepare_tables(conn):
@@ -101,8 +76,6 @@ def build_indices(conn):
             print q
             conn.execute(q)
     conn.commit()
-
-
 
 def get_sentences(inp,max_rank=None):
     """
