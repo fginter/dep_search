@@ -61,11 +61,15 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
         from_c=u"FROM token_index main"
         where_c.append(u"main.token=?")
         where_args.append(words[0])
+        select_c.append("main.token_set")
+        columns.append(("dict_tokens",words[0],set()))
         words.pop(0)
     elif lemmas is not None:
         from_c=u"FROM lemma_index main"
         where_c.append(u"main.lemma=?")
         where_args.append(lemmas[0])
+        select_c.append("main.lemma_set")
+        columns.append(("dict_lemmas",lemmas[0],set()))
         lemmas.pop(0)
     else:
         from_c=u"FROM sentence main"
@@ -75,11 +79,16 @@ def query(conn,words=None,lemmas=None,query_fields=[]):
             joins.append("JOIN token_index ti%d ON main.sentence_id=ti%d.sentence_id"%(i,i))
             where_c.append("ti%d.token=?"%i)
             where_args.append(w)
+            select_c.append("ti%d.token_set")
+            columns.append(("dict_tokens",w,set()))
     if lemmas is not None:
         for i,l in enumerate(lemmas):
             joins.append("JOIN lemma_index li%d ON main.sentence_id=li%d.sentence_id"%(i,i))
             where_c.append("li%d.lemma=?"%i)
             where_args.append(l)
+            select_c.append("li%d.lemma_set")
+            columns.append(("dict_lemmas",l,set()))
+
     ##I won't join the sentence table in, unless I have to
     #if sentence_table==u"sentence":
     #    joins.append("JOIN sentence ON sentence.sentence_id=main.sentence_id")
@@ -167,7 +176,7 @@ import argparse
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
-    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v5_1M_trees.db",help='Name of the database to query. Default: %(default)s.')
+    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v6_1M_trees.db",help='Name of the database to query. Default: %(default)s.')
 
     args = parser.parse_args()
     
@@ -175,6 +184,7 @@ if __name__=="__main__":
 
     from test_search import SearchKoska, SearchPtv, SearchNSubjCop
     s=SearchPtv()
+    s=SearchKoska()
     out8=codecs.getwriter("utf-8")(sys.stdout)
     for counter,(t,res_set) in enumerate(query_search(conn,s)):
         #t.to_conll(out8,highlight=res_set)

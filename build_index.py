@@ -20,11 +20,13 @@ def prepare_tables(conn):
     );
     CREATE TABLE token_index (
        token TEXT,
-       sentence_id INTEGER
+       sentence_id INTEGER,
+       token_set BLOB
     );
     CREATE TABLE lemma_index (
        lemma TEXT,
-       sentence_id INTEGER
+       sentence_id INTEGER,
+       lemma_set BLOB
     );
     CREATE TABLE d_govs (
         sentence_id INTEGER,
@@ -106,22 +108,10 @@ def fill_db(conn,src_data):
         t=Tree.from_conll(sent)
         tpickle=pickle.dumps(t)
         conn.execute('INSERT INTO sentence VALUES(?,?)', [sent_idx,buffer(tpickle)])
-        tokens=set()
-        lemmas=set()
-        for cols in sent:
-            token=cols[1]
-            if token in tokens: #Try not to write duplicates into the DB top make its life easier
-                continue
-            else:
-                tokens.add(token)
-            conn.execute('INSERT INTO token_index VALUES(?,?)', [token,sent_idx])
-
-            lemma=cols[2]
-            if lemma in lemmas: #Try not to write duplicates into the DB top make its life easier
-                continue
-            else:
-                lemmas.add(lemma)
-            conn.execute('INSERT INTO lemma_index VALUES(?,?)', [lemma,sent_idx])
+        for token, token_set in t.dict_tokens.iteritems():
+            conn.execute('INSERT INTO token_index VALUES(?,?,?)', [token,sent_idx,pickle.dumps(token_set)])
+        for lemma, lemma_set in t.dict_lemmas.iteritems():
+            conn.execute('INSERT INTO lemma_index VALUES(?,?,?)', [lemma,sent_idx,pickle.dumps(lemma_set)])
         for dtype,s in t.d_govs.iteritems():
             d=t.type_govs.get(dtype,None)
             assert d is not None
@@ -144,10 +134,10 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     #conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3_4M_trees.db")
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v5_1M_trees.db")
-    prepare_tables(conn)
+    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v6_1M_trees.db")
+    #prepare_tables(conn)
 #    wipe_db(conn)
-    src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin),1000000)
-    fill_db(conn,src_data)
+    #src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin),1000000)
+    #fill_db(conn,src_data)
     build_indices(conn)
     conn.close()
