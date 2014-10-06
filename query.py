@@ -176,7 +176,7 @@ import argparse
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
-    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v6_1M_trees.db",help='Name of the database to query. Default: %(default)s.')
+    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v6_390K_trees.db",help='Name of the database to query. Default: %(default)s.')
 
     args = parser.parse_args()
     
@@ -185,8 +185,10 @@ if __name__=="__main__":
     from test_search import SearchKoska, SearchPtv, SearchNSubjCop
     s=SearchPtv()
     s=SearchKoska()
+    s=SearchNSubjCop()
     out8=codecs.getwriter("utf-8")(sys.stdout)
     for counter,(t,res_set) in enumerate(query_search(conn,s)):
+        print res_set
         #t.to_conll(out8,highlight=res_set)
         if args.max>0 and counter+1>=args.max:
             break

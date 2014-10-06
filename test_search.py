@@ -82,12 +82,12 @@ class SearchNSubjCop(Query):
     def __init__(self):
         Query.__init__(self)
         self.query_fields=[u"!d_deps_nsubj-cop"]
-        self.words=[u"Åbo"]
+        self.words=[u"Turku"]
 
     def match(self,t):
         """
-        _ >nsubj-cop Åbo
+        _ >nsubj-cop Turku
         """
-        s_abo=t.dict_tokens[u"Åbo"]
+        s_abo=t.dict_tokens[u"Turku"]
         s_abo&=t.d_deps[u"nsubj-cop"]
         return s_abo
