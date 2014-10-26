@@ -1,0 +1,1005 @@
+from query import Query
+#import lex as lex
+#import yacc as yacc
+#import re
+from expr import *
+import sys
+
+
+class node_code_block():
+
+    def __init__(self):
+
+        self.operation_blocks = []
+        self.end_block = []
+
+class pair_code_block():
+
+    def __init__(self, rest):
+
+        self.restriction = rest
+
+        self.set1 = ''
+        self.set2 = ''
+        self.operation = ''
+        self.needed_from_db = []
+        self.negated = False
+
+    def to_string(self):
+        return '#Pair(%s, %s, %s, %b)' % (self.set1, self.set2, self.operation, self.negated)
+
+
+class retrieve_from_db_code_block():
+
+    def __init__(self, needed):
+        self.what_to_retrieve = needed
+
+    def to_string(self):
+        return '#f_set=' + str(self.what_to_retrieve)
+
+
+class end_search_block():
+
+    def __init__(self):
+        self.code = '#ENDBLOCK'
+
+
+class end_node_block():
+
+    def __init_(self, node_id):
+        self.node_id = node_id
+
+    def to_string(self):
+        return 'output_' + node_id + '=f_set'
+
+
+
+
+class code():
+
+    def __init__(self, original_node):
+
+        self.original_node = original_node
+        self.process_node(self.original_node)
+        self.get_code()
+
+    def print_code(self):
+        pass
+
+    def get_code(self):
+
+        #match Function
+        match_code, db_list = self.get_match_function()
+        #init_function
+        init_function = self.get_init_function(db_list)
+
+        output = ['class CustomSearch\n',]
+        output.extend(init_function)
+        output.extend(match_function)
+
+        return output
+
+    def get_match_function(self):
+
+        node_codes = []
+
+        #Start going through the nodes in order
+        for node_id in self.order_of_execution:
+            node = self.node_id_dict[node_id]
+            pseudo_node = self.pseudo_nodes[node_id]
+            if len(node.restrictions) < 1:
+                continue
+            node_codes.append(self.get_node_code(node_id))
+
+        node_codes.append(self.get_match_endgame())
+
+        the_code = []
+        for nc in node_codes:
+            the_code.extend(nc)
+        return the_code
+
+    def get_match_endgame(self):
+
+        return  ['return XXX',]
+
+    def get_node_code(self, node_id):
+
+        #So Start collecting the node code blocks into this list
+        operation_blocks = []
+
+
+
+        #Here we are!
+        break_exec_on_empty_set = self.no_negs_above_dict[node_id]
+
+        #Grab the sets which need to be paired with each other
+        sets_to_pair = []
+        negated_sets_to_pair = []
+
+        needed_from_the_dict = set()
+
+
+        #Go through text restrictions
+        #These will be intersected
+        txt_what_sets_are_needed, txt_sets_to_intersect, needed_words = self.get_text_restrictions(node_id)
+
+        #Go through deprels without input
+        #These will be paired
+        pos_dni_sets_to_pair, neg_dni_sets_to_pair = self.get_dep_wo_input_restrictions(node_id)
+
+        #Go through deprels with input
+        #These will be paired
+        pos_di_sets_to_pair, neg_di_sets_to_pair = self.get_dep_w_input_restrictions(node_id)
+
+        #Find a good starting point
+        #Check through positive deprel without input and text_res
+        the_first_set = ''
+        the_first_set_found = False
+
+        first_code_block = []
+
+        #If node has text restrictions it's a good starting point
+        if len(txt_sets_to_intersect) > 0:
+            first_code_block = self.get_text_restrictions_intersect_code(txt_sets_to_intersect)
+            the_first_set_found = True
+            ####
+            operation_blocks.append(retrieve_from_db_code_block(txt_sets_to_intersect))
+
+        elif len(pos_dni_sets_to_pair) > 0:
+            code, needed = self.get_dep_set(pos_dni_sets_to_pair[0])
+            needed_from_the_dict |= needed
+            first_code_block = code
+            ####
+            operation_blocks.append(retrieve_from_db_code_block(pos_dni_sets_to_pair[0]))
+
+
+            pos_dni_sets_to_pair = pos_dni_sets_to_pair[1:]
+            the_first_set_found = True
+        else:
+            #XXX:Do this!
+            needed = 'deps??'
+            first_code_block = ['fset=all_tokens',]
+            the_first_set_found = True
+            ####
+            operation_blocks.append(retrieve_from_db_code_block('ALL TOKENS'))
+
+
+        #Ok, I've got the first set and all I need to get this thing done!
+        pair_code_blocks = []
+
+        #Do pairings for deprels with input
+        for di in pos_di_sets_to_pair:
+            code, needed = self.get_pair_block(di)
+            needed_from_the_dict |= needed
+            pair_code_blocks.append( code, needed = self.get_pair_block(di))
+            ####
+            operation_blocks.append(pair_code_block(di))
+
+
+        #Do pairings for deprels with input
+        for di in pos_di_sets_to_pair:
+            code, needed = self.get_pair_block(di)
+            needed_from_the_dict |= needed
+            pair_code_blocks.append(self.get_pair_block(di))
+            ####
+            operation_blocks.append(pair_code_block(di))
+
+
+        #Do pairings for deprels with input
+        for di in neg_di_sets_to_pair:
+            code, needed = self.get_pair_block(di)
+            needed_from_the_dict |= needed
+            pair_code_blocks.append(self.get_pair_block(di, negated=True))
+            ####
+            operation_blocks.append(pair_code_block(di, negated=True))
+
+
+        #Do pairings for deprels with input
+        for di in neg_di_sets_to_pair:
+            code, needed = self.get_pair_block(di)
+            needed_from_the_dict |= needed
+            pair_code_blocks.append(self.get_pair_block(di, negated=True))
+            ####
+            operation_blocks.append(pair_code_block(di, negated=True))
+
+
+        end_game = ['#Check assignment', 'output_' + node_id + '=fset']
+        ####
+        operation_blocks.append(end_node_block(node_id))
+
+        
+        print first_code_block
+        print pair_code_blocks
+        print end_game
+        return operation_blocks
+
+        import pdb; pdb.set_trace()
+
+
+
+
+        #The endgame; to check wether this form is possible
+        #To be done!
+
+
+    def get_pair_block(self, di, negated=False):
+        needed = set()
+        code_block = []   
+
+        if len(di) > 2:
+            code_block, needed = self.generate_pairing('f_set',None, di[0], di[1], negated)
+        else:
+            code_block, needed = self.generate_pairing('f_set',di[2], di[0], di[1], negated)
+
+        return needed, code_block
+
+
+    def get_dep_set(self, dset):
+
+        needed = set()
+        code = []
+        #(op, dtype)
+        if dset[0] == '<':
+            code.append('fset=t.d_deps[u"' + dset[1] + '"]')
+            needed.add('d_deps_' + dset[1])
+
+        if dset[0] == '>':
+            code.append('fset=t.d_govs[u"' + dset[1] + '"]')
+            needed.add('d_govs_' + dset[1])
+
+        return code, needed
+
+
+    def get_text_restrictions_intersect_code(self, txt_sets_to_intersect):
+
+        code = []
+        code.append('f_set=' + txt_sets_to_intersect[0])
+        for txtres in txt_sets_to_intersect[1:]:
+            code.append('f_set&=' + txtres)
+        return code
+
+
+    def get_dep_w_input_restrictions(self, node_id):
+
+        pos_di_sets_to_pair = []
+        neg_di_sets_to_pair = []
+
+        pseudo_node = self.pseudo_nodes[node_id]
+        #2. Go through the depres without input
+        for dp in pseudo_node.depres_with_input:
+            #print dp.depres.operator
+            op = dp.depres.operator[0]
+            dtype = dp.depres.operator[2:-1]
+            #print op, dtype
+
+            if not dp.depres.negated:
+                #Not negated
+                #Pair f_set with this
+                op = dp.depres.operator[0]
+                dtype = dp.depres.operator[2:-1]
+                if len(dtype) < 1:
+                    dtype = None
+                #print op, dtype
+                pos_di_sets_to_pair.append((op, dtype, dp.input_node))
+
+            else:
+                #Negated
+                #Pair and subtract the result from the f_set
+                #No need to pair when negating!
+                op = dp.depres.operator[0]
+                dtype = dp.depres.operator[2:-1]
+                if len(dtype) < 1:
+                    dtype = None
+                neg_di_sets_to_pair.append((op, dtype, dp.input_node))
+
+        return pos_di_sets_to_pair, neg_di_sets_to_pair
+
+
+    def get_dep_wo_input_restrictions(self, node_id):
+
+        pos_dni_sets_to_pair = []
+        neg_dni_sets_to_pair = []
+
+        pseudo_node = self.pseudo_nodes[node_id]
+        #2. Go through the depres without input
+        for dp in pseudo_node.depres_with_empty_node:
+            #print dp.depres.operator
+            op = dp.depres.operator[0]
+            dtype = dp.depres.operator[2:-1]
+            #print op, dtype
+
+            if not dp.depres.negated:
+                #Not negated
+                #Pair f_set with this
+                op = dp.depres.operator[0]
+                dtype = dp.depres.operator[2:-1]
+                if len(dtype) < 1:
+                    dtype = None
+                #print op, dtype
+                pos_dni_sets_to_pair.append((op, dtype))
+
+            else:
+                #Negated
+                #Pair and subtract the result from the f_set
+                #No need to pair when negating!
+                op = dp.depres.operator[0]
+                dtype = dp.depres.operator[2:-1]
+                if len(dtype) < 1:
+                    dtype = None
+                neg_dni_sets_to_pair.append((op, dtype))
+
+        return pos_dni_sets_to_pair, neg_dni_sets_to_pair
+
+
+
+    def get_text_restrictions(self, node_id):
+
+        needed_words = set()
+        what_sets_are_needed = set()
+        #needed_tags = set()
+        txt_sets_to_pair = []
+
+        pseudo_node = self.pseudo_nodes[node_id]
+
+        for txt_res in pseudo_node.txt_res:
+            #print len(code_block)
+            if txt_res[0] in [u'CGTAG', u'TXT'] and txt_res[1] != u'_':
+
+                if txt_res[0] == u'TXT':
+                    txt_sets_to_pair.append('t.dict_tokens[u"' + txt_res[1] + '"]')
+                    if self.no_negs_above_dict[node_id]:
+                        needed_words.add(txt_res[1])
+
+                elif txt_res[0] == u'CGTAG':
+
+                    if '+' not in txt_res[1]:
+
+                        txt_sets_to_pair.append('t.tags[u"' + txt_res[1] + '"]')
+
+                        if self.no_negs_above_dict[node_id]:
+                            what_sets_are_needed.add('!tags_' + txt_res[1])
+                        else:
+                            what_sets_are_needed.add('tags_' + txt_res[1])
+
+                    else:
+                        tags = txt_res[1].split('+')
+                        for tag in tags:
+                            txt_sets_to_pair.append('t.tags[u"' + tag + '"]')
+                            if self.no_negs_above_dict[node_id]:
+                                what_sets_are_needed.add('!tags_' + tag)
+                            else:
+                                what_sets_are_needed.add('tags_' + tag)
+
+
+        return what_sets_are_needed, txt_sets_to_pair, needed_words
+
+
+    def generate_pairing(self, set1,set2,op,dtype=None,negated=False):
+
+        the_block = ['#Pair(' + str((set1,set2,op,dtype,negated)), ]
+        needed = set()
+
+        if dtype:
+            the_block.append('d_type = "' + dtype + '"')
+        the_block.append('set_1 = ' + set1)
+        if set2:
+            the_block.append('set_2 = ' + set2)
+
+        if dtype and op==u">":
+            the_block.append('needed_dict=t.type_deps.get(dtype,{})')
+            if not negated:
+                needed.add('!deps_' + dtype)
+            else:
+                needed.add('deps_' + dtype)
+        elif dtype and op==u"<":
+            the_block.append('needed_dict=t.type_govs.get(dtype,{})')
+            if not negated:
+                needed.add('!govs_' + dtype)
+            else:
+                needed.add('govs_' + dtype)
+        elif op==u">":
+            the_block.append('needed_dict=t.deps')
+            needed.add('deps')
+        elif op==u"<":
+            the_block.append('needed_dict=t.govs')
+            needed.add('govs')
+
+        the_block.append('result=set()')
+        the_block.append('for i in set1:')
+        if set2:
+            the_block.append('\tif set2&needed_dict.get(i,set()):')
+            the_block.append('\t\tresult.add(i)')
+        else:
+            the_block.append('\tif needed_dict.get(i,set()):')
+            the_block.append('\t\tresult.add(i)')
+
+        return the_block, needed
+
+
+
+
+    def process_node(self, node):
+
+        orig_node = node
+        #Give each node an id
+        #And get appropriate dicts for these nodes
+        self.node_id_dict, self.node_depth_dict, self.no_negs_above_dict = self.get_depth_and_id_dicts(node)
+        #Make a reverse id dict
+        self.reverse_node_id_dict = {v: k for k, v in self.node_id_dict.items()}
+
+        #print '#', self.node_id_dict
+        #print '#', self.node_depth_dict
+
+        #Sort nodes into order
+        self.order_of_execution = []
+        levels = self.node_depth_dict.keys()
+        levels.sort()
+        levels.reverse()
+        for level in levels:
+            self.nodes_which_break_on_empty = []
+            self.nodes_which_dont_break_on_empty = []        
+            for node_id in self.node_depth_dict[level]:
+                if self.no_negs_above_dict[node_id]:
+                    self.nodes_which_break_on_empty.append(node_id)
+                else:
+                    self.nodes_which_dont_break_on_empty.append(node_id)
+            self.order_of_execution.extend(self.nodes_which_break_on_empty)
+            self.order_of_execution.extend(self.nodes_which_dont_break_on_empty)
+
+        #Make pseudo objects
+        self.pseudo_nodes = {}
+        for node_id, node in self.node_id_dict.items():
+            
+            #Go through restrictions of this node
+            node_txt_restrictions = []
+            node_depres = []
+
+            restrictions = node.restrictions
+            for rest in restrictions:
+                if type(rest) != DepRes:
+                    node_txt_restrictions.append(rest)
+                else:
+                    node_depres.append(rest)
+
+            #Make Pseudo DepRels
+            pseudo_depres_list = []
+            for depres in node_depres:
+                #Does this have an input node, which is not empty?
+                input_node = depres.node
+                if len(input_node.restrictions) > 0:
+                    input_node_id = self.reverse_node_id_dict[input_node]
+                else:
+                    input_node_id = None
+                pseudo_depres_list.append(PseudoDepres(depres, input_node_id))
+            pseudo_node = PseudoNode(node, pseudo_depres_list, node_depres, node_txt_restrictions, node_id)
+            self.pseudo_nodes[node_id] = pseudo_node
+
+
+    def get_depth_and_id_dicts(self, node):
+
+        node_id_dict, node_depth_dict, no_negs_above_dict = self.id_the_tree(node, '0', 0, True)
+
+        proper_depth_dict = {}
+        #print 'ndk', self.node_depth_dict.keys()
+        for key in node_depth_dict.keys():
+            value = node_depth_dict[key]
+            #print 'vk', value, key
+            if value not in proper_depth_dict.keys():
+                proper_depth_dict[value] = []
+            proper_depth_dict[value].append(key)
+
+        return node_id_dict, proper_depth_dict, no_negs_above_dict
+
+    def id_the_tree(self, node, id, depth, no_negs_above):
+
+        no_negs_above_dict = {}
+        node_id_dict = {}
+        node_depth_dict = {}
+        node_id_dict[id] = node
+        node_depth_dict[id] = depth
+        no_negs_above_dict[id] = no_negs_above
+        kid_nodes = []
+        negated = []
+        for dr in node.restrictions:
+            if type(dr) == DepRes:
+                kid_nodes.append(dr.node)
+                negated.append(dr.negated)
+
+        for i, kid_node in enumerate(kid_nodes):
+
+            if no_negs_above and not negated[i]:
+                neg = True
+            else:
+                neg = False
+            res_id_dict, res_depth_dict, res_no_negs_above_dict = self.id_the_tree(kid_node, id + '_' + str(i), depth+1, neg)
+            node_id_dict.update(res_id_dict)   
+            node_depth_dict.update(res_depth_dict)  
+            no_negs_above_dict.update(res_no_negs_above_dict)
+
+        return node_id_dict, node_depth_dict, no_negs_above_dict
+
+
+
+
+
+
+
+
+
+class PseudoNode():
+
+    def __init__(self, node, pseudo_depres, depres, txt_res, id, should_break_if_empty=False):
+
+        self.id = id
+        self.node = node
+        self.pseudo_depres = pseudo_depres
+        self.depres = depres
+        self.txt_res = txt_res
+        self.should_break_if_empty = should_break_if_empty
+
+        self.depres_with_empty_node = []
+        self.depres_with_input = []
+        for pd in pseudo_depres:
+            if pd.input_node == None:
+                self.depres_with_empty_node.append(pd)
+            else:
+                self.depres_with_input.append(pd)
+
+class PseudoDepres():
+
+    def __init__(self,depres,input_node):
+
+        self.input_node = input_node
+        self.depres = depres
+        self.expression = depres.operator
+        self.text = str(self.expression)
+
+
+def process_node(node):
+
+    orig_node = node
+    #Give each node an id
+    #And get appropriate dicts for these nodes
+    self.node_id_dict, self.node_depth_dict, self.no_negs_above_dict = get_depth_and_id_dicts(node)
+    #Make a reverse id dict
+    self.reverse_node_id_dict = {v: k for k, v in self.node_id_dict.items()}
+
+    #print '#', self.node_id_dict
+    #print '#', self.node_depth_dict
+
+    #Sort nodes into order
+    self.order_of_execution = []
+    levels = self.node_depth_dict.keys()
+    levels.sort()
+    levels.reverse()
+    for level in levels:
+        self.nodes_which_break_on_empty = []
+        self.nodes_which_dont_break_on_empty = []        
+        for node_id in self.node_depth_dict[level]:
+            if self.no_negs_above_dict[node_id]:
+                self.nodes_which_break_on_empty.append(node_id)
+            else:
+                self.nodes_which_dont_break_on_empty.append(node_id)
+        self.order_of_execution.extend(self.nodes_which_break_on_empty)
+        self.order_of_execution.extend(self.nodes_which_dont_break_on_empty)
+
+    #Make pseudo objects
+    self.pseudo_nodes = {}
+    for node_id, node in self.node_id_dict.items():
+        
+        #Go through restrictions of this node
+        node_txt_restrictions = []
+        node_depres = []
+
+        restrictions = node.restrictions
+        for rest in restrictions:
+            if type(rest) != DepRes:
+                node_txt_restrictions.append(rest)
+            else:
+                node_depres.append(rest)
+
+        #Make Pseudo DepRels
+        pseudo_depres_list = []
+        for depres in node_depres:
+            #Does this have an input node, which is not empty?
+            input_node = depres.node
+            if len(input_node.restrictions) > 0:
+                input_node_id = self.reverse_node_id_dict[input_node]
+            else:
+                input_node_id = None
+            pseudo_depres_list.append(PseudoDepres(depres, input_node_id))
+        pseudo_node = PseudoNode(node, pseudo_depres_list, node_depres, node_txt_restrictions, node_id)
+        self.pseudo_nodes[node_id] = pseudo_node
+
+    print orig_node.to_unicode()
+    what_sets_are_needed = set()
+    what_words_are_needed = set()
+
+    for node_id in self.order_of_execution:
+
+        node = self.node_id_dict[node_id]
+        pseudo_node = self.pseudo_nodes[node_id]
+        if len(node.restrictions) < 1:
+            continue
+
+        if False:
+
+            print
+            print '#Node ', node_id
+            if self.no_negs_above_dict[node_id]:
+                print '#Break execution if this node returns set()'
+            else:
+                print '#Do Not break execution if this node returns set()'
+            print 
+
+            print '\t#Text Restrictions:'
+            for txt_res in pseudo_node.txt_res:
+                print '\t#\t' + str(txt_res)
+            #print
+            print '\t#DepRes without input:'
+            for dp in pseudo_node.depres_with_empty_node:
+                print '\t#\t%s,%s' % (dp.depres.operator, not dp.depres.negated)
+            #print
+            print '\t#DepRes with input:'
+            for dp in pseudo_node.depres_with_input:
+                print '\t#\t%s, node_output_%s,%s'% (dp.depres.operator, dp.input_node,not dp.depres.negated)
+            print '\t#Returns: node_output_%s' % node_id
+
+	    #    0. init and maintain a list of all restrictions
+	        #unique id and possible token set
+
+	        #Restrictions without input
+
+	    #	1. get sets for tag or word, lemma etc restrictions
+	    #	2. get sets for depres without input
+	    #	    pair for every set
+	    #	3. get sets for depres with input
+	    #	    pair for every set
+		    #Maybe first ensure connection here?
+		    #Or, maybe not?
+		    #More details here
+
+	        #Restrictions with input
+
+	    #	4. For every res with input:
+	    #	       get input set and pair with orig_set, with appropriate restriction
+	    #	       save the sets
+		           #Details!
+
+	    #	5. Check assignment
+	    #	    save sets
+
+        #Which_sets are needed:
+
+    #A codeblock for each node
+    #A list of the sets which it needs
+
+    #Afterwards:
+    #   -generate header, with the sets
+
+    #   -remove conflicting sets(later)
+    #   -
+
+    what_sets_are_needed = set()
+    what_words_are_needed = set()
+
+    cb = []
+    for node_id in self.order_of_execution:
+
+        node = self.node_id_dict[node_id]
+        pseudo_node = self.pseudo_nodes[node_id]
+        if len(node.restrictions) < 1:
+            continue
+        code_block = []
+        first_set_found = False
+
+        #1. Go through the textual limits
+        for txt_res in pseudo_node.txt_res:
+            #print len(code_block)
+            if txt_res[0] in [u'CGTAG', u'TXT'] and txt_res[1] != u'_':
+
+                if txt_res[0] == u'TXT':
+                    if len(code_block) == 0:
+                        code_block.append('f_set = t.dict_tokens[u"' + txt_res[1] + '"]')
+
+                    else:
+                        code_block.append('f_set &= t.dict_tokens[u"' + txt_res[1] + '"]')
+                    what_words_are_needed.add(txt_res[1])
+
+                elif txt_res[0] == u'CGTAG':
+
+                    if '+' not in txt_res[1]:
+
+                        if len(code_block) == 0:
+                            code_block.append('f_set = t.tags[u"' + txt_res[1] + '"]')
+                        else:
+                            code_block.append('f_set &= t.tags[u"' + txt_res[1] + '"]')
+
+                        if self.no_negs_above_dict[node_id]:
+                            what_sets_are_needed.add('!tags_' + txt_res[1])
+                        else:
+                            what_sets_are_needed.add('tags_' + txt_res[1])
+
+                    else:
+                        tags = txt_res[1].split('+')
+                        for tag in tags:
+                            if len(code_block) == 0:
+                                code_block.append('f_set = t.tags[u"' + tag + '"]')
+                            else:
+                                code_block.append('f_set &= t.tags[u"' + tag + '"]')
+
+                            if self.no_negs_above_dict[node_id]:
+                                what_sets_are_needed.add('!tags_' + tag)
+                            else:
+                                what_sets_are_needed.add('tags_' + tag)
+
+        #2. Go through the depres without input
+        for dp in pseudo_node.depres_with_empty_node:
+            #print dp.depres.operator
+            op = dp.depres.operator[0]
+            dtype = dp.depres.operator[2:-1]
+            #print op, dtype
+
+            if len(code_block) > 0:
+                if not dp.depres.negated:
+                    #Not negated
+                    #Pair f_set with this
+                    op = dp.depres.operator[0]
+                    dtype = dp.depres.operator[2:-1]
+                    if len(dtype) < 1:
+                        dtype = None
+                    #print op, dtype
+                    pair_block, needed = self.generate_pairing('f_set',None, op, dtype, False)
+                    code_block.extend(pair_block)
+                    what_sets_are_needed |= needed
+                    code_block.append('f_set = result')
+
+                else:
+                    #Negated
+                    #Pair and subtract the result from the f_set
+                    #No need to pair when negating!
+                    op = dp.depres.operator[0]
+                    dtype = dp.depres.operator[2:-1]
+                    if len(dtype) < 1:
+                        dtype = None
+                    #print op, dtype
+                    #pair_block, needed = generate_pairing('f_set',None, op, dtype, True)
+                    #code_block.extend(pair_block)
+                    #what_sets_are_needed |= needed
+                    if dtype:
+                        if op == u'>':
+                            code_block.append('f_set -= t.d_govs[u"' + dtype + '"]')
+                            what_sets_are_needed.add('d_govs_' + dtype)
+                        else:
+                            code_block.append('f_set -= t.d_deps[u"' + dtype + '"]')                        
+                            what_sets_are_needed.add('d_deps_' + dtype)
+            else:
+                if not dp.depres.negated:
+                    #Not negated
+                    #This will not stay it is wrong!
+                    #Only a placeholder!!
+                    code_block.append('f_set = set(range(0, len(t.tokens)))')
+                    op = dp.depres.operator[0]
+                    dtype = dp.depres.operator[2:-1]
+                    if len(dtype) < 1:
+                        dtype = None
+                    pair_block, needed = generate_pairing('f_set',None, op, dtype, True)
+                    code_block.extend(pair_block)
+                    what_sets_are_needed |= needed
+                    code_block.append('f_set = result')
+
+                else:
+                    #Negated
+                    #FFS: f_set = set(all_tokens)
+                    #Very suspect, check later!
+                    code_block.append('f_set = set(range(0, len(t.tokens)))')
+                    op = dp.depres.operator[0]
+                    dtype = dp.depres.operator[2:-1]
+                    if len(dtype) < 1:
+                        dtype = None
+                    #print op, dtype
+                    #pair_block, needed = generate_pairing('f_set',None, op, dtype, True)
+                    #code_block.extend(pair_block)
+                    #what_sets_are_needed |= needed
+                    if dtype:
+                        if op == u'>':
+                            code_block.append('f_set -= t.d_govs[u"' + dtype + '"]')
+                            what_sets_are_needed.add('d_govs_' + dtype)
+                        else:
+                            code_block.append('f_set -= t.d_deps[u"' + dtype + '"]')                        
+                            what_sets_are_needed.add('d_deps_' + dtype)
+                    else:
+                        #Negated whatever errrr
+                        #I'm not going to do this, not now
+                        pass
+
+        #Really?
+        if len(code_block) < 1:
+            code_block.append('f_set = set(range(0, len(t.tokens)))')
+
+        for dp in pseudo_node.depres_with_input:
+
+            if not dp.depres.negated:
+                #Not negated
+                op = dp.depres.operator[0]
+                dtype = dp.depres.operator[2:-1]
+                if len(dtype) < 1:
+                    dtype = None
+                #print op, dtype
+                pair_block, needed = generate_pairing('f_set', 'output_' + dp.input_node, op, dtype, False)
+                code_block.extend(pair_block)
+                what_sets_are_needed |= needed
+                code_block.append('f_set = result')
+
+            else:
+                #Negated
+                #Not negated
+                op = dp.depres.operator[0]
+                dtype = dp.depres.operator[2:-1]
+                if len(dtype) < 1:
+                    dtype = None
+                #print op, dtype
+                pair_block, needed = generate_pairing('f_set', 'output_' + dp.input_node, op, dtype, False)
+                code_block.extend(pair_block)
+                what_sets_are_needed |= needed
+                code_block.append('f_set -= result')           
+
+        code_block.append('##Check that everything works(?,?,?)')
+        code_block.append('output_' + node_id + ' = f_set')
+
+        print '\n'.join(code_block)
+        cb.extend(code_block)
+        #import pdb;pdb.set_trace()
+
+    print 'return output_0'
+    print what_sets_are_needed
+    print what_words_are_needed
+
+    generate_the_search_file(cb, what_sets_are_needed, what_words_are_needed)
+
+
+def generate_the_search_file(code_blocks, what_sets_are_needed, what_words_are_needed):
+
+    print 'class SearchC(Query):'
+    print '\tdef __init__(self):'
+    print '\t\tQuery.__init__(self)'
+    print '\t\tself.words=' + str(what_words_are_needed)
+    print '\t\tself.query_fields=' + str(list(what_sets_are_needed))
+    print
+    print '\tdef match(self,t):'
+    for line in code_blocks:
+        print '\t\t' + line
+    print '\t\treturn output_0'
+
+
+    def __init__(self):
+        Query.__init__(self)
+    
+
+
+
+        #3. Go through the depres with input
+        #4. Nothing found, How would this be possible?
+        
+
+
+def generate_pairing(set1,set2,op,dtype=None,negated=False):
+
+    the_block = ['#Pair(' + str((set1,set2,op,dtype,negated)), ]
+    needed = set()
+
+    if dtype:
+        the_block.append('d_type = "' + dtype + '"')
+    the_block.append('set_1 = ' + set1)
+    if set2:
+        the_block.append('set_2 = ' + set2)
+
+    if dtype and op==u">":
+        the_block.append('needed_dict=t.type_deps.get(dtype,{})')
+        if not negated:
+            needed.add('!deps_' + dtype)
+        else:
+            needed.add('deps_' + dtype)
+    elif dtype and op==u"<":
+        the_block.append('needed_dict=t.type_govs.get(dtype,{})')
+        if not negated:
+            needed.add('!govs_' + dtype)
+        else:
+            needed.add('govs_' + dtype)
+    elif op==u">":
+        the_block.append('needed_dict=t.deps')
+        needed.add('deps')
+    elif op==u"<":
+        the_block.append('needed_dict=t.govs')
+        needed.add('govs')
+
+    the_block.append('result=set()')
+    the_block.append('for i in set1:')
+    if set2:
+        the_block.append('\tif set2&needed_dict.get(i,set()):')
+        the_block.append('\t\tresult.add(i)')
+    else:
+        the_block.append('\tif needed_dict.get(i,set()):')
+        the_block.append('\t\tresult.add(i)')
+
+    return the_block, needed
+
+
+    
+def get_depth_and_id_dicts(node):
+
+    self.node_id_dict, self.node_depth_dict, self.no_negs_above_dict = id_the_tree(node, '0', 0, True)
+
+    proper_depth_dict = {}
+    #print 'ndk', self.node_depth_dict.keys()
+    for key in self.node_depth_dict.keys():
+        value = self.node_depth_dict[key]
+        #print 'vk', value, key
+        if value not in proper_depth_dict.keys():
+            proper_depth_dict[value] = []
+        proper_depth_dict[value].append(key)
+
+    return self.node_id_dict, proper_depth_dict, self.no_negs_above_dict
+
+def id_the_tree(node, id, depth, no_negs_above):
+
+    self.no_negs_above_dict = {}
+    self.node_id_dict = {}
+    self.node_depth_dict = {}
+    self.node_id_dict[id] = node
+    self.node_depth_dict[id] = depth
+    self.no_negs_above_dict[id] = no_negs_above
+    kid_nodes = []
+    negated = []
+    for dr in node.restrictions:
+        if type(dr) == DepRes:
+            kid_nodes.append(dr.node)
+            negated.append(dr.negated)
+
+    for i, kid_node in enumerate(kid_nodes):
+
+        if no_negs_above and not negated[i]:
+            neg = True
+        else:
+            neg = False
+        res_id_dict, res_depth_dict, res_self.no_negs_above_dict = id_the_tree(kid_node, id + '_' + str(i), depth+1, neg)
+        self.node_id_dict.update(res_id_dict)   
+        self.node_depth_dict.update(res_depth_dict)  
+        self.no_negs_above_dict.update(res_self.no_negs_above_dict)
+
+    return self.node_id_dict, self.node_depth_dict, self.no_negs_above_dict
+
+def main():
+
+    '''
+    Exploring the node tree, trying to figure very naive order of execution.
+    With a naive attempt at code generation
+    '''
+
+    import argparse
+    parser = argparse.ArgumentParser(description='Expression parser')
+    parser.add_argument('expression', nargs='+', help='Training file name, or nothing for training on stdin')
+    args = parser.parse_args()
+    
+    e_parser=yacc.yacc()
+    for expression in args.expression:
+        nodes = e_parser.parse(expression)
+        #print nodes.to_unicode()
+
+    cdd = code(nodes)
+    print cdd.print_code()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+main()
