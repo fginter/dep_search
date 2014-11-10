@@ -1,0 +1,3 @@
+[submodule "setlib"]
+	path = setlib
+	url = git@github.com:jmnybl/setlib.git
