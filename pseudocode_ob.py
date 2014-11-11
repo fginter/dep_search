@@ -8,25 +8,37 @@ import sys
 
 class node_code_block():
 
-    def __init__(self):
+    def __init__(self, blocks, pseudo_node, node_id):
 
-        self.operation_blocks = []
+        self.node_id = node_id
+        self.pseudo_node = pseudo_node
+        self.operation_blocks = blocks
         self.end_block = []
 
-class pair_code_block():
+class intersect_code_block():
 
-    def __init__(self, rest):
+    def __init__(self, set1, set2):
 
-        self.restriction = rest
-
-        self.set1 = ''
-        self.set2 = ''
-        self.operation = ''
-        self.needed_from_db = []
-        self.negated = False
+        self.set1 = set1
+        self.set2 = set2
 
     def to_string(self):
-        return '#Pair(%s, %s, %s, %b)' % (self.set1, self.set2, self.operation, self.negated)
+        return 'Intersect' + str((self.set1, self.set2))
+
+class pair_code_block():
+    #(rest, set1, set2, operation, type, negated=False)
+    def __init__(self, rest, set1, set2, operation, optype, negated=False):
+
+        self.restriction = rest
+        self.set1 = set1#''
+        self.set2 = set2#''
+        self.operation = operation#''
+        self.needed_from_db = []
+        self.negated = negated
+        self.optype = optype
+
+    def to_string(self):
+        return 'Pair' + str((self.set1, self.set2, self.operation, self.optype, self.negated))
 
 
 class retrieve_from_db_code_block():
@@ -35,8 +47,7 @@ class retrieve_from_db_code_block():
         self.what_to_retrieve = needed
 
     def to_string(self):
-        return '#f_set=' + str(self.what_to_retrieve)
-
+        return 'Get_from_db' + str((self.what_to_retrieve))
 
 class end_search_block():
 
@@ -46,13 +57,11 @@ class end_search_block():
 
 class end_node_block():
 
-    def __init_(self, node_id):
+    def __init__(self, node_id):
         self.node_id = node_id
 
     def to_string(self):
-        return 'output_' + node_id + '=f_set'
-
-
+        return 'output_' + self.node_id + '=f_set'
 
 
 class code():
@@ -61,17 +70,113 @@ class code():
 
         self.original_node = original_node
         self.process_node(self.original_node)
-        self.get_code()
+        #Match Function
+        self.match_code = self.get_match_function()
+        #What is needed from the dictionary
+        self.text_needs_comp, self.text_needs_vol, self.pair_needs_comp, self.pair_needs_vol = self.get_what_is_needed_from_db()
 
-    def print_code(self):
-        pass
+        print 'Done!'
+
+    def print_pseudo_code(self):
+        #Print what is needed from the db
+        print 'What is needed from the db:'
+        print '  compulsory text/tags:'
+        for rest in self.text_needs_comp:
+            print ' '*4 + rest
+        print '  non-compulsory text/tags:'
+        for rest in self.text_needs_vol:
+            print ' '*4 + rest
+        print '  compulsory deplists:'
+        for rest in self.pair_needs_comp:
+            print ' '*4 + rest
+        print '  non-compulsory deplists:'
+        for rest in self.pair_needs_vol:
+            print ' '*4 + rest
+
+        print
+        print 'Match Function:'
+
+        for node in self.match_code:
+            node_id = node.node_id
+            compulsory_node = self.no_negs_above_dict[node_id]
+            #Humm, It could've been more simple
+            print '  #Node:' + node_id
+            for block in node.operation_blocks:
+                print ' '*2 + 'set_' + node_id + ' = ' + block.to_string()
+                if compulsory_node:
+                    print ' '*2 + 'if empty(set_' + node_id + '): return set_' + node_id  
+        print ' '*2 + 'return set_' + node_id
+
+
+    def get_what_is_needed_from_db(self):
+        #Go through the nodes
+
+        #In two categories:
+        #1. The text requirements
+        #2. What is needed for pairings
+        text_needs = []
+        pair_needs = []
+
+        #Mark if the need is compulsory or not
+        #If negs above, then it is not a compulsory need
+
+        for node in self.match_code:
+            node_id = node.node_id
+            compulsory_node = self.no_negs_above_dict[node_id]
+            #Humm, It could've been more simple
+            for block in node.operation_blocks:
+               # import pdb;pdb.set_trace()
+                if isinstance(block, pair_code_block):
+                    #import pdb; pdb.set_trace()
+                    #Dependency restriction
+                    comp_res = not block.negated
+                    if not comp_res or not compulsory_node:
+                        if block.optype!=None:
+                            pair_needs.append((block.optype ,False))
+                        else:
+                            pair_needs.append(('all_dep_gov', False))
+                    else:
+                        if block.optype!=None:
+                            pair_needs.append((block.optype ,True))
+                        else:
+                            pair_needs.append(('all_dep_gov', True))
+
+                if isinstance(block,intersect_code_block):
+                    if 'set_' not in block.set1:
+                        text_needs.append((block.set1, compulsory_node))
+                    if 'set_' not in block.set2:
+                        text_needs.append((block.set2, compulsory_node))
+                if isinstance(block, retrieve_from_db_code_block):
+                        text_needs.append((block.what_to_retrieve, compulsory_node))
+        #Make sets
+        text_needs_comp = set()
+        text_needs_vol = set()
+        pair_needs_comp = set()
+        pair_needs_vol = set()
+        for pair_need in pair_needs:
+            if pair_need[1]:
+                pair_needs_comp.add(pair_need[0])
+            else:
+                pair_needs_vol.add(pair_need[0])
+
+        for txt_need in text_needs:
+            if txt_need[1]:
+                text_needs_comp.add(txt_need[0])
+            else:
+                text_needs_vol.add(pair_need[0])
+
+        #Remove unnecessary
+        pair_needs_vol -= pair_needs_comp
+        text_needs_vol -= text_needs_comp
+        return text_needs_comp, text_needs_vol, pair_needs_comp, pair_needs_vol
+
 
     def get_code(self):
 
         #match Function
-        match_code, db_list = self.get_match_function()
+        match_code = self.get_match_function()
         #init_function
-        init_function = self.get_init_function(db_list)
+        #init_function = self.get_init_function(db_list)
 
         output = ['class CustomSearch\n',]
         output.extend(init_function)
@@ -87,16 +192,17 @@ class code():
         for node_id in self.order_of_execution:
             node = self.node_id_dict[node_id]
             pseudo_node = self.pseudo_nodes[node_id]
+
             if len(node.restrictions) < 1:
                 continue
             node_codes.append(self.get_node_code(node_id))
 
-        node_codes.append(self.get_match_endgame())
-
-        the_code = []
-        for nc in node_codes:
-            the_code.extend(nc)
-        return the_code
+        return node_codes
+        #import pdb;pdb.set_trace()
+        #the_code = []
+        #for nc in node_codes:
+        #    the_code.extend(nc)
+        #return the_code
 
     def get_match_endgame(self):
 
@@ -107,17 +213,13 @@ class code():
         #So Start collecting the node code blocks into this list
         operation_blocks = []
 
-
-
         #Here we are!
         break_exec_on_empty_set = self.no_negs_above_dict[node_id]
 
         #Grab the sets which need to be paired with each other
         sets_to_pair = []
         negated_sets_to_pair = []
-
         needed_from_the_dict = set()
-
 
         #Go through text restrictions
         #These will be intersected
@@ -136,6 +238,16 @@ class code():
         the_first_set = ''
         the_first_set_found = False
 
+        #print '#' * 50
+        #print '# node:' + node_id
+        #print '#' * 50
+        #print '# ' + str(txt_sets_to_intersect)
+        #print '#' * 50
+        #print '# pos_dni: ' + str(pos_dni_sets_to_pair) + ', neg_dni: ' + str(neg_dni_sets_to_pair)
+        #print '#' * 50
+        #print '# pos_di: ' + str(pos_di_sets_to_pair) + ', neg_di: ' + str(neg_di_sets_to_pair)
+        #print '#' * 50
+
         first_code_block = []
 
         #If node has text restrictions it's a good starting point
@@ -143,11 +255,11 @@ class code():
             first_code_block = self.get_text_restrictions_intersect_code(txt_sets_to_intersect)
             the_first_set_found = True
             ####
-            operation_blocks.append(retrieve_from_db_code_block(txt_sets_to_intersect))
+            operation_blocks.append(retrieve_from_db_code_block(txt_sets_to_intersect[0]))
 
         elif len(pos_dni_sets_to_pair) > 0:
             code, needed = self.get_dep_set(pos_dni_sets_to_pair[0])
-            needed_from_the_dict |= needed
+            #needed_from_the_dict |= needed
             first_code_block = code
             ####
             operation_blocks.append(retrieve_from_db_code_block(pos_dni_sets_to_pair[0]))
@@ -164,56 +276,59 @@ class code():
             operation_blocks.append(retrieve_from_db_code_block('ALL TOKENS'))
 
 
+        #print '# ' + str(first_code_block)
+        #print '#' * 50
+        #print
+        #Works quite nicely up to this point
+
+        for txtr in txt_sets_to_intersect[1:]:
+            operation_blocks.append(intersect_code_block('set_' + node_id, txtr))
+
         #Ok, I've got the first set and all I need to get this thing done!
         pair_code_blocks = []
 
         #Do pairings for deprels with input
         for di in pos_di_sets_to_pair:
-            code, needed = self.get_pair_block(di)
-            needed_from_the_dict |= needed
-            pair_code_blocks.append( code, needed = self.get_pair_block(di))
-            ####
-            operation_blocks.append(pair_code_block(di))
+            operation_blocks.append(pair_code_block(di, 'set_' + node_id, di[2], di[0], di[1]))
 
+        #Do pairings for deprels without input
+        for di in pos_dni_sets_to_pair:
+            #(rest, set1, set2, operation, type, negated=False)
+            operation_blocks.append(pair_code_block(di, 'set_' + node_id, None, di[0], di[1]))
 
-        #Do pairings for deprels with input
-        for di in pos_di_sets_to_pair:
-            code, needed = self.get_pair_block(di)
-            needed_from_the_dict |= needed
-            pair_code_blocks.append(self.get_pair_block(di))
-            ####
-            operation_blocks.append(pair_code_block(di))
-
-
-        #Do pairings for deprels with input
+        #Do pairings for ned deprels with input
         for di in neg_di_sets_to_pair:
-            code, needed = self.get_pair_block(di)
-            needed_from_the_dict |= needed
-            pair_code_blocks.append(self.get_pair_block(di, negated=True))
-            ####
-            operation_blocks.append(pair_code_block(di, negated=True))
+            #(rest, set1, set2, operation, type, negated=False)
+            operation_blocks.append(pair_code_block(di, 'set_' + node_id, di[2], di[0], di[1], negated=True))
 
+        #Do pairings for neg deprels without input
+        for di in neg_dni_sets_to_pair:
+            #(rest, set1, set2, operation, type, negated=False)
+            operation_blocks.append(pair_code_block(di, 'set_' + node_id, None, di[0], di[1], negated=True))
 
-        #Do pairings for deprels with input
-        for di in neg_di_sets_to_pair:
-            code, needed = self.get_pair_block(di)
-            needed_from_the_dict |= needed
-            pair_code_blocks.append(self.get_pair_block(di, negated=True))
-            ####
-            operation_blocks.append(pair_code_block(di, negated=True))
+        #print '#' * 50
+        #for op in operation_blocks:
+        #    print op.to_string()
+        #    if break_exec_on_empty_set:
+        #        print 'if empty(set_' + node_id + '): return set_' + node_id 
+        #print '#' * 50
+        #print 
+        pseudo_node = self.pseudo_nodes[node_id]
+        return node_code_block(operation_blocks, pseudo_node ,node_id)
 
+        #return operation_blocks
 
-        end_game = ['#Check assignment', 'output_' + node_id + '=fset']
+        #end_game = ['#Check assignment', 'output_' + node_id + '=fset']
         ####
-        operation_blocks.append(end_node_block(node_id))
+        #operation_blocks.append(end_node_block(node_id))
 
         
-        print first_code_block
-        print pair_code_blocks
-        print end_game
-        return operation_blocks
+        #print first_code_block
+        #print pair_code_blocks
+        #print end_game
+        #return operation_blocks
 
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
 
 
 
@@ -987,7 +1102,7 @@ def main():
         #print nodes.to_unicode()
 
     cdd = code(nodes)
-    print cdd.print_code()
+    print cdd.print_pseudo_code()
 
 
 
