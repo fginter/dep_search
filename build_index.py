@@ -6,6 +6,10 @@ from datetime import datetime
 from tree import Tree
 import json
 import re
+import struct
+import os
+import setlib.setlib.pytset as pytset
+import zlib
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -14,44 +18,34 @@ symbs=re.compile(ur"[^A-Za-z0-9_]",re.U)
 def prepare_tables(conn):
     build=\
     """
-    CREATE TABLE sentence (
-       sentence_id INTEGER,
-       sdata BLOB
+    CREATE TABLE graph (
+       graph_id INTEGER,
+       token_count INTEGER,
+       conllu_comment_compressed BLOB,
+       conllu_data_compressed BLOB
     );
     CREATE TABLE token_index (
        token TEXT,
-       sentence_id INTEGER,
+       graph_id INTEGER,
        token_set BLOB
     );
     CREATE TABLE lemma_index (
        lemma TEXT,
-       sentence_id INTEGER,
-       lemma_set BLOB
+       graph_id INTEGER,
+       token_set BLOB
     );
-    CREATE TABLE d_govs (
-        sentence_id INTEGER,
-        dtype TEXT,
-        sdata BLOB,
-        type_govs BLOB
-    );
-    CREATE TABLE d_deps (
-        sentence_id INTEGER,
-        dtype TEXT,
-        sdata BLOB,
-        type_deps BLOB
-    );
-    CREATE TABLE govs (
-        sentence_id INTEGER,
-        sdata BLOB
-    );
-    CREATE TABLE deps (
-        sentence_id INTEGER,
-        sdata BLOB
-    );
-    CREATE TABLE tags (
-        sentence_id INTEGER,
+    CREATE TABLE tag_index (
+        graph_id INTEGER,
         tag TEXT,
-        sdata BLOB
+        token_set BLOB
+    );
+    CREATE TABLE rel (
+        graph_id INTEGER,
+        dtype TEXT,
+        token_gov_set BLOB,
+        token_gov_map BLOB,
+        token_dep_set BLOB,
+        token_dep_map BLOB
     );
     """
     
@@ -64,14 +58,12 @@ def prepare_tables(conn):
 def build_indices(conn):
     build=\
     """
-    CREATE UNIQUE INDEX tok_sent ON token_index(token,sentence_id);
-    CREATE UNIQUE INDEX lemma_sent ON lemma_index(lemma,sentence_id);
-    CREATE UNIQUE INDEX sid ON sentence(sentence_id);
-    CREATE UNIQUE INDEX sid_govtype ON d_govs(sentence_id,dtype);
-    CREATE UNIQUE INDEX sid_dtype ON d_deps(sentence_id,dtype);
-    CREATE UNIQUE INDEX sid_govs ON govs(sentence_id);
-    CREATE UNIQUE INDEX sid_deps ON deps(sentence_id);
-    CREATE UNIQUE INDEX sid_tag ON tags(sentence_id,tag);
+    CREATE UNIQUE INDEX tok_gid ON token_index(token,graph_id);
+    CREATE UNIQUE INDEX lemma_gid ON lemma_index(lemma,graph_id);
+    CREATE UNIQUE INDEX gid_tag ON tag_index(graph_id,tag);
+    CREATE INDEX tag_gid ON tag_index(tag,graph_id);
+    CREATE UNIQUE INDEX gid ON graph(graph_id);
+    CREATE UNIQUE INDEX gid_dtype ON rel(graph_id,dtype);
     """
     for q in build.split(";"):
         if q.strip():
@@ -79,51 +71,72 @@ def build_indices(conn):
             conn.execute(q)
     conn.commit()
 
-def get_sentences(inp,max_rank=None):
-    """
-    `inp` file for reading unicode lines
-    """
-    counter=0
-    curr_sent=[]
-    for line in inp:
+
+def read_conll(inp,maxsent=0):
+    """ Read conll format file and yield one sentence at a time as a list of lists of columns. If inp is a string it will be interpreted as fi
+lename, otherwise as open file for reading in unicode"""
+    if isinstance(inp,basestring):
+        f=codecs.open(inp,u"rt",u"utf-8")
+    else:
+        f=codecs.getreader("utf-8")(inp) # read inp directly
+    count=0
+    sent=[]
+    comments=[]
+    for line in f:
         line=line.strip()
         if not line:
-            continue
-        if line.startswith(u"#"):
-            continue
-        if line.startswith(u"1\t"):
-            if curr_sent:
-                yield curr_sent
-                counter+=1
-                if max_rank is not None and max_rank==counter:
+            if sent:
+                count+=1
+                yield sent, comments
+                if maxsent!=0 and count>=maxsent:
                     break
-                curr_sent=[]
-        curr_sent.append(line.split(u"\t"))
+                sent=[]
+                comments=[]
+        elif line.startswith(u"#"):
+            if sent:
+                raise ValueError("Missing newline after sentence")
+            comments.append(line)
+            continue
+        else:
+            sent.append(line.split(u"\t"))
+    else:
+        if sent:
+            yield sent, comments
+
+    if isinstance(inp,basestring):
+        f.close() #Close it if you opened it
+
+def serialize_as_tset_array(tree_len,sets):
+    """
+    tree_len -> length of the tree to be serialized
+    sets: array of tree_len sets, each set holding the indices of the elements
+    """
+    indices=[]
+    for set_idx,s in enumerate(sets):
+        for item in s:
+            indices.append(struct.pack("@HH",set_idx,item))
+    res=struct.pack("@H",tree_len)+("".join(indices))
+    return res
+
 
 def fill_db(conn,src_data):
     """
-    `src_data` - iterator over sentences -result of get_sentences()
+    `src_data` - iterator over sentences -result of read_conll()
     """
-    for sent_idx,sent in enumerate(src_data):
-        t=Tree.from_conll(sent)
-        tpickle=pickle.dumps(t)
-        conn.execute('INSERT INTO sentence VALUES(?,?)', [sent_idx,buffer(tpickle)])
-        for token, token_set in t.dict_tokens.iteritems():
-            conn.execute('INSERT INTO token_index VALUES(?,?,?)', [token,sent_idx,pickle.dumps(token_set)])
-        for lemma, lemma_set in t.dict_lemmas.iteritems():
-            conn.execute('INSERT INTO lemma_index VALUES(?,?,?)', [lemma,sent_idx,pickle.dumps(lemma_set)])
-        for dtype,s in t.d_govs.iteritems():
-            d=t.type_govs.get(dtype,None)
-            assert d is not None
-            conn.execute('INSERT INTO d_govs VALUES(?,?,?,?)', [sent_idx,dtype,pickle.dumps(s),pickle.dumps(d)])
-        for dtype,s in t.d_deps.iteritems():
-            d=t.type_deps.get(dtype,None)
-            assert d is not None
-            conn.execute('INSERT INTO d_deps VALUES(?,?,?,?)', [sent_idx,dtype,pickle.dumps(s),pickle.dumps(d)])
-        for tag,s in t.tags.iteritems():
-            conn.execute('INSERT INTO tags VALUES(?,?,?)', [sent_idx,tag,pickle.dumps(s)])
-        conn.execute('INSERT INTO govs VALUES(?,?)', [sent_idx, pickle.dumps(t.govs)])
-        conn.execute('INSERT INTO deps VALUES(?,?)', [sent_idx, pickle.dumps(t.deps)])
+    for sent_idx,(sent,comments) in enumerate(src_data):
+        t=Tree.from_conll(comments,sent)
+        
+        conn.execute('INSERT INTO graph VALUES(?,?,?,?)', [sent_idx,len(sent),buffer(zlib.compress(t.conllu.encode("utf-8"))),buffer(zlib.compress(t.comments.encode("utf-8")))])
+        for token, token_set in t.tokens.iteritems():
+            conn.execute('INSERT INTO token_index VALUES(?,?,?)', [token,sent_idx,buffer(token_set.tobytes())])
+        for lemma, token_set in t.lemmas.iteritems():
+            conn.execute('INSERT INTO lemma_index VALUES(?,?,?)', [lemma,sent_idx,buffer(token_set.tobytes())])
+        for tag, token_set in t.tags.iteritems():
+            conn.execute('INSERT INTO tag_index VALUES(?,?,?)', [tag,sent_idx,buffer(token_set.tobytes())])
+        for dtype, (govs,deps) in t.rels.iteritems():
+            gov_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(govs) if s))
+            dep_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(deps) if s))
+            conn.execute('INSERT INTO rel VALUES(?,?,?,?,?,?)', [sent_idx,dtype,buffer(gov_set.tobytes()),buffer(serialize_as_tset_array(len(sent),govs)),buffer(dep_set.tobytes()),buffer(serialize_as_tset_array(len(sent),deps))])
         if sent_idx%10000==0:
             print str(datetime.now()), sent_idx
         if sent_idx%10000==0:
@@ -134,10 +147,11 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     #conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3_4M_trees.db")
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v6_1M_trees.db")
-    #prepare_tables(conn)
+    os.system("rm -f /mnt/ssd/sdata/sdata_v7_4M_trees.db")
+    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v7_4M_trees.db")
+    prepare_tables(conn)
 #    wipe_db(conn)
-    #src_data=get_sentences(codecs.getreader("utf-8")(sys.stdin),1000000)
-    #fill_db(conn,src_data)
+    src_data=read_conll(sys.stdin,4000000)
+    fill_db(conn,src_data)
     build_indices(conn)
     conn.close()
