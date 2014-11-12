@@ -132,7 +132,7 @@ def fill_db(conn,src_data):
         for lemma, token_set in t.lemmas.iteritems():
             conn.execute('INSERT INTO lemma_index VALUES(?,?,?)', [lemma,sent_idx,buffer(token_set.tobytes())])
         for tag, token_set in t.tags.iteritems():
-            conn.execute('INSERT INTO tag_index VALUES(?,?,?)', [tag,sent_idx,buffer(token_set.tobytes())])
+            conn.execute('INSERT INTO tag_index VALUES(?,?,?)', [sent_idx,tag,buffer(token_set.tobytes())])
         for dtype, (govs,deps) in t.rels.iteritems():
             gov_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(govs) if s))
             dep_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(deps) if s))
@@ -147,11 +147,11 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     #conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3_4M_trees.db")
-    os.system("rm -f /mnt/ssd/sdata/sdata_v7_4M_trees.db")
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v7_4M_trees.db")
+    os.system("rm -f /mnt/ssd/sdata/sdata_v7_100K_trees.db")
+    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v7_100K_trees.db")
     prepare_tables(conn)
 #    wipe_db(conn)
-    src_data=read_conll(sys.stdin,4000000)
+    src_data=read_conll(sys.stdin,100000)
     fill_db(conn,src_data)
     build_indices(conn)
     conn.close()

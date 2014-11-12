@@ -1,4 +1,4 @@
-import setlib.setlib.pytset as pytset
+import setlib.pytset as pytset
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -16,7 +16,11 @@ class Tree(object):
                 t.lemmas[cols[LEMMA]]=pytset.PyTSet(len(conll))
             t.tokens[cols[FORM]].add_item(idx)
             t.lemmas[cols[LEMMA]].add_item(idx)
-
+            if cols[POS]!=u"_":
+                pos=u"POS_"+cols[POS]
+                if pos not in t.tags:
+                    t.tags[pos]=pytset.PyTSet(len(conll))
+                t.tags[pos].add_item(idx)
             if cols[FEAT]!=u"_":
                 for f in cols[FEAT].split(u"|"):
                     if f not in t.tags:
