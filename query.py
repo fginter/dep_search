@@ -67,16 +67,24 @@ def query(query_fields):
 
 import argparse
 import setlib.example_queries as equeries
+import setlib.db_util as db_util
 if __name__=="__main__":
     #q,args=query([u"token_s_koiran",u"!lemma_s_koira",u"!gov_a_nsubj-cop",u"tag_s_V"])
     #print q,args
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
-    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v6_390K_trees.db",help='Name of the database to query. Default: %(default)s.')
+    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v7_100K_trees.db",help='Name of the database to query. Default: %(default)s.')
     args = parser.parse_args()
 
     query_obj=equeries.SimpleSearch()
-
+    sql_query,sql_args=query(query_obj.query_fields)
+    db=db_util.DB()
+    db.open_db(unicode(args.database))
+    print >> sys.stderr, sql_query, sql_args
+    db.exec_query(sql_query,sql_args)
+    for x in equeries.iterate_results(query_obj,db):
+        print x
+    db.close_db()
     
     # conn=sqlite3.connect(args.database)
 
