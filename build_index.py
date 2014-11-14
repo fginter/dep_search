@@ -8,7 +8,7 @@ import json
 import re
 import struct
 import os
-import setlib.setlib.pytset as pytset
+import setlib.pytset as pytset
 import zlib
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
@@ -115,6 +115,7 @@ def serialize_as_tset_array(tree_len,sets):
     for set_idx,s in enumerate(sets):
         for item in s:
             indices.append(struct.pack("@HH",set_idx,item))
+    #print "IDXs", len(indices)
     res=struct.pack("@H",tree_len)+("".join(indices))
     return res
 
@@ -134,6 +135,9 @@ def fill_db(conn,src_data):
         for tag, token_set in t.tags.iteritems():
             conn.execute('INSERT INTO tag_index VALUES(?,?,?)', [sent_idx,tag,buffer(token_set.tobytes())])
         for dtype, (govs,deps) in t.rels.iteritems():
+            ne_g=[x for x in govs if x]
+            ne_d=[x for x in deps if x]
+            assert ne_g and ne_d
             gov_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(govs) if s))
             dep_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(deps) if s))
             conn.execute('INSERT INTO rel VALUES(?,?,?,?,?,?)', [sent_idx,dtype,buffer(gov_set.tobytes()),buffer(serialize_as_tset_array(len(sent),govs)),buffer(dep_set.tobytes()),buffer(serialize_as_tset_array(len(sent),deps))])
@@ -147,8 +151,8 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     #conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3_4M_trees.db")
-    os.system("rm -f /mnt/ssd/sdata/sdata_v7_100K_trees.db")
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v7_100K_trees.db")
+    os.system("rm -f sdata_v7.db")
+    conn=sqlite3.connect("sdata_v7.db")
     prepare_tables(conn)
 #    wipe_db(conn)
     src_data=read_conll(sys.stdin,100000)

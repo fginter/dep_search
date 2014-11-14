@@ -38,7 +38,7 @@ class Tree(object):
             self.rels[dtype]=([set() for _ in range(graph_len)], [set() for _ in range(graph_len)])
         gidx,didx=self.rels[dtype]
         gidx[gov_idx].add(dep_idx)
-        gidx[dep_idx].add(gov_idx)
+        didx[dep_idx].add(gov_idx)
 
     
     def __init__(self):
