@@ -82,16 +82,16 @@ class code():
         print 'What is needed from the db:'
         print '  compulsory text/tags:'
         for rest in self.text_needs_comp:
-            print ' '*4 + rest
+            print ' '*4 + str(rest)
         print '  non-compulsory text/tags:'
         for rest in self.text_needs_vol:
-            print ' '*4 + rest
+            print ' '*4 + str(rest)
         print '  compulsory deplists:'
         for rest in self.pair_needs_comp:
-            print ' '*4 + rest
+            print ' '*4 + str(rest)
         print '  non-compulsory deplists:'
         for rest in self.pair_needs_vol:
-            print ' '*4 + rest
+            print ' '*4 + str(rest)
 
         print
         print 'Match Function:'
@@ -106,6 +106,86 @@ class code():
                 if compulsory_node:
                     print ' '*2 + 'if empty(set_' + node_id + '): return set_' + node_id  
         print ' '*2 + 'return set_' + node_id
+
+
+    def print_cython_match_function(self):
+
+        print 'What is needed from the db:'
+        print '  compulsory text/tags:'
+        for rest in self.text_needs_comp:
+            print ' '*4 + str(rest)
+        print '  non-compulsory text/tags:'
+        for rest in self.text_needs_vol:
+            print ' '*4 + str(rest)
+        print '  compulsory deplists:'
+        for rest in self.pair_needs_comp:
+            print ' '*4 + str(rest)
+        print '  non-compulsory deplists:'
+        for rest in self.pair_needs_vol:
+            print ' '*4 + str(rest)
+
+        print
+        print 'Match Function:'
+
+        print '    cdef TSet* exec_search(self):'
+        #
+
+        for node in self.match_code:
+            node_id = node.node_id
+            compulsory_node = self.no_negs_above_dict[node_id]
+            #Humm, It could've been more simple
+            print  ' ' * 8 + '#Node:' + node_id
+            for block in node.operation_blocks:
+                #print ' '*2 + 'set_' + node_id + ' = ' + block.to_string()
+                #Here we print the wanted operation
+                #3 options;
+                #    1) set introduction
+                #    2) intersection update on the node set
+                #    3) pairing update on the node set
+                if isinstance(block, retrieve_from_db_code_block):
+                    if block.what_to_retrieve != 'ALL TOKENS':
+                        if type(block.what_to_retrieve) == tuple:
+                            if block.what_to_retrieve[0] == '<':
+                                print ' ' * 8 + 'self.set_' + node_id + '=self.set_deps_' + str(block.what_to_retrieve[1])
+                            else:
+                                print ' ' * 8 + 'self.set_' + node_id + '=self.set_govs_' + str(block.what_to_retrieve[1])
+                        else:
+                            print ' ' * 8 + 'self.set_' + node_id + '=' + str(block.what_to_retrieve)
+                    else:
+                        print ' ' * 8 + 'self.set_' + node_id + '.fill_ones()'
+
+                if isinstance(block, intersect_code_block):
+                    #Which is the one that is not us
+                    sets = set(block.set1, block.set2)
+                    sets -= 'set_' + node_id
+                    print ' ' * 8 + 'self.set_' + node_id + '.intersection_update(' + str(list(sets[0])) + ')'
+
+                if isinstance(block, pair_code_block):
+                    pass
+                    #The options here are:
+                    #1. Deptype is defined
+                    #2. Dep or Gov
+                    if block.optype is None:
+                        pass
+                        #pairing(self.set0,self.set2,self.seta1,False)
+                        if block.operation == '<':
+                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_deps', str(block.negated)]) + ')'
+                        else:
+                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_govs', str(block.negated)]) + ')'
+                    else:
+                        pass
+                        if block.operation == '<':
+                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_deps_'  + str(block.optype), str(block.negated)]) + ')'
+                        else:
+                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_govs_' + str(block.optype), str(block.negated)]) + ')'                    
+
+
+                if compulsory_node:
+                    print ' '*8 + 'if empty(set_' + node_id + '): return set_' + node_id  
+        print ' '*8 + 'return set_' + node_id
+
+
+
 
 
     def get_what_is_needed_from_db(self):
@@ -147,7 +227,10 @@ class code():
                     if 'set_' not in block.set2:
                         text_needs.append((block.set2, compulsory_node))
                 if isinstance(block, retrieve_from_db_code_block):
-                        text_needs.append((block.what_to_retrieve, compulsory_node))
+                        if type(block.what_to_retrieve) == tuple:
+                            pair_needs.append((block.what_to_retrieve, compulsory_node))
+                        else:
+                            text_needs.append((block.what_to_retrieve, compulsory_node))
         #Make sets
         text_needs_comp = set()
         text_needs_vol = set()
@@ -163,7 +246,7 @@ class code():
             if txt_need[1]:
                 text_needs_comp.add(txt_need[0])
             else:
-                text_needs_vol.add(pair_need[0])
+                text_needs_vol.add(txt_need[0])
 
         #Remove unnecessary
         pair_needs_vol -= pair_needs_comp
@@ -461,7 +544,7 @@ class code():
             if txt_res[0] in [u'CGTAG', u'TXT'] and txt_res[1] != u'_':
 
                 if txt_res[0] == u'TXT':
-                    txt_sets_to_pair.append('t.dict_tokens[u"' + txt_res[1] + '"]')
+                    txt_sets_to_pair.append('self.set_word_' + txt_res[1])
                     if self.no_negs_above_dict[node_id]:
                         needed_words.add(txt_res[1])
 
@@ -469,7 +552,7 @@ class code():
 
                     if '+' not in txt_res[1]:
 
-                        txt_sets_to_pair.append('t.tags[u"' + txt_res[1] + '"]')
+                        txt_sets_to_pair.append('self.set_pos_' + txt_res[1])
 
                         if self.no_negs_above_dict[node_id]:
                             what_sets_are_needed.add('!tags_' + txt_res[1])
@@ -479,11 +562,24 @@ class code():
                     else:
                         tags = txt_res[1].split('+')
                         for tag in tags:
-                            txt_sets_to_pair.append('t.tags[u"' + tag + '"]')
+                            txt_sets_to_pair.append('self.set_pos' + tag)
                             if self.no_negs_above_dict[node_id]:
                                 what_sets_are_needed.add('!tags_' + tag)
                             else:
                                 what_sets_are_needed.add('tags_' + tag)
+
+                elif txt_res[0] == u'CGBASE':
+
+                    if '+' not in txt_res[1]:
+
+                        txt_sets_to_pair.append('self.set_lemma_' + txt_res[1])
+
+                        if self.no_negs_above_dict[node_id]:
+                            what_sets_are_needed.add('!lemma_' + txt_res[1])
+                        else:
+                            what_sets_are_needed.add('lemma_' + txt_res[1])
+
+
 
 
         return what_sets_are_needed, txt_sets_to_pair, needed_words
@@ -1103,6 +1199,10 @@ def main():
 
     cdd = code(nodes)
     print cdd.print_pseudo_code()
+    print
+    print cdd.print_cython_match_function()
+
+
 
 
 
