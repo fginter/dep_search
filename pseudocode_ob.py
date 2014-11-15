@@ -110,6 +110,23 @@ class code():
 
     def print_cython_match_function(self):
 
+
+        #Stuff to collect
+        #1. list of node_id sets and how theyre initialized
+        #2. sets from the db
+        #3. arrays from the db
+        #4. all sets
+        #5. all arrays
+        #6. query fields
+
+        node_sets_inits = []
+        sets_from_the_db = []
+        arrays_from_the_db = []
+        all_sets = []
+        all_arrays = []
+        query_fields = []
+
+
         print 'What is needed from the db:'
         print '  compulsory text/tags:'
         for rest in self.text_needs_comp:
@@ -146,13 +163,21 @@ class code():
                     if block.what_to_retrieve != 'ALL TOKENS':
                         if type(block.what_to_retrieve) == tuple:
                             if block.what_to_retrieve[0] == '<':
-                                print ' ' * 8 + 'self.set_' + node_id + '=self.set_deps_' + str(block.what_to_retrieve[1])
+                                #print ' ' * 8 + 'self.set_' + node_id + '=self.set_deps_' + str(block.what_to_retrieve[1])
+                                node_sets_inits.append(('self.set_' + node_id, 'self.set_deps_' + str(block.what_to_retrieve[1])))
+                                sets_from_the_db.append('self.set_deps_' + str(block.what_to_retrieve[1]))
+
                             else:
-                                print ' ' * 8 + 'self.set_' + node_id + '=self.set_govs_' + str(block.what_to_retrieve[1])
+                                #print ' ' * 8 + 'self.set_' + node_id + '=self.set_govs_' + str(block.what_to_retrieve[1])
+                                node_sets_inits.append(('self.set_' + node_id, 'self.set_govs_' + str(block.what_to_retrieve[1])))
+                                sets_from_the_db.append('self.set_govs_' + str(block.what_to_retrieve[1]))
                         else:
-                            print ' ' * 8 + 'self.set_' + node_id + '=' + str(block.what_to_retrieve)
+                            #print ' ' * 8 + 'self.set_' + node_id + '=' + str(block.what_to_retrieve)
+                            node_sets_inits.append(('self.set_' + node_id, str(block.what_to_retrieve)))
+                            sets_from_the_db.append(str(block.what_to_retrieve))
                     else:
-                        print ' ' * 8 + 'self.set_' + node_id + '.fill_ones()'
+                        #print ' ' * 8 + 'self.set_' + node_id + '.fill_ones()'
+                        node_sets_inits.append(('self.set_' + node_id, 'fill_ones'))
 
                 if isinstance(block, intersect_code_block):
                     #Which is the one that is not us
@@ -183,6 +208,64 @@ class code():
                 if compulsory_node:
                     print ' '*8 + 'if empty(set_' + node_id + '): return set_' + node_id  
         print ' '*8 + 'return set_' + node_id
+
+
+        print
+        print '#Sets from the db'
+
+        #import pdb;pdb.set_trace()
+
+        #Initialize function
+
+        #We need:
+        #1.   At least one set from the db
+        #1.5  init tree lengths
+        #2.   Initialize the set_node_ids
+        #2.5  init either fill_ones or db
+        print '''    cdef initialize(self):
+        """
+        Called before every sentence to be processed. Must initialize sets which are not fetched from the DB. Be efficient here, whatever you do!
+        """'''
+
+        #For all node_id sets:
+        #Does the set from the db have to be compulsory??
+        for t in node_sets_inits:
+            print ' '*8 + t[0] + '.tree_length=' + sets_from_the_db[0] + '.tree_length'
+            print ' '*8 + t[0] + '.array_len=' + sets_from_the_db[0] + '.array_len'
+
+        for t in node_sets_inits:
+            if t[1] != 'fill_ones':
+                print ' ' * 8 + t[0] + '=' + t[1] 
+            else:
+                print ' ' * 8 + t[0] + '.fill_ones()' 
+
+
+        #__cinit__ function
+
+        #We need:
+        #1.   query fields
+        #2.   all sets and Arrays used
+        #3.   sets and arrays from db
+
+
+        print '''    def __cinit__(self):
+        #This runs only once per search, creates the data structures, etc.
+        self.sets=<void**>malloc(2*sizeof(void*))
+        self.set_types=<int*>malloc(2*sizeof(int))'''
+
+        #So I guess the first number is arrays and the second is the sets?
+        #XXX:Figure out later
+        print ' ' * 8 + 'self.set_types[0],self.set_types[1]=2,1'
+
+        #Init the sets used, both from db and node_id
+
+        #Init the arrays used
+
+        #Fill the self.sets and query fields
+        #Youll need to regerate them from the restrictions
+
+        #Query Fields
+
 
 
 
