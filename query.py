@@ -82,8 +82,7 @@ if __name__=="__main__":
     db.open_db(unicode(args.database))
     print >> sys.stderr, sql_query, sql_args
     db.exec_query(sql_query,sql_args)
-    for x in equeries.iterate_results(query_obj,db):
-        print x
+    equeries.iterate_results(query_obj,db)
     db.close_db()
     
     # conn=sqlite3.connect(args.database)
