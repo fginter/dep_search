@@ -123,7 +123,7 @@ class code():
         sets_from_the_db = []
         arrays_from_the_db = []
         all_sets = []
-        all_arrays = []
+        all_arrays = set()
         query_fields = []
 
 
@@ -165,16 +165,16 @@ class code():
                             if block.what_to_retrieve[0] == '<':
                                 #print ' ' * 8 + 'self.set_' + node_id + '=self.set_deps_' + str(block.what_to_retrieve[1])
                                 node_sets_inits.append(('self.set_' + node_id, 'self.set_deps_' + str(block.what_to_retrieve[1])))
-                                sets_from_the_db.append('self.set_deps_' + str(block.what_to_retrieve[1]))
+                                sets_from_the_db.append(('self.set_deps_' + str(block.what_to_retrieve[1]), compulsory_node))
 
                             else:
                                 #print ' ' * 8 + 'self.set_' + node_id + '=self.set_govs_' + str(block.what_to_retrieve[1])
                                 node_sets_inits.append(('self.set_' + node_id, 'self.set_govs_' + str(block.what_to_retrieve[1])))
-                                sets_from_the_db.append('self.set_govs_' + str(block.what_to_retrieve[1]))
+                                sets_from_the_db.append(('self.set_govs_' + str(block.what_to_retrieve[1]), compulsory_node))
                         else:
                             #print ' ' * 8 + 'self.set_' + node_id + '=' + str(block.what_to_retrieve)
                             node_sets_inits.append(('self.set_' + node_id, str(block.what_to_retrieve)))
-                            sets_from_the_db.append(str(block.what_to_retrieve))
+                            sets_from_the_db.append((str(block.what_to_retrieve), compulsory_node))
                     else:
                         #print ' ' * 8 + 'self.set_' + node_id + '.fill_ones()'
                         node_sets_inits.append(('self.set_' + node_id, 'fill_ones'))
@@ -195,14 +195,19 @@ class code():
                         #pairing(self.set0,self.set2,self.seta1,False)
                         if block.operation == '<':
                             print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_deps', str(block.negated)]) + ')'
+                            all_arrays.add(('set_a_deps', not block.negated and compulsory_node))
+                            
                         else:
                             print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_govs', str(block.negated)]) + ')'
+                            all_arrays.add(('self.set_a_govs', not block.negated and compulsory_node))
                     else:
                         pass
                         if block.operation == '<':
                             print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_deps_'  + str(block.optype), str(block.negated)]) + ')'
+                            all_arrays.add(('self.set_a_deps_'  + str(block.optype), not block.negated and compulsory_node))
                         else:
-                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_govs_' + str(block.optype), str(block.negated)]) + ')'                    
+                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_govs_' + str(block.optype), str(block.negated)]) + ')'
+                            all_arrays.add(('self.set_a_govs_' + str(block.optype), not block.negated and compulsory_node))                    
 
 
                 if compulsory_node:
@@ -230,8 +235,8 @@ class code():
         #For all node_id sets:
         #Does the set from the db have to be compulsory??
         for t in node_sets_inits:
-            print ' '*8 + t[0] + '.tree_length=' + sets_from_the_db[0] + '.tree_length'
-            print ' '*8 + t[0] + '.array_len=' + sets_from_the_db[0] + '.array_len'
+            print ' '*8 + t[0] + '.tree_length=' + sets_from_the_db[0][0] + '.tree_length'
+            print ' '*8 + t[0] + '.array_len=' + sets_from_the_db[0][0] + '.array_len'
 
         for t in node_sets_inits:
             if t[1] != 'fill_ones':
@@ -255,19 +260,79 @@ class code():
 
         #So I guess the first number is arrays and the second is the sets?
         #XXX:Figure out later
+
+        #XXX: is query is seeded eith neg it doesnt work!
+
         print ' ' * 8 + 'self.set_types[0],self.set_types[1]=2,1'
 
         #Init the sets used, both from db and node_id
 
+        #All sets is node_id sets and sets_from_the db
+        for t in node_sets_inits:
+            print ' '*8 + t[0] + '=new TSet(312)'
+
+        for t in sets_from_the_db:
+            print ' ' * 8 + t[0] + '=new TSet(312)'
+
         #Init the arrays used
+
+        #setify and compulsify arrays, haha
+        all_arrays_set = set()
+        compulsory_arrays = set()
+        voluntary_arrays = set()
+
+        for t in all_arrays:
+            all_arrays_set.add(t[0])
+            if t[1]:
+                compulsory_arrays.add(t[0])
+            else:
+                voluntary_arrays.add(t[0])
+
+        voluntary_arrays -= compulsory_arrays
+
+
+        all_sets_set = set()
+        compulsory_sets = set()
+        voluntary_sets = set()
+
+        for t in sets_from_the_db:
+            all_sets_set.add(t[0])
+            if t[1]:
+                compulsory_sets.add(t[0])
+            else:
+                voluntary_sets.add(t[0])
+
+        voluntary_sets -= compulsory_sets
+
+        for array in list(all_arrays_set):
+            print ' '*8 + array + '=new TSetArray(312)'        
+
 
         #Fill the self.sets and query fields
         #Youll need to regerate them from the restrictions
 
         #Query Fields
+        #Oh, so all the stuff that is needed from the db
+        #Start with sets and the arrays
+        #sets
+        sets_list = []
+        q_fields = []
+        for cs in compulsory_sets:
+            sets_list.append(cs)
+            q_fields.append('!' + cs)
+        for cs in voluntary_sets:
+            sets_list.append(cs)
+            q_fields.append(cs)
+        for cs in compulsory_arrays:
+            sets_list.append(cs)
+            q_fields.append('!' + cs)
+        for cs in voluntary_arrays:
+            sets_list.append(cs)
+            q_fields.append(cs)
 
-
-
+        for i, cs in enumerate(sets_list):
+            print ' '*8 + 'self.sets[' + str(i) + ']=' + cs
+        print ' '*8 + 'self.query_fiels='+str(q_fields)
 
 
 
