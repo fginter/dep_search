@@ -1,65 +1,51 @@
+import setlib.pytset as pytset
+
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
 class Tree(object):
 
     @classmethod
-    def from_conll(cls,conll):
+    def from_conll(cls,comments,conll):
         t=cls()
-        t.govs=[set() for _ in range(len(conll))]
-        t.deps=[set() for _ in range(len(conll))]
-        t.heads=[] #For every token its conll (head,deprel) fields: TODO non-tree
-        for cols in conll:
-            t.tokens.append(cols[FORM])
-            t.lemmas.append(cols[LEMMA])
-            id=int(cols[ID])-1
-            t.dict_tokens.setdefault(cols[FORM],set()).add(id)
-            t.dict_lemmas.setdefault(cols[LEMMA],set()).add(id)
-            t.heads.append((int(cols[HEAD])-1,cols[DEPREL]))
-
-            t.govs[id].add(int(cols[HEAD])-1)
-            t.deps[int(cols[HEAD])-1].add(id)
-            t.d_deps.setdefault(cols[DEPREL],set()).add(id) #this is a DEPREL dependent
-            t.d_govs.setdefault(cols[DEPREL],set()).add(int(cols[HEAD])-1) #this is a DEPREL governor
-            t.type_deps.setdefault(cols[DEPREL],{}).setdefault(int(cols[HEAD])-1,set()).add(id) # id is a DEPREL dependent for HEAD
-            t.type_govs.setdefault(cols[DEPREL],{}).setdefault(id,set()).add(int(cols[HEAD])-1) # HEAD is a DEPREL governor for id
-            t.tags.setdefault(cols[POS],set()).add(id)
+        lines=[] #will accumulate here conll-u lines
+        for idx,cols in enumerate(conll):
+            lines.append([cols[ID],cols[FORM],cols[LEMMA],cols[POS],cols[POS],cols[FEAT],cols[HEAD],cols[DEPREL],u"_",u"_"])
+            if cols[FORM] not in t.tokens:
+                t.tokens[cols[FORM]]=pytset.PyTSet(len(conll))
+            if LEMMA not in t.lemmas:
+                t.lemmas[cols[LEMMA]]=pytset.PyTSet(len(conll))
+            t.tokens[cols[FORM]].add_item(idx)
+            t.lemmas[cols[LEMMA]].add_item(idx)
+            if cols[POS]!=u"_":
+                pos=u"POS_"+cols[POS]
+                if pos not in t.tags:
+                    t.tags[pos]=pytset.PyTSet(len(conll))
+                t.tags[pos].add_item(idx)
             if cols[FEAT]!=u"_":
                 for f in cols[FEAT].split(u"|"):
-                    t.tags.setdefault(f,set()).add(id)
+                    if f not in t.tags:
+                        t.tags[f]=pytset.PyTSet(len(conll))
+                    t.tags[f].add_item(idx)
+            if cols[HEAD] not in (u"_",u"0"):
+                t.add_rel(int(cols[HEAD])-1,idx,cols[DEPREL],len(conll))
+                t.add_rel(int(cols[HEAD])-1,idx,u"anyrel",len(conll))
+        t.comments=u"\n".join(comments)
+        t.conllu=u"\n".join(u"\t".join(l) for l in lines)
         return t
 
-    def __getstate__(self):
-        """
-        Pickle uses this to serialize. Because the way this works, we will only
-        serialize .tokens and .lemmas and nothing else. The rest will be fetched
-        from the DB on a need-to-know basis. This method returns a dictionary
-        which pickle will then set to be the de-serialized object's __dict__
-        """
-        return {"tokens":self.tokens, "lemmas":self.lemmas, "heads":self.heads, "dict_tokens":self.dict_tokens, "dict_lemmas":self.dict_lemmas}
+    def add_rel(self,gov_idx,dep_idx,dtype,graph_len):
+        if dtype not in self.rels:
+            self.rels[dtype]=([set() for _ in range(graph_len)], [set() for _ in range(graph_len)])
+        gidx,didx=self.rels[dtype]
+        gidx[gov_idx].add(dep_idx)
+        didx[dep_idx].add(gov_idx)
 
-    def to_conll(self,out,form=u"conllu",highlight=None):
-        """highlight: set of token indices (0-based) to highlight"""
-        if highlight is not None:
-            for tidx in sorted(highlight):
-                print >> out, u"# visual-style\t%d\tbgColor:green"%(tidx+1)
-        for idx,(token,lemma,(head,deprel)) in enumerate(zip(self.tokens,self.lemmas,self.heads)):
-            if form==u"conllu":
-                print >> out, u"\t".join((unicode(idx+1),token,lemma,u"_",u"_",u"_",unicode(head+1),deprel,u"_",u"_"))
-            else:
-                print >> out, u"\t".join((unicode(idx+1),token,lemma,lemma,u"_",u"_",u"_",unicode(head+1),unicode(head+1),deprel,deprel,u"_",u"_"))
-        print >> out
     
     def __init__(self):
-        self.tokens=[] #list of tokens
-        self.lemmas=[] #list of lemmas
-        self.d_govs={}  #deptype -> set of token ids (0-based)
-        self.d_deps={}  #deptype -> set of token ids (0-based)
-        self.type_govs={} #deptype -> dict of key:token id, value: set of governors with deptype
-        self.type_deps={} #deptype -> dict of key:token id, value: set of dependents with deptype
-        self.tags={}  #morhotag -> set of token ids (0-based)
-        self.govs=[] #[set(),...]
-        self.deps=[] #[set(),...]
-        self.dict_tokens={} #token: set()
-        self.dict_lemmas={} #lemma: set()
-    
-            
+        self.rels={}  #key: rel or "anyrel"  value: ([govs as a list of set(), deps as a list of set()]) e.g. ([set(2),_,_],[_,_,set(0)]) means token 0 governs token 2, and token 2 is governed by token 0
+
+        self.tokens={} #key: token, value: PyTSet()
+        self.lemmas={} #key: lemma: value PyTSet()
+        self.tags={} #key: tag value: PyTSet()
+        self.conllu=None #string
+        self.comments=u""
