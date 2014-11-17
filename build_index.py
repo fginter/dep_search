@@ -64,6 +64,7 @@ def build_indices(conn):
     CREATE INDEX tag_gid ON tag_index(tag,graph_id);
     CREATE UNIQUE INDEX gid ON graph(graph_id);
     CREATE UNIQUE INDEX gid_dtype ON rel(graph_id,dtype);
+    analyze;
     """
     for q in build.split(";"):
         if q.strip():
@@ -150,12 +151,10 @@ def fill_db(conn,src_data):
 
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
-    #conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v3_4M_trees.db")
-    os.system("rm -f sdata_v7.db")
-    conn=sqlite3.connect("sdata_v7.db")
+    os.system("rm -f /mnt/ssd/sdata/sdata_v7_1M_trees.db")
+    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v7_1M_trees.db")
     prepare_tables(conn)
-#    wipe_db(conn)
-    src_data=read_conll(sys.stdin,100000)
+    src_data=read_conll(sys.stdin,1000000)
     fill_db(conn,src_data)
     build_indices(conn)
     conn.close()

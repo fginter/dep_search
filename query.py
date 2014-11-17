@@ -73,7 +73,7 @@ if __name__=="__main__":
     #print q,args
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
-    parser.add_argument('-d', '--database', default="sdata_v7.db",help='Name of the database to query. Default: %(default)s.')
+    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v7_1M_trees.db",help='Name of the database to query. Default: %(default)s.')
     args = parser.parse_args()
 
     query_obj=equeries.SimpleSearch()
