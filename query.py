@@ -80,9 +80,15 @@ if __name__=="__main__":
     sql_query,sql_args=query(query_obj.query_fields)
     db=db_util.DB()
     db.open_db(unicode(args.database))
-    print >> sys.stderr, sql_query, sql_args
-    db.exec_query(sql_query,sql_args)
-    equeries.iterate_results(query_obj,db)
+    print "EQ", db.exec_query(sql_query,sql_args)
+    print sql_query, sql_args
+    counter=0
+    while True:
+        r=query_obj.next_result(db)
+        if r==None:
+            break
+        counter+=1
+    print counter, "hits"
     db.close_db()
     
     # conn=sqlite3.connect(args.database)
