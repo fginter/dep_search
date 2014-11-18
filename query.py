@@ -66,8 +66,8 @@ def query(query_fields):
     return q,args
 
 import argparse
-import setlib.example_queries as equeries
-import setlib.db_util as db_util
+import example_queries as equeries
+import db_util
 if __name__=="__main__":
     #q,args=query([u"token_s_koiran",u"!lemma_s_koira",u"!gov_a_nsubj-cop",u"tag_s_V"])
     #print q,args
