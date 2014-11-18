@@ -151,10 +151,10 @@ def fill_db(conn,src_data):
 
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
-    os.system("rm -f /mnt/ssd/sdata/sdata_v7_1M_trees.db")
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v7_1M_trees.db")
+    os.system("rm -f /mnt/ssd/sdata/sdata_v7_20M_trees.db")
+    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v7_20M_trees.db")
     prepare_tables(conn)
-    src_data=read_conll(sys.stdin,1000000)
+    src_data=read_conll(sys.stdin,20000000)
     fill_db(conn,src_data)
     build_indices(conn)
     conn.close()
