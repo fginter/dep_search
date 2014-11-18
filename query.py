@@ -5,6 +5,7 @@ import codecs
 from datetime import datetime
 from tree import Tree
 import re
+import zlib
 
 
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
@@ -65,6 +66,12 @@ def query(query_fields):
     q+=u"\n"
     return q,args
 
+def get_data_from_db(db_conn,graph_id):
+    results=db_conn.execute('SELECT conllu_comment_compressed FROM graph WHERE graph_id=?',(str(graph_id),))
+    for sent in results.fetchall():
+        print zlib.decompress(sent[0])
+
+
 import argparse
 import setlib.example_queries as equeries
 import setlib.db_util as db_util
@@ -76,20 +83,25 @@ if __name__=="__main__":
     parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v7_1M_trees.db",help='Name of the database to query. Default: %(default)s.')
     args = parser.parse_args()
 
-    query_obj=equeries.SimpleSearch()
+    #query_obj=equeries.SimpleSearch()
+    query_obj=equeries.ParSearch()
     sql_query,sql_args=query(query_obj.query_fields)
     db=db_util.DB()
     db.open_db(unicode(args.database))
+    res_db=sqlite3.connect(args.database)
     print "EQ", db.exec_query(sql_query,sql_args)
     print sql_query, sql_args
     counter=0
     while True:
-        r=query_obj.next_result(db)
+        idx,r=query_obj.next_result(db)
+        print "graph id:",idx
+        get_data_from_db(res_db,idx)
         if r==None:
             break
         counter+=1
     print counter, "hits"
     db.close_db()
+    res_db.close()
     
     # conn=sqlite3.connect(args.database)
 
