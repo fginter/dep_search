@@ -89,13 +89,16 @@ if __name__=="__main__":
     print "EQ", db.exec_query(sql_query,sql_args)
     print sql_query, sql_args
     counter=0
+    sql_counter=0
     while True:
-        idx,r=query_obj.next_result(db)
-        print "graph id:",idx
-        get_data_from_db(res_db,idx)
+        idx,r,rows=query_obj.next_result(db)
+        sql_counter+=rows
         if r==None:
             break
+        print "graph id:",idx
+        get_data_from_db(res_db,idx)
         counter+=1
+    print sql_counter,"rows from database"
     print counter, "hits"
     db.close_db()
     res_db.close()
