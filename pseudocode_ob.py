@@ -110,7 +110,7 @@ class code():
 
 
 
-    def print_cython_match_function_2(self):
+    def get_search_code(self):
 
 
         #Stuff to collect
@@ -150,7 +150,7 @@ class code():
         match_function = []
 
 
-        print '    cdef TSet* exec_search(self):'
+        match_function.append( '    cdef TSet* exec_search(self):')
         #
 
         for node in self.match_code:
@@ -289,14 +289,25 @@ class code():
             #initialize_function.append(' '*8 + t[0] + '.array_len=' + sets_from_the_db[0][0] + '.array_len')
             initialize_function.append(' '*8 + t[0] + '.copy(' + t[1] + ')')
         for t in fill_ones:
-            initialize_function.append(' '*8 + t[0] + '.tree_length=' + sets_from_the_db[0][0] + '.tree_length')
-            initialize_function.append(' '*8 + t[0] + '.array_len=' + sets_from_the_db[0][0] + '.array_len')
+            if sets_from_the_db[0][0] in db_fetch_dict.keys():
+
+                initialize_function.append(' '*8 + t[0] + '.tree_length=' + db_fetch_dict[sets_from_the_db[0][0]] + '.tree_length')
+                initialize_function.append(' '*8 + t[0] + '.array_len=' + db_fetch_dict[sets_from_the_db[0][0]] + '.array_len')
+            else:
+
+                initialize_function.append(' '*8 + t[0] + '.tree_length=self.' + sets_from_the_db[0][0] + '.tree_length')
+                initialize_function.append(' '*8 + t[0] + '.array_len=self.' + sets_from_the_db[0][0] + '.array_len')
+
             initialize_function.append(' ' * 8 + t[0] + '.fill_ones()')
 
         #__cinit__ function
 
 
         cinit_function = []
+        class_block = []
+
+        class_block.append('cdef class  CustomSearch(Search):')
+
 
 
         #We need:
@@ -326,9 +337,11 @@ class code():
         #All sets is node_id sets and sets_from_the db
         for t in node_sets_inits:
             cinit_function.append(' '*8 + t[0] + '=new TSet(312)')
+            class_block.append(' '*4 + 'cdef TSet *' + t[0].split('.')[-1])
 
         for t in list(intersection_sets):
             cinit_function.append(' ' * 8 + 'self.' + t[0] + '=new TSet(312)')
+            class_block.append(' '*4 + 'cdef TSet *' + t[0].split('.')[-1])
 
         #Init the arrays used
 
@@ -363,10 +376,10 @@ class code():
         for array in list(all_arrays_set):
             cinit_function.append(' '*8 + 'self.' + array + '=new TSetArray(312)')
 
-
+            class_block.append(' '*4 + 'cdef TSetArray *' + array)
         #Fill the self.sets and query fields
         #Youll need to regerate them from the restrictions
-
+        class_block.append(' '*4 + 'cdef public object query_fields')
         #Query Fields
         #Oh, so all the stuff that is needed from the db
         #Start with sets and the arrays
@@ -416,14 +429,16 @@ class code():
         for i, cs in enumerate(set_types):
             cinit_function.append(' '*8 + 'self.set_types[' + str(i) + ']=' + str(cs))
 
-        cinit_function.append(' '*8 + 'self.query_fiels='+str(q_fields))
+        cinit_function.append(' '*8 + 'self.query_fields='+str(q_fields))
 
 
 
-        print
+        print '\n'.join(class_block)
         print '\n'.join(match_function)
         print '\n'.join(initialize_function)
         print '\n'.join(cinit_function)
+
+        return class_block + initialize_function + cinit_function + match_function
 
 
 
@@ -672,7 +687,7 @@ class code():
         for i, cs in enumerate(set_types):
             print ' '*8 + 'self.set_types[' + str(i) + ']=' + str(cs)
 
-        print ' '*8 + 'self.query_fiels='+str(q_fields)
+        print ' '*8 + 'self.query_fields='+str(q_fields)
 
 
 
@@ -1690,14 +1705,24 @@ def main():
     cdd = code(nodes)
     #print cdd.print_pseudo_code()
     #print
-    cdd.print_cython_match_function_2()
+    lines = cdd.get_search_code()
+
+    write_cython_code(lines, './setlib/generated_query.pyx')
 
 
 
+def write_cython_code(lines, output_file):
 
+    #Yeah, I know, but it's 2 am
+    inlines = open('./setlib/example_queries.pyx', 'rt').readlines()
 
+    out = open(output_file, 'wt')
+    for line in inlines:
+        out.write(line)
+    for line in lines:
+        out.write(line + '\n')
 
-
+    out.close()
 
 
 
