@@ -29,7 +29,7 @@ def query(query_fields):
           prefixed with "!" means that only non-empty sets are of interest
     """
 
-    joins=[u"FROM graph"]
+    joins=[(u"FROM graph",[])]
     wheres=[]
     args=[]
     selects=[u"graph.graph_id",u"graph.token_count"]
@@ -44,25 +44,22 @@ def query(query_fields):
         else:
             assert False #should never happen
         if ftype in (u"gov",u"dep"):
-            joins.append(u"%sJOIN rel AS t_%d ON graph.graph_id=t_%d.graph_id"%(j_type,i,i))
-            wheres.append(u"t_%d.dtype=?"%i)
-            args.append(res)
+            joins.append((u"%sJOIN rel AS t_%d ON graph.graph_id=t_%d.graph_id and t_%d.dtype=?"%(j_type,i,i,i),[res]))
             if stype==u"s":
                 selects.append(u"t_%d.token_%s_set"%(i,ftype))
             elif stype==u"a":
                 selects.append(u"t_%d.token_%s_map"%(i,ftype))
         elif ftype in (u"token",u"lemma",u"tag"):
-            joins.append(u"%sJOIN %s_index AS t_%d ON graph.graph_id=t_%d.graph_id"%(j_type,ftype,i,i))
-            wheres.append(u"t_%d.%s=?"%(i,ftype))
-            args.append(res)
+            joins.append((u"%sJOIN %s_index AS t_%d ON graph.graph_id=t_%d.graph_id and t_%d.%s=?"%(j_type,ftype,i,i,i,ftype),[res]))
             selects.append(u"t_%d.token_set"%i)
     
     joins.sort() #This is a horrible hack, but it will sort FROM JOIN ... LEFT JOIN the right way and help the QueryPlan generator
     q=u"SELECT %s"%(u", ".join(selects))
-    q+=u"\n"+(u"\n".join(j for j in joins))
-    if wheres:
-        q+=u"\nWHERE\n"+(u" and ".join(w for w in wheres))
+    q+=u"\n"+(u"\n".join(j[0] for j in joins))
     q+=u"\n"
+    args=[]
+    for j in joins:
+        args.extend(j[1])
     return q,args
 
 import argparse
