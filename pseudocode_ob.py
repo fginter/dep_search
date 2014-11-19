@@ -1,4 +1,4 @@
-from query import Query
+#from query import Query
 #import lex as lex
 #import yacc as yacc
 #import re
@@ -101,11 +101,330 @@ class code():
             compulsory_node = self.no_negs_above_dict[node_id]
             #Humm, It could've been more simple
             print '  #Node:' + node_id
-            for block in node.operation_blocks:
+            for i, block in enumerate(node.operation_blocks):
                 print ' '*2 + 'set_' + node_id + ' = ' + block.to_string()
-                if compulsory_node:
-                    print ' '*2 + 'if empty(set_' + node_id + '): return set_' + node_id  
+                if compulsory_node and i not in [0, len(node.operation_blocks)]:
+                    print ' '*2 + 'if set_' + node_id + '.is_empty(): return set_' + node_id + str(i)
         print ' '*2 + 'return set_' + node_id
+
+
+
+
+    def print_cython_match_function_2(self):
+
+
+        #Stuff to collect
+        #1. list of node_id sets and how theyre initialized
+        #2. sets from the db
+        #3. arrays from the db
+        #4. all sets
+        #5. all arrays
+        #6. query fields
+
+        node_sets_inits = []
+        sets_from_the_db = []
+        arrays_from_the_db = []
+        all_sets = []
+        all_arrays = set()
+        query_fields = []
+
+        intersection_sets = set()
+
+
+        #print 'What is needed from the db:'
+        #print '  compulsory text/tags:'
+        #for rest in self.text_needs_comp:
+        #    print ' '*4 + str(rest)
+        #print '  non-compulsory text/tags:'
+        #for rest in self.text_needs_vol:
+        #    print ' '*4 + str(rest)
+        #print '  compulsory deplists:'
+        #for rest in self.pair_needs_comp:
+        #    print ' '*4 + str(rest)
+        #print '  non-compulsory deplists:'
+        #for rest in self.pair_needs_vol:
+        #    print ' '*4 + str(rest)
+        print
+        print '#Match Function:'
+
+        match_function = []
+
+
+        print '    cdef TSet* exec_search(self):'
+        #
+
+        for node in self.match_code:
+            node_id = node.node_id
+            compulsory_node = self.no_negs_above_dict[node_id]
+            #Humm, It could've been more simple
+            match_function.append(' ' * 8 + '#Node:' + node_id)
+            for i, block in enumerate(node.operation_blocks):
+                #print ' '*2 + 'set_' + node_id + ' = ' + block.to_string()
+                #Here we print the wanted operation
+                #3 options;
+                #    1) set introduction
+                #    2) intersection update on the node set
+                #    3) pairing update on the node set
+                if isinstance(block, retrieve_from_db_code_block):
+                    if block.what_to_retrieve != 'ALL TOKENS':
+                        if type(block.what_to_retrieve) == tuple:
+                            if block.what_to_retrieve[0] == '<':
+                                #print ' ' * 8 + 'self.set_' + node_id + '=self.set_deps_' + str(block.what_to_retrieve[1])
+                                node_sets_inits.append(('self.set_' + node_id, 'dep_s_' + str(block.what_to_retrieve[1])))
+                                sets_from_the_db.append(('dep_s_' + str(block.what_to_retrieve[1]), compulsory_node))
+
+                            else:
+                                #print ' ' * 8 + 'self.set_' + node_id + '=self.set_govs_' + str(block.what_to_retrieve[1])
+                                node_sets_inits.append(('self.set_' + node_id, 'gov_s_' + str(block.what_to_retrieve[1])))
+                                sets_from_the_db.append(('gov_s_' + str(block.what_to_retrieve[1]), compulsory_node))
+                        else:
+                            #print ' ' * 8 + 'self.set_' + node_id + '=' + str(block.what_to_retrieve)
+                            node_sets_inits.append(('self.set_' + node_id, str(block.what_to_retrieve)))
+                            sets_from_the_db.append((str(block.what_to_retrieve), compulsory_node))
+                    else:
+                        #print ' ' * 8 + 'self.set_' + node_id + '.fill_ones()'
+                        node_sets_inits.append(('self.set_' + node_id, 'fill_ones'))
+
+                if isinstance(block, intersect_code_block):
+                    #Which is the one that is not us
+
+                    #import pdb;pdb.set_trace()
+                    sets = set([block.set1, block.set2])
+                    sets -= set(['self.set_' + node_id])
+                    #sets = list(sets)
+                    match_function.append(' ' * 8 + 'self.set_' + node_id + '.intersection_update(self.' + str(list(sets)[0]) + ')')
+                    intersection_sets.add((str(list(sets)[0]), compulsory_node))
+                    sets_from_the_db.append((str(list(sets)[0]), compulsory_node))
+
+                if isinstance(block, pair_code_block):
+                    pass
+                    #The options here are:
+                    #1. Deptype is defined
+                    #2. Dep or Gov
+                    #import pdb;pdb.set_trace()
+                    if block.optype is None:
+                        pass
+                        #pairing(self.set0,self.set2,self.seta1,False)
+                        #import pdb; pdb.set_trace()
+                        #print 'block', block
+                        if block.operation == '<':
+                            match_function.append( ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.dep_a_anytoken', str(block.negated)]) + ')')
+                            all_arrays.add(('dep_a_anytoken', not block.negated and compulsory_node))
+                            
+                        else:
+                            match_function.append(' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.gov_a_anytoken', str(block.negated)]) + ')')
+                            all_arrays.add(('self.gov_a_anytoken', not block.negated and compulsory_node))
+                    else:
+                        pass
+                        if block.operation == '<':
+                            match_function.append(' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.dep_a_'  + str(block.optype), str(block.negated)]) + ')')
+                            all_arrays.add(('dep_a_'  + str(block.optype), not block.negated and compulsory_node))
+                        else:
+                            match_function.append(' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.gov_a_' + str(block.optype), str(block.negated)]) + ')')
+                            all_arrays.add(('gov_a_' + str(block.optype), not block.negated and compulsory_node))                    
+
+
+                if compulsory_node and i not in [0,1, len(node.operation_blocks)-1]:
+                    match_function.append(' '*8 + 'if set_' + node_id + '.is_empty(): return set_' + node_id + str(i))
+        match_function.append(' '*8 + 'return self.set_' + node_id)
+
+
+        print
+        #print '#Sets from the db'
+
+        #import pdb;pdb.set_trace()
+
+        #Initialize function
+
+        #We need:
+        #1.   At least one set from the db
+        #1.5  init tree lengths
+        #2.   Initialize the set_node_ids
+        #2.5  init either fill_ones or db
+
+        #get the first mentions
+        t_inits_from_db = set()
+        db_fetch_dict = {}
+
+        #
+        fill_ones = set()
+        clone = set()
+        cinit_load = set()
+
+        for t in node_sets_inits:
+
+            if t[1] == 'fill_ones':
+                fill_ones.add(t)
+
+            elif t[1] not in t_inits_from_db:
+                db_fetch_dict[t[1]] = t[0]
+                t_inits_from_db.add(t[1])
+                cinit_load.add((t[0], t[1]))
+            else:
+                clone.add((t[0], db_fetch_dict[t[0]]))
+
+
+        #import pdb;pdb.set_trace()
+
+
+        initialize_function = []
+
+
+        initialize_function.append('''    cdef initialize(self):
+        """
+        Called before every sentence to be processed. Must initialize sets which are not fetched from the DB. Be efficient here, whatever you do!
+        """''')
+
+        #For all node_id sets:
+        #Does the set from the db have to be compulsory??
+        initialize_function.append(' '*8 + 'pass')
+#        for t in node_sets_inits:
+#
+#            print ' '*8 + t[0] + '.tree_length=' + sets_from_the_db[0][0] + '.tree_length'
+#            print ' '*8 + t[0] + '.array_len=' + sets_from_the_db[0][0] + '.array_len'
+
+        #clones and fill ones
+        for t in clone:
+            #initialize_function.append(' '*8 + t[0] + '.tree_length=' + sets_from_the_db[0][0] + '.tree_length')
+            #initialize_function.append(' '*8 + t[0] + '.array_len=' + sets_from_the_db[0][0] + '.array_len')
+            initialize_function.append(' '*8 + t[0] + '.copy(' + t[1] + ')')
+        for t in fill_ones:
+            initialize_function.append(' '*8 + t[0] + '.tree_length=' + sets_from_the_db[0][0] + '.tree_length')
+            initialize_function.append(' '*8 + t[0] + '.array_len=' + sets_from_the_db[0][0] + '.array_len')
+            initialize_function.append(' ' * 8 + t[0] + '.fill_ones()')
+
+        #__cinit__ function
+
+
+        cinit_function = []
+
+
+        #We need:
+        #1.   query fields
+        #2.   all sets and Arrays used
+        #3.   sets and arrays from db
+
+        #Count all db stuff
+        #All db stuff is:
+        #cinit_load + intersection_sets + all_arrays
+        all_db_stuff_count = len(cinit_load) + len(intersection_sets) + len(all_arrays)
+
+        cinit_function.append('''    def __cinit__(self):
+        #This runs only once per search, creates the data structures, etc.
+        self.sets=<void**>malloc(''' + str(all_db_stuff_count) + '''*sizeof(void*))
+        self.set_types=<int*>malloc(''' + str(all_db_stuff_count) + '''*sizeof(int))''')
+
+        #So I guess the first number is arrays and the second is the sets?
+        #XXX:Figure out later
+
+        #XXX: is query is seeded eith neg it doesnt work!
+
+        #print ' ' * 8 + 'self.set_types[0],self.set_types[1]=2,1'
+
+        #Init the sets used, both from db and node_id
+
+        #All sets is node_id sets and sets_from_the db
+        for t in node_sets_inits:
+            cinit_function.append(' '*8 + t[0] + '=new TSet(312)')
+
+        for t in list(intersection_sets):
+            cinit_function.append(' ' * 8 + 'self.' + t[0] + '=new TSet(312)')
+
+        #Init the arrays used
+
+        #setify and compulsify arrays, haha
+        all_arrays_set = set()
+        compulsory_arrays = set()
+        voluntary_arrays = set()
+
+        for t in all_arrays:
+            all_arrays_set.add(t[0])
+            if t[1]:
+                compulsory_arrays.add(t[0])
+            else:
+                voluntary_arrays.add(t[0])
+
+        voluntary_arrays -= compulsory_arrays
+
+
+        all_sets_set = set()
+        compulsory_sets = set()
+        voluntary_sets = set()
+
+        for t in sets_from_the_db:
+            all_sets_set.add(t[0])
+            if t[1]:
+                compulsory_sets.add(t[0])
+            else:
+                voluntary_sets.add(t[0])
+
+        voluntary_sets -= compulsory_sets
+
+        for array in list(all_arrays_set):
+            cinit_function.append(' '*8 + 'self.' + array + '=new TSetArray(312)')
+
+
+        #Fill the self.sets and query fields
+        #Youll need to regerate them from the restrictions
+
+        #Query Fields
+        #Oh, so all the stuff that is needed from the db
+        #Start with sets and the arrays
+        #sets
+        sets_list = []
+        q_fields = []
+        set_types = []
+
+
+        for cs in compulsory_sets:
+
+            #The possibilities here
+            #set_node_id
+            #self. + cs
+            if cs in db_fetch_dict.keys():
+                sets_list.append(db_fetch_dict[cs])
+            else:
+                sets_list.append('self.' + cs)
+
+            q_fields.append(u'!' + cs.split('.')[-1])
+            set_types.append(1)
+        for cs in voluntary_sets:
+            if cs in db_fetch_dict.keys():
+                sets_list.append(db_fetch_dict[cs])
+            else:
+                sets_list.append('self.' + cs)
+
+            if cs in db_fetch_dict.keys():
+                sets_list.append(db_fetch_dict[cs])
+            else:
+                sets_list.append('self.' + cs)
+
+            q_fields.append(u'' + cs.split('.')[-1])
+            set_types.append(1)
+        for cs in compulsory_arrays:
+            sets_list.append('self.' + cs)
+            q_fields.append(u'!' + cs.split('.')[-1])
+            set_types.append(2)
+        for cs in voluntary_arrays:
+            set_types.append(2)
+            sets_list.append('self.' + cs)
+            q_fields.append(u'' + cs)
+
+        for i, cs in enumerate(sets_list):
+            cinit_function.append(' '*8 + 'self.sets[' + str(i) + ']=' + cs)
+
+        for i, cs in enumerate(set_types):
+            cinit_function.append(' '*8 + 'self.set_types[' + str(i) + ']=' + str(cs))
+
+        cinit_function.append(' '*8 + 'self.query_fiels='+str(q_fields))
+
+
+
+        print
+        print '\n'.join(match_function)
+        print '\n'.join(initialize_function)
+        print '\n'.join(cinit_function)
+
 
 
     def print_cython_match_function(self):
@@ -127,22 +446,21 @@ class code():
         query_fields = []
 
 
-        print 'What is needed from the db:'
-        print '  compulsory text/tags:'
-        for rest in self.text_needs_comp:
-            print ' '*4 + str(rest)
-        print '  non-compulsory text/tags:'
-        for rest in self.text_needs_vol:
-            print ' '*4 + str(rest)
-        print '  compulsory deplists:'
-        for rest in self.pair_needs_comp:
-            print ' '*4 + str(rest)
-        print '  non-compulsory deplists:'
-        for rest in self.pair_needs_vol:
-            print ' '*4 + str(rest)
-
+        #print 'What is needed from the db:'
+        #print '  compulsory text/tags:'
+        #for rest in self.text_needs_comp:
+        #    print ' '*4 + str(rest)
+        #print '  non-compulsory text/tags:'
+        #for rest in self.text_needs_vol:
+        #    print ' '*4 + str(rest)
+        #print '  compulsory deplists:'
+        #for rest in self.pair_needs_comp:
+        #    print ' '*4 + str(rest)
+        #print '  non-compulsory deplists:'
+        #for rest in self.pair_needs_vol:
+        #    print ' '*4 + str(rest)
         print
-        print 'Match Function:'
+        print '#Match Function:'
 
         print '    cdef TSet* exec_search(self):'
         #
@@ -152,7 +470,7 @@ class code():
             compulsory_node = self.no_negs_above_dict[node_id]
             #Humm, It could've been more simple
             print  ' ' * 8 + '#Node:' + node_id
-            for block in node.operation_blocks:
+            for i, block in enumerate(node.operation_blocks):
                 #print ' '*2 + 'set_' + node_id + ' = ' + block.to_string()
                 #Here we print the wanted operation
                 #3 options;
@@ -164,13 +482,13 @@ class code():
                         if type(block.what_to_retrieve) == tuple:
                             if block.what_to_retrieve[0] == '<':
                                 #print ' ' * 8 + 'self.set_' + node_id + '=self.set_deps_' + str(block.what_to_retrieve[1])
-                                node_sets_inits.append(('self.set_' + node_id, 'self.set_deps_' + str(block.what_to_retrieve[1])))
-                                sets_from_the_db.append(('self.set_deps_' + str(block.what_to_retrieve[1]), compulsory_node))
+                                node_sets_inits.append(('self.set_' + node_id, 'self.deps_s_' + str(block.what_to_retrieve[1])))
+                                sets_from_the_db.append(('self.deps_s_' + str(block.what_to_retrieve[1]), compulsory_node))
 
                             else:
                                 #print ' ' * 8 + 'self.set_' + node_id + '=self.set_govs_' + str(block.what_to_retrieve[1])
-                                node_sets_inits.append(('self.set_' + node_id, 'self.set_govs_' + str(block.what_to_retrieve[1])))
-                                sets_from_the_db.append(('self.set_govs_' + str(block.what_to_retrieve[1]), compulsory_node))
+                                node_sets_inits.append(('self.set_' + node_id, 'self.govs_s_' + str(block.what_to_retrieve[1])))
+                                sets_from_the_db.append(('self.govs_s_' + str(block.what_to_retrieve[1]), compulsory_node))
                         else:
                             #print ' ' * 8 + 'self.set_' + node_id + '=' + str(block.what_to_retrieve)
                             node_sets_inits.append(('self.set_' + node_id, str(block.what_to_retrieve)))
@@ -181,42 +499,48 @@ class code():
 
                 if isinstance(block, intersect_code_block):
                     #Which is the one that is not us
-                    sets = set(block.set1, block.set2)
-                    sets -= 'set_' + node_id
-                    print ' ' * 8 + 'self.set_' + node_id + '.intersection_update(' + str(list(sets[0])) + ')'
+
+                    #import pdb;pdb.set_trace()
+                    sets = set([block.set1, block.set2])
+                    sets -= set(['self.set_' + node_id])
+                    #sets = list(sets)
+                    print ' ' * 8 + 'self.set_' + node_id + '.intersection_update(' + str(list(sets)[0]) + ')'
 
                 if isinstance(block, pair_code_block):
                     pass
                     #The options here are:
                     #1. Deptype is defined
                     #2. Dep or Gov
+                    #import pdb;pdb.set_trace()
                     if block.optype is None:
                         pass
                         #pairing(self.set0,self.set2,self.seta1,False)
+                        #import pdb; pdb.set_trace()
+                        #print 'block', block
                         if block.operation == '<':
-                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_deps', str(block.negated)]) + ')'
-                            all_arrays.add(('set_a_deps', not block.negated and compulsory_node))
+                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.deps_a', str(block.negated)]) + ')'
+                            all_arrays.add(('self.deps_a', not block.negated and compulsory_node))
                             
                         else:
-                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_govs', str(block.negated)]) + ')'
-                            all_arrays.add(('self.set_a_govs', not block.negated and compulsory_node))
+                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.govs_a', str(block.negated)]) + ')'
+                            all_arrays.add(('self.govs_a', not block.negated and compulsory_node))
                     else:
                         pass
                         if block.operation == '<':
-                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_deps_'  + str(block.optype), str(block.negated)]) + ')'
-                            all_arrays.add(('self.set_a_deps_'  + str(block.optype), not block.negated and compulsory_node))
+                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.deps_a_'  + str(block.optype), str(block.negated)]) + ')'
+                            all_arrays.add(('self.deps_a_'  + str(block.optype), not block.negated and compulsory_node))
                         else:
-                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.set_a_govs_' + str(block.optype), str(block.negated)]) + ')'
-                            all_arrays.add(('self.set_a_govs_' + str(block.optype), not block.negated and compulsory_node))                    
+                            print ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.govs_a_' + str(block.optype), str(block.negated)]) + ')'
+                            all_arrays.add(('self.govs_a_' + str(block.optype), not block.negated and compulsory_node))                    
 
 
-                if compulsory_node:
-                    print ' '*8 + 'if empty(set_' + node_id + '): return set_' + node_id  
+                if compulsory_node and i not in [0,1, len(node.operation_blocks)-1]:
+                    print ' '*8 + 'if set_' + node_id + '.is_empty(): return set_' + node_id + str(i)
         print ' '*8 + 'return set_' + node_id
 
 
         print
-        print '#Sets from the db'
+        #print '#Sets from the db'
 
         #import pdb;pdb.set_trace()
 
@@ -227,6 +551,11 @@ class code():
         #1.5  init tree lengths
         #2.   Initialize the set_node_ids
         #2.5  init either fill_ones or db
+
+        import pdb;pdb.set_trace()
+
+
+
         print '''    cdef initialize(self):
         """
         Called before every sentence to be processed. Must initialize sets which are not fetched from the DB. Be efficient here, whatever you do!
@@ -263,7 +592,7 @@ class code():
 
         #XXX: is query is seeded eith neg it doesnt work!
 
-        print ' ' * 8 + 'self.set_types[0],self.set_types[1]=2,1'
+        #print ' ' * 8 + 'self.set_types[0],self.set_types[1]=2,1'
 
         #Init the sets used, both from db and node_id
 
@@ -317,21 +646,32 @@ class code():
         #sets
         sets_list = []
         q_fields = []
+        set_types = []
+
+
         for cs in compulsory_sets:
             sets_list.append(cs)
-            q_fields.append('!' + cs)
+            q_fields.append('!' + cs.split('.')[-1])
+            set_types.append(1)
         for cs in voluntary_sets:
             sets_list.append(cs)
-            q_fields.append(cs)
+            q_fields.append(cs.split('.')[-1])
+            set_types.append(1)
         for cs in compulsory_arrays:
             sets_list.append(cs)
-            q_fields.append('!' + cs)
+            q_fields.append('!' + cs.split('.')[-1])
+            set_types.append(2)
         for cs in voluntary_arrays:
-            sets_list.append(cs)
+            set_types.append(2)
+            sets_list.append(cs.split('.')[-1])
             q_fields.append(cs)
 
         for i, cs in enumerate(sets_list):
             print ' '*8 + 'self.sets[' + str(i) + ']=' + cs
+
+        for i, cs in enumerate(set_types):
+            print ' '*8 + 'self.set_types[' + str(i) + ']=' + str(cs)
+
         print ' '*8 + 'self.query_fiels='+str(q_fields)
 
 
@@ -513,29 +853,31 @@ class code():
         #Works quite nicely up to this point
 
         for txtr in txt_sets_to_intersect[1:]:
-            operation_blocks.append(intersect_code_block('set_' + node_id, txtr))
+            operation_blocks.append(intersect_code_block('self.set_' + node_id, txtr))
 
         #Ok, I've got the first set and all I need to get this thing done!
         pair_code_blocks = []
 
         #Do pairings for deprels with input
         for di in pos_di_sets_to_pair:
-            operation_blocks.append(pair_code_block(di, 'set_' + node_id, di[2], di[0], di[1]))
+
+            #print di
+            operation_blocks.append(pair_code_block(di, 'self.set_' + node_id, di[2], di[0], di[1]))
 
         #Do pairings for deprels without input
         for di in pos_dni_sets_to_pair:
             #(rest, set1, set2, operation, type, negated=False)
-            operation_blocks.append(pair_code_block(di, 'set_' + node_id, None, di[0], di[1]))
+            operation_blocks.append(pair_code_block(di, 'self.set_' + node_id, None, di[0], di[1]))
 
         #Do pairings for ned deprels with input
         for di in neg_di_sets_to_pair:
             #(rest, set1, set2, operation, type, negated=False)
-            operation_blocks.append(pair_code_block(di, 'set_' + node_id, di[2], di[0], di[1], negated=True))
+            operation_blocks.append(pair_code_block(di, 'self.set_' + node_id, di[2], di[0], di[1], negated=True))
 
         #Do pairings for neg deprels without input
         for di in neg_dni_sets_to_pair:
             #(rest, set1, set2, operation, type, negated=False)
-            operation_blocks.append(pair_code_block(di, 'set_' + node_id, None, di[0], di[1], negated=True))
+            operation_blocks.append(pair_code_block(di, 'self.set_' + node_id, None, di[0], di[1], negated=True))
 
         #print '#' * 50
         #for op in operation_blocks:
@@ -626,7 +968,7 @@ class code():
                 if len(dtype) < 1:
                     dtype = None
                 #print op, dtype
-                pos_di_sets_to_pair.append((op, dtype, dp.input_node))
+                pos_di_sets_to_pair.append((op, dtype, 'self.set_' + dp.input_node))
 
             else:
                 #Negated
@@ -636,7 +978,7 @@ class code():
                 dtype = dp.depres.operator[2:-1]
                 if len(dtype) < 1:
                     dtype = None
-                neg_di_sets_to_pair.append((op, dtype, dp.input_node))
+                neg_di_sets_to_pair.append((op, dtype, 'self.set_' + dp.input_node))
 
         return pos_di_sets_to_pair, neg_di_sets_to_pair
 
@@ -692,7 +1034,7 @@ class code():
             if txt_res[0] in [u'CGTAG', u'TXT'] and txt_res[1] != u'_':
 
                 if txt_res[0] == u'TXT':
-                    txt_sets_to_pair.append('self.set_word_' + txt_res[1])
+                    txt_sets_to_pair.append('token_s_' + txt_res[1])
                     if self.no_negs_above_dict[node_id]:
                         needed_words.add(txt_res[1])
 
@@ -700,7 +1042,7 @@ class code():
 
                     if '+' not in txt_res[1]:
 
-                        txt_sets_to_pair.append('self.set_pos_' + txt_res[1])
+                        txt_sets_to_pair.append('tag_s_' + txt_res[1])
 
                         if self.no_negs_above_dict[node_id]:
                             what_sets_are_needed.add('!tags_' + txt_res[1])
@@ -710,7 +1052,7 @@ class code():
                     else:
                         tags = txt_res[1].split('+')
                         for tag in tags:
-                            txt_sets_to_pair.append('self.set_pos' + tag)
+                            txt_sets_to_pair.append('tag_s_' + tag)
                             if self.no_negs_above_dict[node_id]:
                                 what_sets_are_needed.add('!tags_' + tag)
                             else:
@@ -720,7 +1062,7 @@ class code():
 
                     if '+' not in txt_res[1]:
 
-                        txt_sets_to_pair.append('self.set_lemma_' + txt_res[1])
+                        txt_sets_to_pair.append('lemma_s_' + txt_res[1])
 
                         if self.no_negs_above_dict[node_id]:
                             what_sets_are_needed.add('!lemma_' + txt_res[1])
@@ -1346,9 +1688,9 @@ def main():
         #print nodes.to_unicode()
 
     cdd = code(nodes)
-    print cdd.print_pseudo_code()
-    print
-    print cdd.print_cython_match_function()
+    #print cdd.print_pseudo_code()
+    #print
+    cdd.print_cython_match_function_2()
 
 
 
