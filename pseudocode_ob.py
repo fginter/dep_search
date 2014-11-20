@@ -418,10 +418,10 @@ class code():
             else:
                 sets_list.append('self.' + cs)
 
-            if cs in db_fetch_dict.keys():
-                sets_list.append(db_fetch_dict[cs])
-            else:
-                sets_list.append('self.' + cs)
+            #if cs in db_fetch_dict.keys():
+            #    sets_list.append(db_fetch_dict[cs])
+            #else:
+            #    sets_list.append('self.' + cs)
 
             q_fields.append(u'' + cs.split('.')[-1])
             set_types.append(1)
