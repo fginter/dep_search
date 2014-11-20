@@ -1,6 +1,7 @@
 # distutils: language = c++
 # distutils: include_dirs = setlib
-# distutils: sources = setlib/tset.cpp query_functions.cpp
+# distutils: sources = query_functions.cpp
+# distutils: extra_objects = setlib/pytset.so
 
 from libcpp cimport bool
 from db_util cimport DB

@@ -1,5 +1,5 @@
 # distutils: include_dirs = setlib
-# distutils: sources = setlib/tset.cpp
+# distutils: extra_objects = setlib/pytset.so
 # distutils: language = c++
 # distutils: libraries = sqlite3
 
