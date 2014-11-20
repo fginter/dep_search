@@ -2,7 +2,7 @@
 # distutils: include_dirs = setlib
 # distutils: extra_objects = setlib/pytset.so
 # distutils: sources = query_functions.cpp
-include "ts.pxi"
+include "search_common.pxi"
 
 cdef class  GeneratedSearch(Search):
 
