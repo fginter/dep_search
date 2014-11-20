@@ -272,7 +272,9 @@ class code():
                 t_inits_from_db.add(t[1])
                 cinit_load.add((t[0], t[1]))
             else:
-                clone.add((t[0], db_fetch_dict[t[0]]))
+                #print db_fetch_dict
+                #import pdb;pdb.set_trace()
+                clone.add((t[0], db_fetch_dict[t[1]]))
 
 
         #import pdb;pdb.set_trace()
@@ -1722,14 +1724,14 @@ def main():
     #print
     lines = cdd.get_search_code()
 
-    write_cython_code(lines, './setlib/generated_query.pyx')
+    write_cython_code(lines, './generated_query.pyx')
 
 
 
 def write_cython_code(lines, output_file):
 
     #Yeah, I know, but it's 2 am
-    inlines = open('./setlib/example_queries.pyx', 'rt').readlines()
+    inlines = open('./example_queries.pyx', 'rt').readlines()
 
     out = open(output_file, 'wt')
     for line in inlines:
