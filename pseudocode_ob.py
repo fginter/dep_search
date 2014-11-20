@@ -1712,6 +1712,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description='Expression parser')
     parser.add_argument('expression', nargs='+', help='Training file name, or nothing for training on stdin')
+    parser.add_argument('output_file')
     args = parser.parse_args()
     
     e_parser=yacc.yacc()
@@ -1720,22 +1721,22 @@ def main():
         print nodes.to_unicode()
 
     cdd = code(nodes)
-    #print cdd.print_pseudo_code()
-    #print
     lines = cdd.get_search_code()
-
-    write_cython_code(lines, './generated_query.pyx')
-
-
+    filename = str(args.output_file)
+    write_cython_code(lines, filename + '.pyx')
 
 def write_cython_code(lines, output_file):
 
-    #Yeah, I know, but it's 2 am
-    inlines = open('./example_queries.pyx', 'rt').readlines()
-
     out = open(output_file, 'wt')
-    for line in inlines:
-        out.write(line)
+
+    magic_lines = '''# distutils: language = c++
+# distutils: include_dirs = setlib
+# distutils: extra_objects = setlib/pytset.so
+# distutils: sources = query_functions.cpp
+include "search_common.pxi"\n'''
+
+    out.write(magic_lines)
+
     for line in lines:
         out.write(line + '\n')
 
