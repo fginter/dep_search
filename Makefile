@@ -1,4 +1,4 @@
-TARGETS=db_util.so example_queries.so
+TARGETS=db_util.so
 
 .PHONY: setlib
 
@@ -10,11 +10,8 @@ setlib:
 db_util.so: setlib db_util.pyx db_util.pxd setlib/tset.cpp setlib/tset.h
 	python setup.py build_ext --inplace
 
-example_queries.so: setlib example_queries.pyx query_functions.cpp query_functions.h
-	python setup.py build_ext --inplace
-
 clean:
-	rm -rf $(TARGETS)
+	rm -f *.so
 	$(MAKE) -C setlib clean
 
 

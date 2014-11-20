@@ -6,7 +6,7 @@ from datetime import datetime
 from tree import Tree
 import re
 import zlib
-
+import importlib
 
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 def query(query_fields):
@@ -69,8 +69,18 @@ def get_data_from_db(db_conn,graph_id):
         print zlib.decompress(sent[0])
 
 
+def load(pyxFile):
+    from distutils.core import setup
+    from Cython.Build import cythonize
+    setup(ext_modules = cythonize(
+           pyxFile+".pyx",                 # our Cython source
+           language="c++",             # generate C++ code
+      ),script_args=["build_ext","--inplace"])
+    mod=importlib.import_module(pyxFile)
+    return mod
+
+
 import argparse
-import example_queries as equeries
 import db_util
 if __name__=="__main__":
     #q,args=query([u"token_s_koiran",u"!lemma_s_koira",u"!gov_a_nsubj-cop",u"tag_s_V"])
@@ -78,10 +88,12 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
     parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v7_1M_trees.db",help='Name of the database to query. Default: %(default)s.')
+    parser.add_argument('--search', default="parsubj",help='The name of the search to run (without .pyx) Default: %(default)s.')
     args = parser.parse_args()
 
-    #query_obj=equeries.SimpleSearch()
-    query_obj=equeries.ParSearch()
+    mod=load(args.search)
+    query_obj=mod.GeneratedSearch()
+    #query_obj=q.equeries.ParSearch()
     sql_query,sql_args=query(query_obj.query_fields)
     db=db_util.DB()
     db.open_db(unicode(args.database))
