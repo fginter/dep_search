@@ -152,6 +152,7 @@ class code():
 
         match_function.append( '    cdef TSet* exec_search(self):')
         #
+        all_tokens = False
 
         for node in self.match_code:
             node_id = node.node_id
@@ -202,11 +203,21 @@ class code():
                     #1. Deptype is defined
                     #2. Dep or Gov
                     #import pdb;pdb.set_trace()
+                    if block.set2 is None:
+                        #We need in this code an extra set which is always filled with ones!
+                        #Lets call it self.all_tokens
+                        block.set2='self.all_tokens'
+                        if not all_tokens:
+                            node_sets_inits.append(('self.all_tokens', 'fill_ones'))
+                            all_tokens = True
+
                     if block.optype is None:
                         pass
                         #pairing(self.set0,self.set2,self.seta1,False)
                         #import pdb; pdb.set_trace()
                         #print 'block', block
+
+                        #if block.set2 is None:
                         if block.operation == '<':
                             match_function.append( ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.dep_a_anytoken', str(block.negated)]) + ')')
                             all_arrays.add(('dep_a_anytoken', not block.negated and compulsory_node))
@@ -1700,7 +1711,7 @@ def main():
     e_parser=yacc.yacc()
     for expression in args.expression:
         nodes = e_parser.parse(expression)
-        #print nodes.to_unicode()
+        print nodes.to_unicode()
 
     cdd = code(nodes)
     #print cdd.print_pseudo_code()
