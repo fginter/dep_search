@@ -144,8 +144,8 @@ class code():
         #print '  non-compulsory deplists:'
         #for rest in self.pair_needs_vol:
         #    print ' '*4 + str(rest)
-        print
-        print '#Match Function:'
+        #print
+        #print '#Match Function:'
 
         match_function = []
 
@@ -822,6 +822,10 @@ class code():
         #These will be intersected
         txt_what_sets_are_needed, txt_sets_to_intersect, needed_words = self.get_text_restrictions(node_id)
 
+        #print txt_what_sets_are_needed, txt_sets_to_intersect, needed_words
+        #import pdb;pdb.set_trace()
+
+
         #Go through deprels without input
         #These will be paired
         pos_dni_sets_to_pair, neg_dni_sets_to_pair = self.get_dep_wo_input_restrictions(node_id)
@@ -1057,7 +1061,7 @@ class code():
 
         for txt_res in pseudo_node.txt_res:
             #print len(code_block)
-            if txt_res[0] in [u'CGTAG', u'TXT'] and txt_res[1] != u'_':
+            if txt_res[0] in [u'CGTAG', u'TXT', u'CGBASE'] and txt_res[1] != u'_':
 
                 if txt_res[0] == u'TXT':
                     txt_sets_to_pair.append('token_s_' + txt_res[1])
