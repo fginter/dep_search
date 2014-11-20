@@ -88,7 +88,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
     parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v7_1M_trees.db",help='Name of the database to query. Default: %(default)s.')
-    parser.add_argument('--search', default="parsubj",help='The name of the search to run (without .pyx) Default: %(default)s.')
+    parser.add_argument('search', default="parsubj",help='The name of the search to run (without .pyx) Default: %(default)s.')
     args = parser.parse_args()
 
     mod=load(args.search)
