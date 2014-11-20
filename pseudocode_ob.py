@@ -104,7 +104,7 @@ class code():
             for i, block in enumerate(node.operation_blocks):
                 print ' '*2 + 'set_' + node_id + ' = ' + block.to_string()
                 if compulsory_node and i not in [0, len(node.operation_blocks)]:
-                    print ' '*2 + 'if set_' + node_id + '.is_empty(): return set_' + node_id + str(i)
+                    print ' '*2 + 'if self.set_' + node_id + '.is_empty(): return self.set_' + node_id
         print ' '*2 + 'return set_' + node_id
 
 
@@ -224,7 +224,7 @@ class code():
                             
                         else:
                             match_function.append(' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.gov_a_anytoken', str(block.negated)]) + ')')
-                            all_arrays.add(('self.gov_a_anytoken', not block.negated and compulsory_node))
+                            all_arrays.add(('gov_a_anytoken', not block.negated and compulsory_node))
                     else:
                         pass
                         if block.operation == '<':
@@ -236,7 +236,7 @@ class code():
 
 
                 if compulsory_node and i not in [0,1, len(node.operation_blocks)-1]:
-                    match_function.append(' '*8 + 'if set_' + node_id + '.is_empty(): return set_' + node_id + str(i))
+                    match_function.append(' '*8 + 'if self.set_' + node_id + '.is_empty(): return self.set_' + node_id)
         match_function.append(' '*8 + 'return self.set_' + node_id)
 
 
@@ -283,7 +283,7 @@ class code():
         initialize_function = []
 
 
-        initialize_function.append('''    cdef initialize(self):
+        initialize_function.append('''    cdef void initialize(self):
         """
         Called before every sentence to be processed. Must initialize sets which are not fetched from the DB. Be efficient here, whatever you do!
         """''')
@@ -319,9 +319,7 @@ class code():
         cinit_function = []
         class_block = []
 
-        class_block.append('cdef class  CustomSearch(Search):')
-
-
+        class_block.append('cdef class GeneratedSearch(Search):')
 
         #We need:
         #1.   query fields
