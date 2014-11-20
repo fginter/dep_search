@@ -219,12 +219,12 @@ class code():
 
                         #if block.set2 is None:
                         if block.operation == '<':
-                            match_function.append( ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.dep_a_anytype', str(block.negated)]) + ')')
-                            all_arrays.add(('dep_a_anytype', not block.negated and compulsory_node))
+                            match_function.append( ' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.dep_a_anyrel', str(block.negated)]) + ')')
+                            all_arrays.add(('dep_a_anyrel', not block.negated and compulsory_node))
                             
                         else:
-                            match_function.append(' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.gov_a_anytype', str(block.negated)]) + ')')
-                            all_arrays.add(('gov_a_anytype', not block.negated and compulsory_node))
+                            match_function.append(' '*8 + 'pairing(' + ','.join([str(block.set1), str(block.set2), 'self.gov_a_anyrel', str(block.negated)]) + ')')
+                            all_arrays.add(('gov_a_anyrel', not block.negated and compulsory_node))
                     else:
                         pass
                         if block.operation == '<':
