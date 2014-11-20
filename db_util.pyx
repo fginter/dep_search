@@ -1,7 +1,8 @@
-# distutils: language = c++
-# distutils: libraries = sqlite3
 # distutils: include_dirs = setlib
 # distutils: sources = setlib/tset.cpp
+# distutils: language = c++
+# distutils: libraries = sqlite3
+
 from libcpp cimport bool
 #http://www.sqlite.org/cintro.html
 from setlib.pytset cimport PyTSet, PyTSetArray 
@@ -43,23 +44,33 @@ cdef class DB:
             print sqlite3_errmsg(self.db)            
             return result
 
-    cdef void fill_tset(self,TSet *out, int column_index):
+    cdef void fill_tset(self,TSet *out, int column_index, int tree_length):
         cdef const void *data
-        data=sqlite3_column_blob(self.stmt, column_index)
-        out.add_serialized_data(data)
+        data_type=sqlite3_column_type(self.stmt,column_index)
+        if data_type==SQLITE_BLOB:
+            data=sqlite3_column_blob(self.stmt, column_index)
+            out.deserialize(data)
+        else:
+            out.set_length(tree_length)
+            out.erase()
 
-    cdef void fill_tsetarray(self, TSetArray *out, int column_index):
+    cdef void fill_tsetarray(self, TSetArray *out, int column_index, int tree_length):
         cdef int blob_len
         cdef const void *data
-        data=sqlite3_column_blob(self.stmt,column_index)
-        blob_len=sqlite3_column_bytes(self.stmt, column_index);
-        out.deserialize(data,blob_len)
+        data_type=sqlite3_column_type(self.stmt,column_index)
+        if data_type==SQLITE_BLOB:
+            data=sqlite3_column_blob(self.stmt,column_index)
+            blob_len=sqlite3_column_bytes(self.stmt, column_index);
+            out.deserialize(data,blob_len)
+        else:
+            out.set_length(tree_length)
+            out.erase()
 
-    def fill_pytset(self, PyTSet s, int column_index):
-        self.fill_tset(s.thisptr, column_index)
+    def fill_pytset(self, PyTSet s, int column_index, int tree_length):
+        self.fill_tset(s.thisptr, column_index, tree_length)
 
-    def fill_pytsetarray(self, PyTSetArray s, int column_index):
-        self.fill_tsetarray(s.thisptr, column_index)
+    def fill_pytsetarray(self, PyTSetArray s, int column_index, int tree_length):
+        self.fill_tsetarray(s.thisptr, column_index, tree_length)
 
     cdef int get_integer(self, int column_index):
         return sqlite3_column_int(self.stmt, column_index)
@@ -67,12 +78,14 @@ cdef class DB:
     cdef void fill_sets(self, void **set_pointers, int *types, int size):
         cdef int i
         cdef int col_index
+        cdef int tree_length = sqlite3_column_int(self.stmt, 1)
+        #print tree_length
         for i in range(size):
             col_index=i+2
             if types[i]==1: # TODO fix constant
-                self.fill_tset(<TSet *>set_pointers[i],col_index)
+                self.fill_tset(<TSet *>set_pointers[i],col_index,tree_length)
             elif types[i]==2:
-                self.fill_tsetarray(<TSetArray *>set_pointers[i],col_index)
+                self.fill_tsetarray(<TSetArray *>set_pointers[i],col_index,tree_length)
             else:
                 print "C",types[i]
                 assert False

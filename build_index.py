@@ -21,8 +21,8 @@ def prepare_tables(conn):
     CREATE TABLE graph (
        graph_id INTEGER,
        token_count INTEGER,
-       conllu_comment_compressed BLOB,
-       conllu_data_compressed BLOB
+       conllu_data_compressed BLOB,
+       conllu_comment_compressed BLOB
     );
     CREATE TABLE token_index (
        token TEXT,
@@ -49,7 +49,8 @@ def prepare_tables(conn):
     );
     """
     
-    for q in build.split(";"):
+    for q in build.split(";"):        
+        q=q.strip()
         if q:
             print q
             conn.execute(q)
@@ -125,7 +126,9 @@ def fill_db(conn,src_data):
     """
     `src_data` - iterator over sentences -result of read_conll()
     """
+    counter=0
     for sent_idx,(sent,comments) in enumerate(src_data):
+        counter+=1
         t=Tree.from_conll(comments,sent)
         
         conn.execute('INSERT INTO graph VALUES(?,?,?,?)', [sent_idx,len(sent),buffer(zlib.compress(t.conllu.encode("utf-8"))),buffer(zlib.compress(t.comments.encode("utf-8")))])
@@ -147,14 +150,20 @@ def fill_db(conn,src_data):
         if sent_idx%10000==0:
             conn.commit()
     conn.commit()
-
+    return counter
 
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
-    os.system("rm -f /mnt/ssd/sdata/sdata_v7_20M_trees.db")
-    conn=sqlite3.connect("/mnt/ssd/sdata/sdata_v7_20M_trees.db")
-    prepare_tables(conn)
-    src_data=read_conll(sys.stdin,20000000)
-    fill_db(conn,src_data)
-    build_indices(conn)
-    conn.close()
+    os.system("rm -f /mnt/ssd/sdata/all/*")
+    counter=0
+    while True:
+        conn=sqlite3.connect("/mnt/ssd/sdata/all/sdata_v7_1M_trees_%03d.db"%counter)
+        prepare_tables(conn)
+        src_data=read_conll(sys.stdin,1000000)
+        filled=fill_db(conn,src_data)
+        if filled==0:
+            break
+        build_indices(conn)
+        conn.close()
+        counter+=1
+

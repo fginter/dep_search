@@ -8,6 +8,7 @@ cdef extern from "sqlite3.h":
     int sqlite3_prepare_v2(sqlite3 *db, const char *zSql, int nByte, sqlite3_stmt **ppStmt, const char **pzTail)
     int sqlite3_step(sqlite3_stmt*)
     const void * sqlite3_column_blob(sqlite3_stmt*, int)
+    int sqlite3_column_type(sqlite3_stmt*, int iCol)
     int sqlite3_column_bytes(sqlite3_stmt*, int iCol)
     int sqlite3_bind_text(sqlite3_stmt*,int iCol,const char* val,int len, void(*)(void*))
     int sqlite3_column_int(sqlite3_stmt*, int iCol)
@@ -20,6 +21,8 @@ cdef extern from "sqlite3.h":
     int SQLITE_DONE
     int SQLITE_ROW
     int SQLITE_OPEN_READONLY
+    int SQLITE_NULL
+    int SQLITE_BLOB
     
 
 cdef extern from "tset.h" namespace "tset":
@@ -34,15 +37,21 @@ cdef extern from "tset.h" namespace "tset":
         void start_iteration()
         bool next_item(TSet *)
         char * get_data_as_char(int *)
-        void add_serialized_data(const void *)
+        void deserialize(const void *)
+        void erase()
+        void set_length(int tree_length)
+        void print_set()
     cdef cppclass TSetArray:
         void deserialize(const void *data, int size)
+        void erase()
+        void set_length(int tree_length)
+        void print_array()
 
 cdef class DB:
     cdef sqlite3 *db #Pointer to the open DB
     cdef sqlite3_stmt *stmt # Pointer to a prepared statement
-    cdef void fill_tset(self, TSet *out, int column_index)
-    cdef void fill_tsetarray(self, TSetArray *out, int column_index)
+    cdef void fill_tset(self, TSet *out, int column_index, int tree_length)
+    cdef void fill_tsetarray(self, TSetArray *out, int column_index, int tree_length)
     cpdef int next(self)
     cdef void fill_sets(self, void **set_pointers, int *types, int size)
     cdef int get_integer(self, int column_index)
