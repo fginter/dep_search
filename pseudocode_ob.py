@@ -240,7 +240,7 @@ class code():
         match_function.append(' '*8 + 'return self.set_' + node_id)
 
 
-        print
+        #print
         #print '#Sets from the db'
 
         #import pdb;pdb.set_trace()
