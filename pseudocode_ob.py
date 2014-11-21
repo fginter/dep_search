@@ -1747,9 +1747,9 @@ def generate_and_write_search_code_from_expression(expression, output_file):
 
 def generate_and_write_search_code_from_node_tree(node, output_file):
 
-    code = code(node)
-    lines = code.get_search_code()
-    write_cython_code(lines, filename + '.pyx')
+    cd = code(node)
+    lines = cd.get_search_code()
+    write_cython_code(lines, output_file)
 
 
 
