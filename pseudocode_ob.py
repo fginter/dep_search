@@ -442,12 +442,10 @@ class code():
 
         cinit_function.append(' '*8 + 'self.query_fields='+str(q_fields))
 
-
-
-        print '\n'.join(class_block)
-        print '\n'.join(match_function)
-        print '\n'.join(initialize_function)
-        print '\n'.join(cinit_function)
+        #print '\n'.join(class_block)
+        #print '\n'.join(match_function)
+        #print '\n'.join(initialize_function)
+        #print '\n'.join(cinit_function)
 
         return class_block + initialize_function + cinit_function + match_function
 
@@ -1741,11 +1739,20 @@ include "search_common.pxi"\n'''
     out.close()
 
 
+def generate_and_write_search_code_from_expression(expression, output_file):
+
+    nodes = e_parser.parse(expression)
+    code = code(nodes)
+    lines = code.get_search_code()
+    write_cython_code(lines, filename + '.pyx')
+
+def generate_and_write_search_code_from_node_tree(node, output_file):
+
+    code = code(node)
+    lines = code.get_search_code()
+    write_cython_code(lines, filename + '.pyx')
 
 
 
-
-
-
-
-main()
+if __name__ == "__main__":
+    main()
