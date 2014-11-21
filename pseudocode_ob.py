@@ -347,11 +347,11 @@ class code():
 
         #All sets is node_id sets and sets_from_the db
         for t in node_sets_inits:
-            cinit_function.append(' '*8 + t[0] + '=new TSet(312)')
+            cinit_function.append(' '*8 + t[0] + '=new TSet(2048)')
             class_block.append(' '*4 + 'cdef TSet *' + t[0].split('.')[-1])
 
         for t in list(intersection_sets):
-            cinit_function.append(' ' * 8 + 'self.' + t[0] + '=new TSet(312)')
+            cinit_function.append(' ' * 8 + 'self.' + t[0] + '=new TSet(2048)')
             class_block.append(' '*4 + 'cdef TSet *' + t[0].split('.')[-1])
 
         #Init the arrays used
@@ -385,7 +385,7 @@ class code():
         voluntary_sets -= compulsory_sets
 
         for array in list(all_arrays_set):
-            cinit_function.append(' '*8 + 'self.' + array + '=new TSetArray(312)')
+            cinit_function.append(' '*8 + 'self.' + array + '=new TSetArray(2048)')
 
             class_block.append(' '*4 + 'cdef TSetArray *' + array)
         #Fill the self.sets and query fields
@@ -622,10 +622,10 @@ class code():
 
         #All sets is node_id sets and sets_from_the db
         for t in node_sets_inits:
-            print ' '*8 + t[0] + '=new TSet(312)'
+            print ' '*8 + t[0] + '=new TSet(2048)'
 
         for t in sets_from_the_db:
-            print ' ' * 8 + t[0] + '=new TSet(312)'
+            print ' ' * 8 + t[0] + '=new TSet(2048)'
 
         #Init the arrays used
 
@@ -658,7 +658,7 @@ class code():
         voluntary_sets -= compulsory_sets
 
         for array in list(all_arrays_set):
-            print ' '*8 + array + '=new TSetArray(312)'        
+            print ' '*8 + array + '=new TSetArray(2048)'        
 
 
         #Fill the self.sets and query fields

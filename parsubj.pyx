@@ -26,8 +26,8 @@ cdef class  GeneratedSearch(Search):
         self.set_types[0],self.set_types[1],self.set_types[2],self.set_types[3],self.set_types[4],self.set_types[5],self.set_types[6]=1,1,2,2,2,2,2 #Types of stuff we grab from the DB, so we'll be grabbing 1 and 2, i.e. array and set
 
 
-        self.noun_set,self.par_set,self.all_tokens,self.all_tokens2,self.all_tokens3=new TSet(312), new TSet(312), new TSet(312), new TSet(312), new TSet(312) ## all sets needed in the query must be created 
-        self.num_mapping, self.obj_mapping, self.subj_mapping, self.xcomp_mapping, self.iccomp_mapping = new TSetArray(312), new TSetArray(312), new TSetArray(312), new TSetArray(312), new TSetArray(312)
+        self.noun_set,self.par_set,self.all_tokens,self.all_tokens2,self.all_tokens3=new TSet(2048), new TSet(2048), new TSet(2048), new TSet(2048), new TSet(2048) ## all sets needed in the query must be created 
+        self.num_mapping, self.obj_mapping, self.subj_mapping, self.xcomp_mapping, self.iccomp_mapping = new TSetArray(2048), new TSetArray(2048), new TSetArray(2048), new TSetArray(2048), new TSetArray(2048)
 
         self.sets[0]=self.noun_set
         self.sets[1]=self.par_set #...feed the pointers into the sets[] array so the DB can fill them with data for us
