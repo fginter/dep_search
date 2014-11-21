@@ -1,3 +1,5 @@
+import subprocess
+import os
 import sys
 import cPickle as pickle
 import sqlite3
@@ -7,6 +9,10 @@ from tree import Tree
 import re
 import zlib
 import importlib
+import argparse
+import db_util
+import glob
+
 
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 def query(query_fields):
@@ -64,42 +70,25 @@ def query(query_fields):
     return q,args
 
 def get_data_from_db(db_conn,graph_id):
-    results=db_conn.execute('SELECT conllu_comment_compressed FROM graph WHERE graph_id=?',(str(graph_id),))
+    results=db_conn.execute('SELECT conllu_data_compressed FROM graph WHERE graph_id=?',(str(graph_id),))
     for sent in results.fetchall():
-        print zlib.decompress(sent[0])
+        print zlib.decompress(sent[0]).strip()
 
 
 def load(pyxFile):
-    from distutils.core import setup
-    from Cython.Build import cythonize
-    setup(ext_modules = cythonize(
-           pyxFile+".pyx",                 # our Cython source
-           language="c++",             # generate C++ code
-      ),script_args=["build_ext","--inplace"])
+    """Loads a search pyx file, returns the module"""
+    ###I need to hack around this, because this thing is messing stdout
+    print >> sys.stderr, "Loading", pyxFile
+    subprocess.call(["python","compile_ext.py",pyxFile], stdout=sys.stderr, stderr=sys.stderr)
     mod=importlib.import_module(pyxFile)
     return mod
 
-
-import argparse
-import db_util
-if __name__=="__main__":
-    #q,args=query([u"token_s_koiran",u"!lemma_s_koira",u"!gov_a_nsubj-cop",u"tag_s_V"])
-    #print q,args
-    parser = argparse.ArgumentParser(description='Execute a query against the db')
-    parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
-    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/sdata_v7_1M_trees.db",help='Name of the database to query. Default: %(default)s.')
-    parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx) Default: %(default)s.')
-    args = parser.parse_args()
-
-    mod=load(args.search)
-    query_obj=mod.GeneratedSearch()
-    #query_obj=q.equeries.ParSearch()
-    sql_query,sql_args=query(query_obj.query_fields)
+def query_from_db(q_obj,db_name,sql_query,sql_args):
     db=db_util.DB()
-    db.open_db(unicode(args.database))
-    res_db=sqlite3.connect(args.database)
-    print "EQ", db.exec_query(sql_query,sql_args)
-    print sql_query, sql_args
+    db.open_db(unicode(db_name))
+    res_db=sqlite3.connect(unicode(db_name))
+    db.exec_query(sql_query,sql_args)
+    print >> sys.stderr, sql_query, sql_args
     counter=0
     sql_counter=0
     while True:
@@ -107,24 +96,40 @@ if __name__=="__main__":
         sql_counter+=rows
         if r==None:
             break
-        print "graph id:",idx
+        print "# graph id:",idx
+        for x in r:
+            print "# visual-style\t%s\tbgColor:red"%(x+1)
         get_data_from_db(res_db,idx)
+        print
         counter+=1
-    print sql_counter,"rows from database"
-    print counter, "hits"
+    print >> sys.stderr, sql_counter,"rows from database",db_name
+    print >> sys.stderr, counter, "hits in", db_name
     db.close_db()
     res_db.close()
     
-    # conn=sqlite3.connect(args.database)
 
-    # from test_search import SearchKoska, SearchPtv, SearchNSubjCop
-    # s=SearchPtv()
-    # s=SearchKoska()
-    # s=SearchNSubjCop()
-    # out8=codecs.getwriter("utf-8")(sys.stdout)
-    # for counter,(t,res_set) in enumerate(query_search(conn,s)):
-    #     print res_set
-    #     #t.to_conll(out8,highlight=res_set)
-    #     if args.max>0 and counter+1>=args.max:
-    #         break
-    # conn.close()
+
+if __name__=="__main__":
+    #q,args=query([u"token_s_koiran",u"!lemma_s_koira",u"!gov_a_nsubj-cop",u"tag_s_V"])
+    #print q,args
+    parser = argparse.ArgumentParser(description='Execute a query against the db')
+    parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
+    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/all/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
+    parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
+    args = parser.parse_args()
+
+    if os.path.exists(args.search+".pyx"):
+        print >> sys.stderr, "Loading "+args.search+".pyx"
+        mod=load(args.search)
+    else:
+        #This is a query, compile first
+        import pseudocode_ob
+        pseudocode_ob.generate_and_write_search_code_from_expression(args.search, "q_autogen")
+        mod=load("q_autogen")
+    query_obj=mod.GeneratedSearch()
+    sql_query,sql_args=query(query_obj.query_fields)
+    
+    dbs=glob.glob(args.database)
+    dbs.sort()
+    for d in dbs:
+        query_from_db(query_obj,d,sql_query,sql_args)
