@@ -6,6 +6,7 @@
 from libcpp cimport bool
 #http://www.sqlite.org/cintro.html
 from setlib.pytset cimport PyTSet, PyTSetArray 
+import sys
 
 cdef class DB:
 
@@ -14,7 +15,7 @@ cdef class DB:
         sqlite3_open_v2(db_name_u8,&self.db,SQLITE_OPEN_READONLY,NULL)
 
     def close_db(self):
-        sqlite3_close(self.db)
+        print >> sys.stderr,  "DB CLOSE:", sqlite3_close_v2(self.db)
 
     def exec_query(self, unicode query, object args):
         """Runs sqlite3_prepare, use .next() to iterate through the rows. Args is a list of *UNICODE* arguments to bind to the query"""
@@ -39,9 +40,10 @@ cdef class DB:
         if result==SQLITE_ROW:
             return 0
         elif result==SQLITE_DONE:
+            sqlite3_finalize(self.stmt)
             return 1
         else:
-            print sqlite3_errmsg(self.db)            
+            print >> sys.stderr, sqlite3_errmsg(self.db)            
             return result
 
     cdef void fill_tset(self,TSet *out, int column_index, int tree_length):
@@ -79,7 +81,6 @@ cdef class DB:
         cdef int i
         cdef int col_index
         cdef int tree_length = sqlite3_column_int(self.stmt, 1)
-        #print tree_length
         for i in range(size):
             col_index=i+2
             if types[i]==1: # TODO fix constant
@@ -89,5 +90,6 @@ cdef class DB:
             else:
                 print "C",types[i]
                 assert False
+
             
 

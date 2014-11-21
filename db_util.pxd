@@ -4,7 +4,8 @@ from libcpp cimport bool
 cdef extern from "sqlite3.h":
     int sqlite3_bind_parameter_count(sqlite3_stmt*)
     int sqlite3_open_v2(const char *filename, sqlite3 **ppDb, int flags, const char *zvfs) 
-    int sqlite3_close(sqlite3*)
+    int sqlite3_close_v2(sqlite3*)
+    int sqlite3_finalize(sqlite3_stmt *pStmt)
     int sqlite3_prepare_v2(sqlite3 *db, const char *zSql, int nByte, sqlite3_stmt **ppStmt, const char **pzTail)
     int sqlite3_step(sqlite3_stmt*)
     const void * sqlite3_column_blob(sqlite3_stmt*, int)
