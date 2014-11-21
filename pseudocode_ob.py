@@ -75,7 +75,7 @@ class code():
         #What is needed from the dictionary
         self.text_needs_comp, self.text_needs_vol, self.pair_needs_comp, self.pair_needs_vol = self.get_what_is_needed_from_db()
 
-        print 'Done!'
+        #print 'Done!'
 
     def print_pseudo_code(self):
         #Print what is needed from the db
