@@ -1699,7 +1699,6 @@ def id_the_tree(node, id, depth, no_negs_above):
     return self.node_id_dict, self.node_depth_dict, self.no_negs_above_dict
 
 def main():
-
     '''
     Exploring the node tree, trying to figure very naive order of execution.
     With a naive attempt at code generation
@@ -1740,11 +1739,11 @@ include "search_common.pxi"\n'''
 
 
 def generate_and_write_search_code_from_expression(expression, output_file):
-
+    e_parser=yacc.yacc()
     nodes = e_parser.parse(expression)
-    code = code(nodes)
-    lines = code.get_search_code()
-    write_cython_code(lines, filename + '.pyx')
+    cdd = code(nodes)
+    lines = cdd.get_search_code()
+    write_cython_code(lines, output_file + '.pyx')
 
 def generate_and_write_search_code_from_node_tree(node, output_file):
 
