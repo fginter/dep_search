@@ -10,6 +10,7 @@ import struct
 import os
 import setlib.pytset as pytset
 import zlib
+import itertools
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -155,12 +156,14 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     os.system("rm -f /mnt/ssd/sdata/all/*")
+    src_data=read_conll(sys.stdin,40000000)
+    batch=500000
     counter=0
     while True:
-        conn=sqlite3.connect("/mnt/ssd/sdata/all/sdata_v7_1M_trees_%03d.db"%counter)
+        conn=sqlite3.connect("/mnt/ssd/sdata/all/sdata_v7_1M_trees_%05d.db"%counter)
         prepare_tables(conn)
-        src_data=read_conll(sys.stdin,1000000)
-        filled=fill_db(conn,src_data)
+        it=itertools.islice(src_data,batch)
+        filled=fill_db(conn,it)
         if filled==0:
             break
         build_indices(conn)
