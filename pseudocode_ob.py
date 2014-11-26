@@ -171,17 +171,17 @@ class code():
                         if type(block.what_to_retrieve) == tuple:
                             if block.what_to_retrieve[0] == '<':
                                 #print ' ' * 8 + 'self.set_' + node_id + '=self.set_deps_' + str(block.what_to_retrieve[1])
-                                node_sets_inits.append(('self.set_' + node_id, 'dep_s_' + str(block.what_to_retrieve[1])))
-                                sets_from_the_db.append(('dep_s_' + str(block.what_to_retrieve[1]), compulsory_node))
+                                node_sets_inits.append(('self.set_' + node_id, 'dep_s_' + block.what_to_retrieve[1]))
+                                sets_from_the_db.append(('dep_s_' + block.what_to_retrieve[1], compulsory_node))
 
                             else:
                                 #print ' ' * 8 + 'self.set_' + node_id + '=self.set_govs_' + str(block.what_to_retrieve[1])
-                                node_sets_inits.append(('self.set_' + node_id, 'gov_s_' + str(block.what_to_retrieve[1])))
-                                sets_from_the_db.append(('gov_s_' + str(block.what_to_retrieve[1]), compulsory_node))
+                                node_sets_inits.append(('self.set_' + node_id, 'gov_s_' + block.what_to_retrieve[1]))
+                                sets_from_the_db.append(('gov_s_' + block.what_to_retrieve[1], compulsory_node))
                         else:
                             #print ' ' * 8 + 'self.set_' + node_id + '=' + str(block.what_to_retrieve)
-                            node_sets_inits.append(('self.set_' + node_id, str(block.what_to_retrieve)))
-                            sets_from_the_db.append((str(block.what_to_retrieve), compulsory_node))
+                            node_sets_inits.append(('self.set_' + node_id, block.what_to_retrieve))
+                            sets_from_the_db.append((block.what_to_retrieve, compulsory_node))
                     else:
                         #print ' ' * 8 + 'self.set_' + node_id + '.fill_ones()'
                         node_sets_inits.append(('self.set_' + node_id, 'fill_ones'))
