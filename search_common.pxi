@@ -18,6 +18,7 @@ cdef extern from "tset.h" namespace "tset":
         void print_set()
         void erase()
         void set_length(int tree_length)
+        void complement()
 
     cdef cppclass TSetArray:
         int tree_length
