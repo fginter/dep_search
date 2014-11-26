@@ -163,7 +163,7 @@ if __name__=="__main__":
         conn=sqlite3.connect("/mnt/ssd/sdata/all/sdata_v7_1M_trees_%05d.db"%counter)
         prepare_tables(conn)
         it=itertools.islice(src_data,batch)
-        filled=fill_db(conn,src_data)
+        filled=fill_db(conn,it)
         if filled==0:
             break
         build_indices(conn)
