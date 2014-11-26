@@ -145,9 +145,9 @@ def p_prop(t):
     u'''prop : REGEX
              | PROPLABEL REGEX'''
     if len(t)==2:
-        t[0]=(u"TXT",unicode(t[1][1:-1])) #strip the /../
+        t[0]=(u"TXT",unicode(t[1][1:-1].decode('utf-8'))) #strip the /../
     elif len(t)==3:
-        t[0]=(unicode(t[1][1:]),unicode(t[2][1:-1])) #strip the /../
+        t[0]=(unicode(t[1][1:].decode('utf-8')),unicode(t[2][1:-1].decode('utf-8'))) #strip the /../
 
 
 lex.lex(reflags=re.UNICODE)
