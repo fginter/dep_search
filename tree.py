@@ -9,7 +9,20 @@ class Tree(object):
         t=cls()
         lines=[] #will accumulate here conll-u lines
         for idx,cols in enumerate(conll):
-            lines.append([cols[ID],cols[FORM],cols[LEMMA],cols[POS],cols[POS],cols[FEAT],cols[HEAD],cols[DEPREL],u"_",u"_"])
+            # convert second layer into conll-u
+            heads,deprels=cols[HEAD].split(u","),cols[DEPREL].split(u",")
+            deps=[]
+            for idx,(g,dtype) in enumerate(zip(heads,deprels)):
+                if idx==0:
+                    continue
+                deps.append((int(g),dtype))
+            cols[HEAD]=heads[0]
+            cols[DEPREL]=deprels[0]
+            if deps:
+                DEPS=u"|".join(unicode(g)+u":"+dtype for g,dtype in sorted(deps))
+            else:
+                DEPS=u"_"
+            lines.append([cols[ID],cols[FORM],cols[LEMMA],cols[POS],cols[POS],cols[FEAT],cols[HEAD],cols[DEPREL],DEPS,u"_"])
             if cols[FORM] not in t.tokens:
                 t.tokens[cols[FORM]]=pytset.PyTSet(len(conll))
             if LEMMA not in t.lemmas:
@@ -29,6 +42,10 @@ class Tree(object):
             if cols[HEAD] not in (u"_",u"0"):
                 t.add_rel(int(cols[HEAD])-1,idx,cols[DEPREL],len(conll))
                 t.add_rel(int(cols[HEAD])-1,idx,u"anyrel",len(conll))
+                if DEPS!=u"_":
+                    for dep in DEPS.split(u"|"):
+                        g,dtype=dep.split(u":")
+                        t.add_rel(int(g)-1,idx,dtype,len(conll))
         t.comments=u"\n".join(comments)
         t.conllu=u"\n".join(u"\t".join(l) for l in lines)
         return t
