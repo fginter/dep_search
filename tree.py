@@ -12,8 +12,8 @@ class Tree(object):
             # convert second layer into conll-u
             heads,deprels=cols[HEAD].split(u","),cols[DEPREL].split(u",")
             deps=[]
-            for idx,(g,dtype) in enumerate(zip(heads,deprels)):
-                if idx==0:
+            for index,(g,dtype) in enumerate(zip(heads,deprels)):
+                if index==0:
                     continue
                 deps.append((int(g),dtype))
             cols[HEAD]=heads[0]
