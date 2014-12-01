@@ -352,7 +352,7 @@ class text_restriction_code_block():
                             to_intersect.append((u'lemma_s_' + tag, '+'))
             else:
                 pass
-                raise Exception('Wrong Tag!', '')        
+                raise Exception('Wrong Tag!')        
 
 
 
@@ -530,7 +530,7 @@ class pair_code_block():
         match_function = []
         temp_set = 'ebin'
         optypes = []
-        if '|' in self.optype:
+        if self.optype is not None and '|' in self.optype:
             optypes = self.optype.split('|')
             temp_set = set_manager.get_temp_array()
             op = ''
@@ -541,7 +541,7 @@ class pair_code_block():
 
             match_function.append(' '*8 + temp_set + '.clone(' + set_manager.inv_list_dict[op + '_a_' + optypes[0]] + ')')
             for ot in optypes[1:]:
-                match_function.append(' '*8 + temp_set + '.union(' + set_manager.inv_list_dict[op + '_a_' + ot] + ')')
+                match_function.append(' '*8 + temp_set + '.union_update(' + set_manager.inv_list_dict[op + '_a_' + ot] + ')')
         else:
             optypes = [self.optype]
 
@@ -557,10 +557,10 @@ class pair_code_block():
 
             #if self.set2 is None:
             if self.operation == '<':
-                match_function.append( ' '*8 + 'pairing(' + ','.join([str(self.set1), str(self.set2), set_manager.inv_list_dict['self.dep_a_anyrel'], str(self.negated)]) + ')')
+                match_function.append( ' '*8 + 'pairing(' + ','.join([str(self.set1), str(self.set2), set_manager.inv_list_dict['dep_a_anyrel'], str(self.negated)]) + ')')
                 
             else:
-                match_function.append(' '*8 + 'pairing(' + ','.join([str(self.set1), str(self.set2), set_manager.inv_list_dict['self.gov_a_anyrel'], str(self.negated)]) + ')')
+                match_function.append(' '*8 + 'pairing(' + ','.join([str(self.set1), str(self.set2), set_manager.inv_list_dict['gov_a_anyrel'], str(self.negated)]) + ')')
         else:
             if '|' in self.optype:
 
@@ -572,9 +572,9 @@ class pair_code_block():
             else:
 
                 if self.operation == '<':
-                    match_function.append(' '*8 + 'pairing(' + ','.join([str(self.set1), str(self.set2), set_manager.inv_list_dict['self.dep_a_'  + str(self.optype)], str(self.negated)]) + ')')
+                    match_function.append(' '*8 + 'pairing(' + ','.join([str(self.set1), str(self.set2), set_manager.inv_list_dict['dep_a_'  + str(self.optype)], str(self.negated)]) + ')')
                 else:
-                    match_function.append(' '*8 + 'pairing(' + ','.join([str(self.set1), str(self.set2), set_manager.inv_list_dict['self.gov_a_' + str(self.optype)], str(self.negated)]) + ')')
+                    match_function.append(' '*8 + 'pairing(' + ','.join([str(self.set1), str(self.set2), set_manager.inv_list_dict['gov_a_' + str(self.optype)], str(self.negated)]) + ')')
 
         return match_function
 
@@ -596,7 +596,7 @@ class pair_code_block():
             self.extras.append('ALL TOKENS')
 
         optypes = []
-        if '|' in self.optype:
+        if self.optype is not None and '|' in self.optype:
             optypes = self.optype.split('|')
         else:
             optypes = [self.optype]
@@ -667,7 +667,7 @@ class pair_code_block():
         if len(optypes) > 1:
             self.extras.append('temp_array')
 
-        if '|' not in self.optype:
+        if self.optype is not None and '|' not in self.optype:
             return comp_arrays, comp_sets, vol_sets, vol_arrays, self.extras
         else:
             return [], [], comp_sets + vol_sets, comp_arrays + vol_arrays, self.extras            
@@ -684,6 +684,9 @@ class retrieve_from_db_code_block():
     def __init__(self, needed):
         self.what_to_retrieve = needed
         self.negated = False
+
+    def get_code(self, set_manager):
+        return []     
 
     def get_needed(self):
         if self.get_init_set() != 'ALL TOKENS':
@@ -1093,7 +1096,8 @@ class code():
                         what_sets_are_needed.add('!lemma_' + txt_res[1])
                     else:
                         what_sets_are_needed.add('lemma_' + txt_res[1])
-
+            else:
+                raise Exception('Wrong Tag:' + txt_res[0])
         return what_sets_are_needed, txt_sets_to_pair, needed_words
 
 
