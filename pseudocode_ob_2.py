@@ -212,7 +212,7 @@ class SetManager():
 
         for key in self.init_dict:
             if self.init_dict[key] == 'ALL TOKENS':
-                lines.append(' '*8 + key + '.set_length(' + stuff + ')')
+                lines.append(' '*8 + key + '.set_length(' + stuff + '.tree_length)')
                 lines.append(' '*8 + key + '.fill_ones()')
             else:
                 if key not in self.load_list_dict.keys():
@@ -221,7 +221,7 @@ class SetManager():
 
         #The extras as well
         for ts in self.temp_set_list:
-            lines.append(' '*8 + ts + '.set_length(' + stuff + ')')
+            lines.append(' '*8 + ts + '.set_length(' + stuff + '.array_length)')
                 #lines.append(' '*4 + key + '.fill_ones()')            
 
         stuff = inv_list_dict[self.all_arrays[0]]
@@ -547,7 +547,7 @@ class pair_code_block():
 
         #Get a temp set
         if self.set2 is None:
-            self.set2 = 'self.all_tokens'
+            self.set2 = 'self.set_all_tokens'
 
         if self.optype is None:
             pass
