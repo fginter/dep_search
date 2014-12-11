@@ -42,6 +42,7 @@ cdef extern from "tset.h" namespace "tset":
         void erase()
         void set_length(int tree_length)
         void print_set()
+        void copy(TSet *other)
     cdef cppclass TSetArray:
         void deserialize(const void *data, int size)
         void erase()
@@ -49,6 +50,7 @@ cdef extern from "tset.h" namespace "tset":
         void print_array()
         void union_update(TSetArray *other)
         void intersection_update(TSetArray *other)
+        void copy(TSetArray *other)
 
 cdef class DB:
     cdef sqlite3 *db #Pointer to the open DB
