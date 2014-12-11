@@ -19,6 +19,7 @@ cdef extern from "tset.h" namespace "tset":
         void erase()
         void set_length(int tree_length)
         void complement()
+        void copy(TSet *other)
 
     cdef cppclass TSetArray:
         int tree_length
@@ -32,6 +33,7 @@ cdef extern from "tset.h" namespace "tset":
         void print_array()
         void erase()
         void set_length(int tree_length)
+        void copy(TSetArray *other)
 
 cdef extern from "query_functions.h":
     void pairing(TSet *index_set, TSet *other_set, TSetArray *mapping, bool negated)
