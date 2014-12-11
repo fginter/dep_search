@@ -230,17 +230,17 @@ class SetManager():
             else:
                 if key not in self.load_list_dict.keys():
                     #Get the name of the set and clone
-                    lines.append(' '*8 + key + '.clone(' + inv_list_dict[self.init_dict[key]] + ')')
+                    lines.append(' '*8 + key + '.copy(' + inv_list_dict[self.init_dict[key]] + ')')
 
         #The extras as well
         for ts in self.temp_set_list:
-            lines.append(' '*8 + ts + '.set_length(' + stuff + '.array_length)')
+            lines.append(' '*8 + ts + '.set_length(' + stuff + '.tree_length)')
                 #lines.append(' '*4 + key + '.fill_ones()')            
 
         stuff = inv_list_dict[self.all_arrays[0]]
 
         for ts in self.temp_array_list:
-            lines.append(' '*8 + ts + '.set_length(' + stuff + ')')
+            lines.append(' '*8 + ts + '.set_length(' + stuff + '.tree_length)')
                 #lines.append(' '*4 + key + '.fill_ones()')      
         #Reverse the load_list_dict
         
@@ -552,7 +552,7 @@ class pair_code_block():
             else:
                 op = 'gov'
 
-            match_function.append(' '*8 + temp_set + '.clone(' + set_manager.inv_list_dict[op + '_a_' + optypes[0]] + ')')
+            match_function.append(' '*8 + temp_set + '.copy(' + set_manager.inv_list_dict[op + '_a_' + optypes[0]] + ')')
             for ot in optypes[1:]:
                 match_function.append(' '*8 + temp_set + '.union_update(' + set_manager.inv_list_dict[op + '_a_' + ot] + ')')
         else:
