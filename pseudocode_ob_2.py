@@ -176,6 +176,19 @@ class SetManager():
 
         query_list = []
 
+        for key in self.init_dict:
+            if key not in self.load_list_dict.keys():
+                lines.append(' '*8 + key + '= new TSet(2048)')
+
+        #The extras as well
+        for ts in self.temp_set_list:
+            if key not in self.load_list_dict.keys():
+                lines.append(' '*8 + ts + '= new TSet(2048)')
+
+        for ts in self.temp_array_list:
+            if key not in self.load_list_dict.keys():
+                lines.append(' '*8 + ts + '= new TSetArray(2048)')
+
         for i, key in enumerate(self.load_list_dict.keys()):
             if 'set' in key:
                 lines.append(' '*8 + 'self.set_types[' + str(i) + ']=1')
