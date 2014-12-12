@@ -1,6 +1,10 @@
-import subprocess
-import os
 import sys
+import os
+
+THISDIR=os.path.dirname(os.path.abspath(__file__))
+os.chdir(THISDIR)
+
+import subprocess
 import cPickle as pickle
 import sqlite3
 import codecs

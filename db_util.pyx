@@ -1,12 +1,15 @@
-# distutils: include_dirs = setlib
-# distutils: extra_objects = setlib/pytset.so
+# distutils: include_dirs = . setlib
 # distutils: language = c++
 # distutils: libraries = sqlite3
+# distutils: sources = setlib/tset.cpp
 
+
+import sys
+import os
 from libcpp cimport bool
 #http://www.sqlite.org/cintro.html
 from setlib.pytset cimport PyTSet, PyTSetArray 
-import sys
+
 
 cdef class DB:
 
