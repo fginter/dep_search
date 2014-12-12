@@ -237,7 +237,7 @@ class SetManager():
             lines.append(' '*8 + ts + '.set_length(' + stuff + '.tree_length)')
                 #lines.append(' '*4 + key + '.fill_ones()')            
 
-        stuff = inv_list_dict[self.all_arrays[0]]
+        #stuff = inv_list_dict[self.all_arrays[0]]
 
         for ts in self.temp_array_list:
             lines.append(' '*8 + ts + '.set_length(' + stuff + '.tree_length)')
