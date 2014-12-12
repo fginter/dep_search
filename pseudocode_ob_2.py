@@ -243,7 +243,8 @@ class SetManager():
             lines.append(' '*8 + ts + '.set_length(' + stuff + '.tree_length)')
                 #lines.append(' '*4 + key + '.fill_ones()')      
         #Reverse the load_list_dict
-        
+        if len(lines) < 2:
+            lines.append(' '*8 + 'pass')  
         return lines
 
     def get_temp_set(self):
