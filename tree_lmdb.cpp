@@ -146,3 +146,21 @@ int LMDB::store_key_tree(unsigned int tree_id, void *key_data, int key_size) {
     op_count++;
     return restart_transaction();
 }
+
+//binary search
+int b_search(uint32_t what, uint32_t *beg, uint32_t *end) {
+    uint32_t *mid;
+    do {
+	mid=beg+(end-beg)/2;
+	if (*mid == what) {
+	    return 1;
+	}
+	else if (*mid < what) {
+	    beg=mid;
+	}
+	else {
+	    end=mid;
+	}
+    } while (beg!=end);
+    return 0;
+}

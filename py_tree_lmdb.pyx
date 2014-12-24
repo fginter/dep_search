@@ -1,8 +1,7 @@
-# distutils: include_dirs = . ./liblmdb
 # distutils: language = c++
 # distutils: libraries = lmdb
 # distutils: sources = tree_lmdb.cpp
-# distutils: library_dirs = ./liblmdb
+
 
 
 cdef class Py_LMDB:
