@@ -14,7 +14,7 @@ py_tree_lmdb.so: py_tree_lmdb.pyx py_tree_lmdb.pxd tree_lmdb.cpp tree_lmdb.h Mak
 	python setup.py build_ext --inplace
 
 test: test.cpp tree_lmdb.cpp
-	g++ -o test test.cpp tree_lmdb.cpp -llmdb
+	g++ -o test test.cpp tree_lmdb.cpp setlib/tset.cpp -llmdb
 
 clean:
 	rm -f *.so
