@@ -143,7 +143,9 @@ class SetManager():
         # -- for temp set create one
         self.temp_set_list = []
         self.temp_array_list = []
-        for e in extras:
+
+        for e in extra_list:
+        #for e in extras:
             if e == 'ALL TOKENS':
                 self.init_dict['self.set_all_tokens'] = 'ALL TOKENS'
             if e == 'temp_set':
