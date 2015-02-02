@@ -87,7 +87,7 @@ def load(pyxFile):
     mod=importlib.import_module(pyxFile)
     return mod
 
-def query_from_db(q_obj,db_name,sql_query,sql_args):
+def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits):
     db=db_util.DB()
     db.open_db(unicode(db_name))
     res_db=sqlite3.connect(unicode(db_name))
@@ -106,6 +106,10 @@ def query_from_db(q_obj,db_name,sql_query,sql_args):
         get_data_from_db(res_db,idx)
         print
         counter+=1
+        if max_hits!=0 and counter>=max_hits:
+            print >> sys.stderr, "--max ",max_hits
+            print >> sys.stderr, counter, "hits in", db_name
+            sys.exit(0)
     print >> sys.stderr, sql_counter,"rows from database",db_name
     print >> sys.stderr, counter, "hits in", db_name
     db.close_db()
@@ -136,4 +140,4 @@ if __name__=="__main__":
     dbs=glob.glob(args.database)
     dbs.sort()
     for d in dbs:
-        query_from_db(query_obj,d,sql_query,sql_args)
+        query_from_db(query_obj,d,sql_query,sql_args,args.max)
