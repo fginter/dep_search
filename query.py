@@ -83,7 +83,10 @@ def load(pyxFile):
     """Loads a search pyx file, returns the module"""
     ###I need to hack around this, because this thing is messing stdout
     print >> sys.stderr, "Loading", pyxFile
-    subprocess.call(["python","compile_ext.py",pyxFile], stdout=sys.stderr, stderr=sys.stderr)
+    error=subprocess.call(["python","compile_ext.py",pyxFile], stdout=sys.stderr, stderr=sys.stderr)
+    if error!=0:
+        print >> sys.stderr, "Cannot compile search code, error:",error
+        sys.exit(1)
     mod=importlib.import_module(pyxFile)
     return mod
 
