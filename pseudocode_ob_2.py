@@ -95,8 +95,13 @@ class SetManager():
             elif self.all_sets.count(self.init_dict[key]) > 1:
                 self.clone_set_node_list.append(key)
             else:
-                self.db_set_node_dict[key] = self.init_dict[key]
-                self.rev_db_set_node_dict[self.init_dict[key]] = key
+                print key
+                print self.init_dict[key]
+                try:
+                    self.db_set_node_dict[key] = self.init_dict[key]
+                    self.rev_db_set_node_dict[self.init_dict[key]] = key
+                except:
+                    pass
                 if self.init_dict[key] in compulsory_sets:
                     self.load_list_dict[key] = '!' + self.init_dict[key]
                 else:
@@ -160,10 +165,14 @@ class SetManager():
 
         self.inv_list_dict = {}
         for key in self.load_list_dict.keys():
+
             v = self.load_list_dict[key]
-            if v.startswith('!'):
-                v = v[1:]
-            self.inv_list_dict[v] = key
+            try:
+                if v.startswith('!'):
+                    v = v[1:]
+                self.inv_list_dict[v] = key
+            except:
+                pass
 
 
     def get_cinit_function(self):
@@ -697,29 +706,82 @@ class pair_code_block():
 
 class retrieve_from_db_code_block():
 
-    def __init__(self, needed):
+    def __init__(self, needed, node_id):
+        self.node_id = node_id
         self.what_to_retrieve = needed
         self.negated = False
 
     def get_code(self, set_manager):
-        return []     
+
+        the_code = []
+        if len(self.get_used_sets()) > 1:
+            for item in self.get_used_sets():
+                print item
+                print self.get_used_sets()
+                the_code.append(' ' * 8 + 'self.set_' + str(self.node_id) + '.union_update(' + set_manager.inv_list_dict[item] + ')')
+
+        return the_code
 
     def get_needed(self):
         if self.get_init_set() != 'ALL TOKENS':
-            return [], [self.get_init_set()], [], [], []
+            return [], self.get_used_sets(), [], [], []
         else:
             return [], [], [], [], []
+
+    def get_used_sets(self):
+        if self.what_to_retrieve != 'ALL TOKENS':
+            if self.what_to_retrieve[0] == '<':
+                if self.what_to_retrieve[1] is None:
+                    return ['dep_s_anyrel']
+                if '|' not in self.what_to_retrieve[1]:
+                    return ['dep_s_' + self.what_to_retrieve[1]]
+                else:
+                    t_list = []
+                    for to_rec in self.what_to_retrieve[1].split('|'):
+                        t_list.append('dep_s_' + to_rec)
+                    return t_list
+
+
+            elif self.what_to_retrieve[0] == '>':
+                if self.what_to_retrieve[1] is None:
+                    return ['gov_s_anyrel']
+                if '|' not in self.what_to_retrieve[1]:
+                    return ['gov_s_' + self.what_to_retrieve[1]]
+                else:
+                    t_list = []
+                    for to_rec in self.what_to_retrieve[1].split('|'):
+                        t_list.append('gov_s_' + to_rec)
+                    return t_list
+
+        else:
+                return ['ALL TOKENS']
+
+
 
     def get_init_set(self):
         if self.what_to_retrieve != 'ALL TOKENS':
             if self.what_to_retrieve[0] == '<':
                 if self.what_to_retrieve[1] is None:
                     return 'dep_s_anyrel'
-                return 'dep_s_' + self.what_to_retrieve[1]
+                if '|' not in self.what_to_retrieve[1]:
+                    return 'dep_s_' + self.what_to_retrieve[1]
+                else:
+                    t_list = []
+                    for to_rec in self.what_to_retrieve[1].split('|'):
+                        t_list.append('dep_s_' + to_rec)
+                    return t_list[0]
+
+
             elif self.what_to_retrieve[0] == '>':
                 if self.what_to_retrieve[1] is None:
                     return 'gov_s_anyrel'
-                return 'gov_s_' + self.what_to_retrieve[1]
+                if '|' not in self.what_to_retrieve[1]:
+                    return 'gov_s_' + self.what_to_retrieve[1]
+                else:
+                    t_list = []
+                    for to_rec in self.what_to_retrieve[1].split('|'):
+                        t_list.append('gov_s_' + to_rec)
+                    return t_list[0]
 
         else:
                 return 'ALL TOKENS'
@@ -933,11 +995,11 @@ class code():
             operation_blocks.append(text_restriction_code_block(pseudo_node, node_id, init=True))
 
         elif len(pos_dni_sets_to_pair) > 0:
-            operation_blocks.append(retrieve_from_db_code_block(pos_dni_sets_to_pair[0]))
+            operation_blocks.append(retrieve_from_db_code_block(pos_dni_sets_to_pair[0], node_id))
             pos_dni_sets_to_pair = pos_dni_sets_to_pair[1:]
             the_first_set_found = True
         else:
-            operation_blocks.append(retrieve_from_db_code_block('ALL TOKENS'))
+            operation_blocks.append(retrieve_from_db_code_block('ALL TOKENS', node_id))
 
         #Ok, I've got the first set and all I need to get this thing done!
         pair_code_blocks = []
