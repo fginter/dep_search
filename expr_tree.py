@@ -9,28 +9,43 @@ class ExpressionError(ValueError):
 
     pass
 
-class SetNode_Token(object):
+
+class BaseNode():
+    node_id = ''
+    level = 0
+    negs_above = False
+    neg = False
+    deprel = False
+
+class SetNode_Token(BaseNode):
     #Makes a single operation, and returns a single set
     def __init__(self, token_restriction):
         self.node_id = ''
         self.token_restriction = token_restriction
         self.proplabel = ''
+
+    def get_kid_nodes(self):
+        return []
+
     def to_unicode(self):
         return u'SetNode(Token:' + self.proplabel + self.token_restriction + u')' 
 
 
-class SetNode_And(object):
+class SetNode_And(BaseNode):
 
     def __init__(self, setnode1, setnode2):
         self.node_id = ''
         self.setnode1 = setnode1
         self.setnode2 = setnode2
         self.proplabel = ''
+
+    def get_kid_nodes(self):
+        return [self.setnode1, self.setnode2]
 
     def to_unicode(self):
         return u'Node(' + self.setnode1.to_unicode() + ' AND ' + self.setnode2.to_unicode() + ')'
 
-class SetNode_Or(object):
+class SetNode_Or(BaseNode):
 
     def __init__(self, setnode1, setnode2):
         self.node_id = ''
@@ -38,10 +53,13 @@ class SetNode_Or(object):
         self.setnode2 = setnode2
         self.proplabel = ''
 
+    def get_kid_nodes(self):
+        return [self.setnode1, self.setnode2]
+
     def to_unicode(self):
         return u'Node(' + self.setnode1.to_unicode() + ' OR ' + self.setnode2.to_unicode() + ')'
 
-class SetNode_Dep(object):
+class SetNode_Dep(BaseNode):
 
     def __init__(self, setnode1, setnode2, deprel):
         self.node_id = ''
@@ -50,102 +68,80 @@ class SetNode_Dep(object):
         self.deprel = deprel
         self.proplabel = ''
 
+    def get_kid_nodes(self):
+        return [self.setnode1, self.setnode2, self.deprel]
+
     def to_unicode(self):
         return u'Node(' + self.setnode1.to_unicode() + ' - ' + self.deprel.to_unicode() +' - '+ self.setnode2.to_unicode() + ')'
 
-class SetNode_Not(object):
+class SetNode_Not(BaseNode):
 
     def __init__(self, setnode1):
         self.node_id = ''
         self.setnode1 = setnode1
+        self.neg = True
+
+    def get_kid_nodes(self):
+        return [self.setnode1,]
+
     def to_unicode(self):
         return u'Node(NOT ' + self.setnode1.to_unicode() +')'
 
-class DeprelNode(object):
+class DeprelNode(BaseNode):
     #Makes a single operation, and returns a single set
     def __init__(self, dep_restriction):
         self.node_id = ''
         self.dep_restriction = dep_restriction
+        self.deprel = True
+
+    def get_kid_nodes(self):
+        return []
+
     def to_unicode(self):
         return u'DeprelNode(' + self.dep_restriction + u')'
 
-class DeprelNode_And(object):
+class DeprelNode_And(BaseNode):
 
     def __init__(self, dnode1, dnode2):
         self.node_id = ''
         self.dnode1 = dnode1
         self.dnode2 = dnode2
+        self.deprel = True
+
+    def get_kid_nodes(self):
+        return [self.dnode1, self.dnode2]
+
     def to_unicode(self):
         return u'DeprelNode(' + self.dnode1.to_unicode() + ' AND ' + self.dnode2.to_unicode() + ')'
 
-class DeprelNode_Or(object):
+class DeprelNode_Or(BaseNode):
 
     def __init__(self, dnode1, dnode2):
         self.node_id = ''
         self.dnode1 = dnode1
         self.dnode2 = dnode2
+        self.deprel = True
+
+    def get_kid_nodes(self):
+        return [self.dnode1, self.dnode2]
+
     def to_unicode(self):
         return u'DeprelNode(' + self.dnode1.to_unicode() + ' OR ' + self.dnode2.to_unicode() + ')'
 
 
-class DeprelNode_Not(object):
+class DeprelNode_Not(BaseNode):
 
     def __init__(self, dnode1):
         self.node_id = '' 
         self.dnode1 = dnode1
+        self.neg = True
+        self.deprel = True
+
+    def get_kid_nodes(self):
+        return [self.dnode1]
+
     def to_unicode(self):
         return u'DeprelNode(NOT ' + self.dnode1.to_unicode() +')'
-
-# one node (token, possibly restricted somehow)
-class Node(object): 
-
-    def __init__(self):
-        self.restrictions=[] #Right now, just a list of dependency restrictions
-
-    def add_dep_res(self,res):
-        self.restrictions.append(res)
-
-    def add_tok_res(self,res): #Adds a restriction on the token
-        self.restrictions.append(res) #just a list for now, it will need to change of course
-
-    def to_unicode(self):
-        return u"Node(%s)"%(u",".join(r.to_unicode() if not isinstance(r,tuple) else u"=".join(c for c in r) for r in self.restrictions))
-
-
-#one token restriction
-class TokenRes(object):
-
-    def __init__(self,content):
-        self.negated=False #Has this restriction been negated?
-        self.content=content 
-        self.restrictions=[]
-
-    def to_unicode(self):
-        if self.negated:
-            neg=u"!"
-        else:
-            neg=u""
-        return u'TokenRes:' + neg+self.content+u"  "+str(self.restrictions)
-
-
-
-
-# one dependency restriction
-class DepRes(object):
-    
-    def __init__(self,operator,node):
-        self.negated=False #Has this restriction been negated?
-        self.operator=operator #I guess we'll need to do more than just remember these :D
-        self.node=node
-        self.restrictions=[]
-
-
-    def to_unicode(self):
-        if self.negated:
-            neg=u"!"
-        else:
-            neg=u""
-        return neg+self.operator+u"  "+self.node.to_unicode()
 
 
 #########################
@@ -267,5 +263,7 @@ if __name__=="__main__":
     
     e_parser=yacc.yacc()
     for expression in args.expression:
-        print e_parser.parse(expression).to_unicode()
+        exp = e_parser.parse(expression)
+        print exp.to_unicode()
+        import pdb;pdb.set_trace()
     
