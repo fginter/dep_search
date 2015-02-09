@@ -18,7 +18,6 @@ class NodeInterpreter():
         self.node = node
         self.array_count = 0
         self.set_count = 0
-        print 'init', self.node
 
     def do_you_need_all_tokens(self):
         #XXX Needs Optimization
@@ -36,7 +35,6 @@ class NodeInterpreter():
         if isinstance(self.node, SetNode_Token):
             #Tag, Lemma or Word
             db_orders = self.set_node_token_into_db_label()
-            print db_orders, self.node
             if db_orders == None: import pdb;pdb.set_trace()
         #Give these needed sets a name
         name_dict = {}
@@ -65,14 +63,14 @@ class NodeInterpreter():
         if self.node.negs_above:
             prechar = ''
         if self.node.dep_restriction.split('@')[0] == '<':
-            return [prechar + u'dep_a_anyrel']
-        if self.node.dep_restriction.split('@')[0] == '>':
             return [prechar + u'gov_a_anyrel']
+        if self.node.dep_restriction.split('@')[0] == '>':
+            return [prechar + u'dep_a_anyrel']
 
         if self.node.dep_restriction.startswith('>'):
-            return [prechar + u'gov_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
-        if self.node.dep_restriction.startswith('<'):
             return [prechar + u'dep_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
+        if self.node.dep_restriction.startswith('<'):
+            return [prechar + u'gov_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
 
 
     def set_node_token_into_db_label(self):
@@ -94,10 +92,11 @@ class NodeInterpreter():
 
 
     def what_output_do_you_need(self):
-        #XXX optimize this!
-        print self.node
-        return True, 'node_' + self.node.node_id + '_out'
-        #return False, None
+
+        if isinstance(self.node, SetNode_Token) or isinstance(self.node, DeprelNode) or isinstance(self.node, SetNode_Dep):        
+            return True, 'node_' + self.node.node_id + '_out'
+        else:
+            return False, None
 
 class SetManager():
 
@@ -152,14 +151,60 @@ def generate_search_code(node):
 
 
     #Now for the code generation itself
-    
-
-
-
-
-
+    generate_code(node, set_manager, node_dict, order_of_execution)
 
     import pdb;pdb.set_trace()
+
+
+def generate_code(nodes, set_manager, node_dict, order_of_execution):
+
+    #Start building the match code, by going through the nodes in the order of ooe
+    #A mysterious object will deal with the code_block creation
+
+    #This will be practically for filtering functions
+    extra_functions = []
+    match_code_lines = []
+    node_output_dict = {}
+
+    for node_id in order_of_execution:
+        node = node_dict[node_id]
+        match_block, extra_functions = generate_code_for_a_node(node, set_manager, node_dict, node_output_dict)
+
+
+def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict)
+
+    extra_functions = []
+    match_lines = []
+
+    match_lines.append('#' + node.node_id)
+    match_lines.append('#' + str(type(node)))
+
+    node_ni = Node_Interpreter(node)
+
+    #SetNode_Token
+    if isinstance(node, SetNode_Token):
+        #I'll find the name of the assigned set
+        what_I_need_from_the_db = node_ni.set_node_token_into_db_label()
+        if len(what_I_need_from_the_db) < 1:
+            #Ah, this is all tokens kind of SetNode_Token
+            #I'll just report it as my output
+            output_set = set_manager.node_needs[node.node_id]['all_tokens_label'][0]
+            match_lines.append('#Reporting ' + output_set + ' as output set')
+            node_ouput_dict[node.node_id] = output_set
+        else:
+            #Get the setname
+            db_set = set_manager.node_needs[key]['db_sets_label'][what_I_need_from_the_db[0]]
+            output_set_name = 
+            match_lines.append('#Reporting ' + output_set + ' as output set')
+            node_ouput_dict[node.node_id] = output_set
+        #I'll copy it
+        #I'll report my output
+
+            
+
+
+
+
 
 
 def visualize_sets(set_manager, node_dict):
@@ -180,7 +225,9 @@ def visualize_sets(set_manager, node_dict):
         print 'All_tokens needed:'
         for ikey in set_manager.node_needs[key]['all_tokens_label']:
             print ikey
-
+        print 'Output_sets needed:'
+        if set_manager.node_needs[key]['own_output']:
+            print set_manager.node_needs[key]['own_output_set']
 
 def visualize_order(order):
 
@@ -269,7 +316,9 @@ def id_the_nodes(node, pid, lev, negs_above, node_dict):
     negs = False
     if negs_above or node.neg:
         negs = True
-    #Get list of kid nodes
+
+    if isinstance(node, SetNode_Or) or isinstance(node, DeprelNode_Or):
+        negs = True
 
     node.node_id = pid
     node.level = lev
@@ -283,14 +332,14 @@ def id_the_nodes(node, pid, lev, negs_above, node_dict):
             id_the_nodes(kid_node, pid + '_' + str(i), lev + 1, negs, node_dict)
     else:
         #Check if the deprel is negative or not:
-        print ':3'
-        if isinstance(node.deprel, DeprelNode_Not):
-            id_the_nodes(node.setnode2, pid + '_2', lev + 1, True, node_dict)
-        else:
-            id_the_nodes(node.setnode2, pid + '_2', lev + 1, negs, node_dict)
-
-        id_the_nodes(node.setnode1, pid + '_0', lev + 1, negs, node_dict)
-        id_the_nodes(node.deprel, pid + '_1', lev + 1, negs, node_dict)
+        for i, deprel_tuple in enumerate(node.deprels):
+            #deprel_tuple[0] = deprel, deprel_tuple[1] = token_set
+            if isinstance(deprel_tuple[0], DeprelNode_Not):
+                id_the_nodes(deprel_tuple[1], pid + '_' + str(i) + '_0', lev + 1, True, node_dict)
+                id_the_nodes(deprel_tuple[0], pid + '_' + str(i) + '_1', lev + 1, True, node_dict)
+            else:
+                id_the_nodes(deprel_tuple[1], pid + '_' + str(i) + '_0', lev + 1, negs, node_dict)
+                id_the_nodes(deprel_tuple[0], pid + '_' + str(i) + '_1', lev + 1, negs, node_dict)
 
 def main():
     '''

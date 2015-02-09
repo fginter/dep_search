@@ -63,16 +63,26 @@ class SetNode_Dep(BaseNode):
 
     def __init__(self, setnode1, setnode2, deprel):
         self.node_id = ''
-        self.setnode1 = setnode1
-        self.setnode2 = setnode2
-        self.deprel = deprel
+        self.index_node = setnode1
+        self.deprels = [(deprel, setnode2)]
+        #self.setnode2 = setnode2
+        #self.deprel = deprel
         self.proplabel = ''
 
     def get_kid_nodes(self):
-        return [self.setnode1, self.setnode2, self.deprel]
+        to_return = [self.index_node,]
+        for dr_tuple in self.deprels:
+            to_return.append(dr_tuple[0])
+            to_return.append(dr_tuple[1])
+        return to_return
 
     def to_unicode(self):
-        return u'Node(' + self.setnode1.to_unicode() + ' - ' + self.deprel.to_unicode() +' - '+ self.setnode2.to_unicode() + ')'
+
+        deprel_list = []
+        for drt in self.deprels:
+            deprel_list.append(drt[0].to_unicode() + ':' + drt[1].to_unicode())        
+
+        return u'Node(index_node:' + self.index_node.to_unicode() + ' << ' + ','.join(deprel_list) +' >> )'
 
 class SetNode_Not(BaseNode):
 
@@ -181,7 +191,7 @@ def t_error(t):
 # the grammar rules are the comment strings of the functions
 
 #Main 
-precedence = ( ('left','DEPOP'),('left','OR'),('left','AND'))
+precedence = (('right','DEPOP'),('left','OR'),('left','AND'))
 
 def p_error(t):
     if t==None:
@@ -237,9 +247,30 @@ def p_sn_not(t):
     u'''setnode : NEG setnode'''
     t[0] = SetNode_Not(t[2])
 
-def p_sn_depres(t):
-    u'''setnode : setnode depnode setnode'''
-    t[0] = SetNode_Dep(t[1], t[3], t[2])
+#def p_sn_depres(t):
+#    u'''setnode : setnode depnode setnode'''
+#    t[0] = SetNode_Dep(t[1], t[3], t[2])
+
+def p_sn_depres_ex(t):
+    u'''setnode : setnode depres'''
+    if isinstance(t[1], SetNode_Dep):
+        t[1].deprels.append(t[2])
+        t[0] = t[1]
+    else:
+        t[0] = SetNode_Dep(t[1], t[2][1], t[2][0])
+
+
+def p_sn_depres_a(t):
+    u'''depres : depnode setnode'''
+    t[0] = (t[1], t[2])
+
+#def p_sn_depres_ex(t):
+#    u'''setnode : setnode depnode setnode'''
+#    if isinstance(t[1], SetNode_Dep):
+#        t[1].deprels.append((t[2], t[3]))
+#        t[0] = t[1]
+#    else:
+#        t[0] = SetNode_Dep(t[1], t[3], t[2])
 
 def p_n_sn(t):
     u'''setnode : REGEX
