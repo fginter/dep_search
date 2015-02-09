@@ -18,65 +18,107 @@ class NodeInterpreter():
         self.node = node
         self.array_count = 0
         self.set_count = 0
+        print 'init', self.node
 
     def do_you_need_all_tokens(self):
         #XXX Needs Optimization
         if isinstance(self.node, SetNode_Token):
             if self.node.token_restriction == '_':
-                return True
+                self.set_count += 1
+                return True, ['node_' + self.node.node_id + '_all_tokens_' + str(self.set_count)]
+            else:
+                return False, []
+        else:
+            return False, []
 
     def what_sets_do_you_need(self):
         db_orders = []
         if isinstance(self.node, SetNode_Token):
             #Tag, Lemma or Word
             db_orders = self.set_node_token_into_db_label()
-        return db_orders
+            print db_orders, self.node
+            if db_orders == None: import pdb;pdb.set_trace()
+        #Give these needed sets a name
+        name_dict = {}
+        for dbo in db_orders:
+            self.set_count += 1
+            name_dict[dbo] = 'node_' + self.node.node_id + '_set_' + str(self.set_count)
+        return db_orders, name_dict
 
     def what_arrays_do_you_need(self):
+        db_orders = []
         if isinstance(self.node, DeprelNode):
             db_orders = self.deprel_node_into_db_label()
-        return db_orders
+        #Give these needed sets a name
+        name_dict = {}
+        for dbo in db_orders:
+            self.array_count += 1
+            name_dict[dbo] = 'node_' + self.node.node_id + '_array_' + str(self.array_count)
+
+
+        return db_orders, name_dict
 
     def deprel_node_into_db_label(self):
-        pass
         #XXX change after format change!
-        #Raise Error if faulty query!
+        #This guy will need optimization later on!
+        prechar = '!'
+        if self.node.negs_above:
+            prechar = ''
+        if self.node.dep_restriction.split('@')[0] == '<':
+            return [prechar + u'dep_a_anyrel']
+        if self.node.dep_restriction.split('@')[0] == '>':
+            return [prechar + u'gov_a_anyrel']
 
-        pass
+        if self.node.dep_restriction.startswith('>'):
+            return [prechar + u'gov_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
+        if self.node.dep_restriction.startswith('<'):
+            return [prechar + u'dep_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
+
 
     def set_node_token_into_db_label(self):
         #XXX change after format change!
         #Raise Error if faulty query!
-
-        pass
-
+        prechar = '!'
+        if self.node.negs_above:
+            prechar = ''
+        if self.node.proplabel == '' and self.node.token_restriction != '_':
+            return [prechar + 'token_s_' + self.node.token_restriction[1:-1]]
+        if self.node.proplabel == '@CGTAG' and self.node.token_restriction != '_':
+            return [prechar + 'tag_s_' + self.node.token_restriction[1:-1]]
+        if self.node.proplabel == '@CGBASE' and self.node.token_restriction != '_':
+            return [prechar + 'lemma_s_' + self.node.token_restriction[1:-1]]
+        if self.node.proplabel != '':
+            raise Exception('Faulty Proplabel!', self.node.proplabel, self.node.token_restriction)
+        if self.node.token_restriction == '_':
+            return []
 
 
     def what_output_do_you_need(self):
         #XXX optimize this!
-        return True, self.node.node_id + '_out'
-
+        print self.node
+        return True, 'node_' + self.node.node_id + '_out'
+        #return False, None
 
 class SetManager():
 
     def __init__(self, nodes, node_dict):
         self.node_needs = {}
         #Interrogate the nodes
-        for node_id in node_dict.keys():
-            node = node_dict.keys()
+        for key in node_dict.keys():
+            node = node_dict[key]
             self.node_needs[key] = {}
             ni = NodeInterpreter(node)
 
             #0. Are you compulsory
             #1. What sets do you need from the db?
-            self.node_needs[key]['db_sets'] = ni.what_sets_do_you_need()
-            self.node_needs[key]['all_tokens'] = ni.do_you_need_all_tokens()
+            self.node_needs[key]['db_sets'], self.node_needs[key]['db_sets_label'] = ni.what_sets_do_you_need()
+            self.node_needs[key]['all_tokens'], self.node_needs[key]['all_tokens_label'] = ni.do_you_need_all_tokens()
             #2. What arrays do you need from the db?
-            self.node_needs[key]['db_arrays'] = ni.what_arrays_do_you_need()
+            self.node_needs[key]['db_arrays'], self.node_needs[key]['db_arrays_label'] = ni.what_arrays_do_you_need()
             #3. What temporary sets do you need?
             #4. What temporary arrays do you need?
             #5. Do you need an output set, what is your output set called?
-            self.node_needs[key]['own_output'], self.node_needs[key]['output_set'] = ni.what_output_do_you_need()
+            self.node_needs[key]['own_output'], self.node_needs[key]['own_output_set'] = ni.what_output_do_you_need()
 
 
 def generate_search_code(node):
@@ -102,15 +144,42 @@ def generate_search_code(node):
     order_of_execution = get_order_of_execution(node, node_dict)
     visualize_order(order_of_execution)
 
+    #Get all the sets this thing needs...
     set_manager = SetManager(node, node_dict)
+    #... and visualize!
+    visualize_sets(set_manager, node_dict)
+    #Seems to work!
+
+
+    #Now for the code generation itself
+    
+
+
+
+
+
+
     import pdb;pdb.set_trace()
-    #Planning & Set Building Phase
 
-    #   -which node needs which sets
-    #   -which sets are needed at all
-    #       -like which output sets and all that
-    #       -which need temporary sets
 
+def visualize_sets(set_manager, node_dict):
+
+    print
+    print 'Node Sets'
+
+    for key in set_manager.node_needs.keys():
+
+        print
+        print node_dict[key].to_unicode()
+        print 'Sets needed from the db:'
+        for ikey in set_manager.node_needs[key]['db_sets_label'].keys():
+            print ikey, set_manager.node_needs[key]['db_sets_label'][ikey]
+        print 'Arrays needed from the db:'
+        for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
+            print ikey, set_manager.node_needs[key]['db_arrays_label'][ikey]
+        print 'All_tokens needed:'
+        for ikey in set_manager.node_needs[key]['all_tokens_label']:
+            print ikey
 
 
 def visualize_order(order):
