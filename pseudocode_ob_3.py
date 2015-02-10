@@ -93,7 +93,7 @@ class NodeInterpreter():
 
     def what_output_do_you_need(self):
 
-        if isinstance(self.node, SetNode_Token) or isinstance(self.node, DeprelNode) or isinstance(self.node, SetNode_Dep):        
+        if (isinstance(self.node, SetNode_Token) and not self.node.token_restriction == '_') or isinstance(self.node, DeprelNode) or isinstance(self.node, SetNode_Dep):        
             return True, 'node_' + self.node.node_id + '_out'
         else:
             return False, None
@@ -151,6 +151,7 @@ def generate_search_code(node):
 
 
     #Now for the code generation itself
+    print 'match_code'
     generate_code(node, set_manager, node_dict, order_of_execution)
 
     import pdb;pdb.set_trace()
@@ -166,21 +167,29 @@ def generate_code(nodes, set_manager, node_dict, order_of_execution):
     match_code_lines = []
     node_output_dict = {}
 
-    for node_id in order_of_execution:
-        node = node_dict[node_id]
-        match_block, extra_functions = generate_code_for_a_node(node, set_manager, node_dict, node_output_dict)
+    for node in order_of_execution:
+        match_block, node_extra_functions = generate_code_for_a_node(node, set_manager, node_dict, node_output_dict)
+
+        match_code_lines.extend(match_block)
+        extra_functions.extend(node_extra_functions)
+        #print
+        for l in match_block:
+            if not l.startswith('#'): print l
+
+    #Match function we now have
+    #cinit and initialize
 
 
-def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict)
+
+
+def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
 
     extra_functions = []
     match_lines = []
 
     match_lines.append('#' + node.node_id)
-    match_lines.append('#' + str(type(node)))
-
-    node_ni = Node_Interpreter(node)
-
+    match_lines.append('#' + node.to_unicode())
+    node_ni = NodeInterpreter(node)
     #SetNode_Token
     if isinstance(node, SetNode_Token):
         #I'll find the name of the assigned set
@@ -190,20 +199,136 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict)
             #I'll just report it as my output
             output_set = set_manager.node_needs[node.node_id]['all_tokens_label'][0]
             match_lines.append('#Reporting ' + output_set + ' as output set')
-            node_ouput_dict[node.node_id] = output_set
+            node_output_dict[node.node_id] = output_set
+            return match_lines, extra_functions
         else:
             #Get the setname
-            db_set = set_manager.node_needs[key]['db_sets_label'][what_I_need_from_the_db[0]]
-            output_set_name = 
+            db_set = set_manager.node_needs[node.node_id]['db_sets_label'][what_I_need_from_the_db[0]]
+            output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
+            match_lines.append('self.' + output_set_name + '.copy(self.' + db_set + ')')
             match_lines.append('#Reporting ' + output_set + ' as output set')
-            node_ouput_dict[node.node_id] = output_set
-        #I'll copy it
-        #I'll report my output
+            node_output_dict[node.node_id] = output_set_name
+            return match_lines, extra_functions
 
-            
+    elif isinstance(node, DeprelNode):
+        output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
+        #I'll find the name of the assigned array
+        what_I_need_from_the_db = node_ni.deprel_node_into_db_label()
+        #Get the setname
+        db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]]
+        output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
+        match_lines.append('self.' + output_set_name + '.copy(self.' + db_set + ')')
+        match_lines.append('#Reporting ' + output_set_name + ' as output array')
+        node_output_dict[node.node_id] = output_set_name
+        return match_lines, extra_functions
+        
+    elif isinstance(node, SetNode_And):
+
+        #Get input nodes
+        input_set_1 = node_output_dict[node.setnode1.node_id]
+        input_set_2 = node_output_dict[node.setnode2.node_id]
+        match_lines.append('self.' + input_set_1 + '.intersection_update(self.' + input_set_2 + ')')
+        if not node.negs:
+            match_lines.append('if self.' + input_set_1 + '.is_empty: return self.' + input_set_1)
+        match_lines.append('#Reporting ' + input_set_1 + ' as output set')
+        node_output_dict[node.node_id] = input_set_1
+
+    elif isinstance(node, DeprelNode_And):
+
+        #Get input nodes
+        input_array_1 = node_output_dict[node.dnode1.node_id]
+        input_array_2 = node_output_dict[node.dnode2.node_id]
+        match_lines.append('self.' + input_array_1 + '.intersection_update(self.' + input_array_2 + ')')
+        match_lines.append('#Reporting ' + input_array_1 + ' as output array')
+        node_output_dict[node.node_id] = input_array_1
+
+    elif isinstance(node, SetNode_Or):
+
+        #Get input nodes
+        input_set_1 = node_output_dict[node.setnode1.node_id]
+        input_set_2 = node_output_dict[node.setnode2.node_id]
+        match_lines.append('self.' + input_set_1 + '.union_update(self.' + input_set_2 + ')')
+        if not node.negs:
+            match_lines.append('if self.' + input_set_1 + '.is_empty: return self.' + input_set_1)
+        match_lines.append('#Reporting ' + input_set_1 + ' as output set')
+        node_output_dict[node.node_id] = input_set_1
+
+    elif isinstance(node, DeprelNode_Or):
+
+        #Get input nodes
+        input_array_1 = node_output_dict[node.dnode1.node_id]
+        input_array_2 = node_output_dict[node.dnode2.node_id]
+        match_lines.append('self.' + input_array_1 + '.union_update(self.' + input_array_2 + ')')
+        match_lines.append('#Reporting ' + input_array_1 + ' as output array')
+        node_output_dict[node.node_id] = input_array_1
 
 
+    elif isinstance(node, SetNode_Not):
 
+        input_set = node_output_dict[node.setnode1.node_id]
+        match_lines.append('self.' + input_set + '.complement_update()')
+        match_lines.append('#Reporting ' + input_set + ' as output set')
+        node_output_dict[node.node_id] = input_set
+
+    elif isinstance(node, DeprelNode_Not):
+
+        input_array = node_output_dict[node.dnode1.node_id]
+        #Why? So that SetNode_Dep can have negative depres
+        if not isinstance(node.parent_node, SetNode_Dep):
+            match_lines.append('self.' + input_array + '.complement_update()')
+        match_lines.append('#Reporting ' + input_array + ' as output set')
+        node_output_dict[node.node_id] = input_array
+
+    elif isinstance(node, SetNode_Dep):
+
+        #Here we are!
+        #Basically this will be a for loop with a filtering function
+        #How many tokens there are in a sentence?
+        sentence_count_str = get_sentence_count_str(set_manager)
+        #Index node
+        index_node = node_output_dict[node.index_node.node_id]
+        #output set
+        output_set = set_manager.node_needs[node.node_id]['own_output_set']
+
+        match_lines.append('for t in range(0, self.' + sentence_count_str + '.tree_length):')
+        match_lines.append(' ' * 4 + 'if t in self.' + index_node + ': continue')
+        match_lines.append(' ' * 4 + 'if self.filter_' + node.node_id + '(XXX): self.' + output_set + '.add_item(t)')
+        match_lines.append('#Reporting ' + output_set + ' as output set')
+        node_output_dict[node.node_id] = output_set
+        #output_set
+        #for t in sentence:
+        #   if Filter(xxxxxxxx):
+        #       output_set.add_item(t)
+
+    return match_lines, extra_functions
+
+def get_sentence_count_str(set_manager):
+    #Search for some random set or array and return proper line
+    compulsory = []
+    non_compulsory = []
+
+    for key in set_manager.node_needs.keys():
+        for ikey in set_manager.node_needs[key]['db_sets_label'].keys():
+            db_set = set_manager.node_needs[key]['db_sets_label'][ikey]
+            if ikey.startswith('!'):
+                compulsory.append(db_set)
+                break
+            else:
+                non_compulsory.append(db_set)
+        for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
+            db_set = set_manager.node_needs[key]['db_arrays_label'][ikey]
+            if ikey.startswith('!'):
+                compulsory.append(db_set)
+                break
+            else:
+                non_compulsory.append(db_set)
+
+
+    if len(compulsory) > 0:
+        return compulsory[0]
+    if len(non_compulsory) < 1:
+        raise Exception('Cannot get sentence length!')
+    return non_compulsory[0]
 
 
 
@@ -329,11 +454,19 @@ def id_the_nodes(node, pid, lev, negs_above, node_dict):
 
         kid_nodes = node.get_kid_nodes()
         for i, kid_node in enumerate(kid_nodes):
+            kid_node.parent_node = node
             id_the_nodes(kid_node, pid + '_' + str(i), lev + 1, negs, node_dict)
     else:
+
+        id_the_nodes(node.index_node, pid + '_i', lev + 1, negs, node_dict)
+
         #Check if the deprel is negative or not:
         for i, deprel_tuple in enumerate(node.deprels):
             #deprel_tuple[0] = deprel, deprel_tuple[1] = token_set
+
+            deprel_tuple[0].parent_node = node
+            deprel_tuple[1].parent_node = node
+
             if isinstance(deprel_tuple[0], DeprelNode_Not):
                 id_the_nodes(deprel_tuple[1], pid + '_' + str(i) + '_0', lev + 1, True, node_dict)
                 id_the_nodes(deprel_tuple[0], pid + '_' + str(i) + '_1', lev + 1, True, node_dict)

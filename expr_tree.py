@@ -16,6 +16,7 @@ class BaseNode():
     negs_above = False
     neg = False
     deprel = False
+    parent_node = None
 
 class SetNode_Token(BaseNode):
     #Makes a single operation, and returns a single set
