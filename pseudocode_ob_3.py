@@ -151,11 +151,155 @@ def generate_search_code(node):
 
 
     #Now for the code generation itself
-    print 'match_code'
-    generate_code(node, set_manager, node_dict, order_of_execution)
+    for l in get_class_function(set_manager):
+        print l
+
+    for l in get_cinit_function(set_manager):
+        print l
+
+    for l in get_init_function(set_manager):
+        print l
+
+    for l in generate_code(node, set_manager, node_dict, order_of_execution):
+        print l
+
 
     import pdb;pdb.set_trace()
 
+def get_cinit_function(set_manager, max_len=2048):
+
+
+    #XXX
+    temp_set_list = []
+    temp_array_list = []
+    output_set_list = []
+
+    load_list_set = []
+    load_list_array = []
+
+
+    for key in set_manager.node_needs.keys():
+
+        for ikey in set_manager.node_needs[key]['db_sets_label'].keys():
+            load_list_set.append((ikey, set_manager.node_needs[key]['db_sets_label'][ikey]))
+        for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
+            load_list_array.append((ikey, set_manager.node_needs[key]['db_arrays_label'][ikey]))
+        for ikey in set_manager.node_needs[key]['all_tokens_label']:
+            temp_set_list.append(ikey)
+        if set_manager.node_needs[key]['own_output']:
+            temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
+
+
+    lines = []
+    lines.append('    def __cinit__(self):')
+    lines.append('        self.sets=<void**>malloc(' + str(len(load_list_set) + len(load_list_array)) + '*sizeof(void*))')
+    lines.append('        self.set_types=<int*>malloc(' + str(len(load_list_set) + len(load_list_array)) + '*sizeof(int))')
+
+    query_list = []
+
+    for ts in temp_set_list:
+        if ts not in load_list_set:
+            lines.append(' '*8 + 'self.' + ts + ' = new TSet(' + str(max_len) + ')')
+
+    for ts in temp_array_list:
+        if key not in self.load_list_dict.keys():
+            lines.append(' '*8 + 'self.' + ts +   '= new TSetArray(' + str(max_len) + ')')
+
+    load_list = load_list_set + load_list_array
+
+    for i, key in enumerate(load_list):
+        if 'set' in key[1]:
+            lines.append(' '*8 + 'self.set_types[' + str(i) + '] = 1')
+            lines.append(' '*8 + key + '= new TSet(' + max_len + ')')
+            lines.append(' '*8 + 'self.sets[' + str(i) + '] = ' + key)
+            query_list.append(u'' + load_list_dict[key])
+        elif 'array' in key[1]:
+            lines.append(' '*8 + 'self.set_types[' + str(i) + '] = 2')
+            lines.append(' '*8 + 'self.' + key[1] + ' = new TSetArray(' + str(max_len) + ')')
+            lines.append(' '*8 + 'self.sets[' + str(i) + '] = ' + 'self.' + key[1])
+            query_list.append(u'' + key[0])
+
+    lines.append(' '*8 + 'self.query_fields = ' + str(query_list))
+    return lines
+
+
+def get_init_function(set_manager):
+
+    temp_set_list = []
+    temp_array_list = []
+    all_tokens_list = []
+
+    for key in set_manager.node_needs.keys():
+        for ikey in set_manager.node_needs[key]['all_tokens_label']:
+            all_tokens_list.append(ikey)
+
+    sentence_count_str = get_sentence_count_str(set_manager)
+    lines = []
+    lines.append(' '*4 + 'cdef void initialize(self):')
+
+    for key in all_tokens_list:
+            lines.append(' '*8 + 'self.' + key + '.set_length(self.' + sentence_count_str + '.tree_length)')
+            lines.append(' '*8 + 'self.' + key + '.fill_ones()')
+
+    #Maybe I should add the copies here?
+    #    else:
+    #        if key not in self.load_list_dict.keys():
+    #            #Get the name of the set and clone
+    #            lines.append(' '*8 + key + '.copy(' + inv_list_dict[self.init_dict[key]] + ')')
+
+    #XXX uncomment if needed
+    #The extras as well
+    #for ts in self.temp_set_list:
+    #    lines.append(' '*8 + ts + '.set_length(' + stuff + '.tree_length)')
+            #lines.append(' '*4 + key + '.fill_ones()')            
+    #stuff = inv_list_dict[self.all_arrays[0]]
+    #for ts in self.temp_array_list:
+    #    lines.append(' '*8 + ts + '.set_length(' + stuff + '.tree_length)')
+    #        #lines.append(' '*4 + key + '.fill_ones()')      
+    #Reverse the load_list_dict
+
+    if len(lines) < 2:
+        lines.append(' '*8 + 'pass')  
+    return lines
+
+def get_class_function(set_manager):
+    lines = []
+
+    temp_set_list = []
+    temp_array_list = []
+    output_set_list = []
+
+    load_list_set = []
+    load_list_array = []
+
+
+    for key in set_manager.node_needs.keys():
+
+        for ikey in set_manager.node_needs[key]['db_sets_label'].keys():
+            load_list_set.append((ikey, set_manager.node_needs[key]['db_sets_label'][ikey]))
+        for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
+            load_list_array.append((ikey, set_manager.node_needs[key]['db_arrays_label'][ikey]))
+        for ikey in set_manager.node_needs[key]['all_tokens_label']:
+            temp_set_list.append(ikey)
+        if set_manager.node_needs[key]['own_output']:
+            temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
+
+    lines.append('cdef class  GeneratedSearch(Search):')
+    for key in load_list_set:
+        lines.append(' ' * 4 + 'cdef TSet *' + key[1])
+
+    for key in load_list_array:
+        lines.append(' ' * 4 + 'cdef TSetArray *' + key[1])
+
+    #Extra and temp
+    for key in temp_set_list:
+        lines.append(' ' * 4 + 'cdef TSet *' + key)
+    
+    for key in temp_array_list:
+        lines.append(' ' * 4 + 'cdef TSetArray *' + key)
+    lines.append(' ' * 4 + 'cdef public object query_fields')
+
+    return lines
 
 def generate_code(nodes, set_manager, node_dict, order_of_execution):
 
@@ -172,15 +316,18 @@ def generate_code(nodes, set_manager, node_dict, order_of_execution):
 
         match_code_lines.extend(match_block)
         extra_functions.extend(node_extra_functions)
-        #print
-        for l in match_block:
-            if not l.startswith('#'): print l
 
-    #Match function we now have
-    #cinit and initialize
+    lines = []
+    lines.append('    cdef TSet* exec_search(self):')
+    for l in match_code_lines:
+        lines.append(' '*8 + l)
+    lines.append(' '*8 + 'return self.' + node_output_dict['0'])
 
+    for f in extra_functions:
+        for l in f:
+            lines.append(l)
 
-
+    return lines
 
 def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
 
@@ -281,9 +428,38 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
 
     elif isinstance(node, SetNode_Dep):
 
-        #Here we are!
-        #Basically this will be a for loop with a filtering function
-        #How many tokens there are in a sentence?
+        #0. Create the tables needed for the filtering function
+        #   (mapping_array, input_set, negated)
+        #   ....
+
+        #[(deprel, setnode2), ...... ]
+        #table_of_restrictions = []
+        deprels = []
+        input_sets = []
+        negateds = []
+        for deprel, input_set in node.deprels:
+            negated = False
+            if isinstance(deprel, DeprelNode_Not):
+                negated = True
+            #table_of_restrictions.append((deprel, input_set, negated))
+            deprels.append('self.' + node_output_dict[deprel.node_id])
+            input_sets.append('self.' + node_output_dict[input_set.node_id])
+            negateds.append(negated)
+
+
+        #Now we need to start building the filtering function
+        #0. The arguments
+
+        filtering_arguments = '(t,(' + ','.join(deprels) + ',),(' + ','.join(input_sets) + ',))'
+        filtering_function_name = 'self.filter_' + node.node_id
+
+        #1. Start building the Filtering function itself
+        filtering_function = generate_filtering(filtering_function_name, deprels, input_sets, negateds)
+
+
+
+
+
         sentence_count_str = get_sentence_count_str(set_manager)
         #Index node
         index_node = node_output_dict[node.index_node.node_id]
@@ -291,8 +467,8 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
         output_set = set_manager.node_needs[node.node_id]['own_output_set']
 
         match_lines.append('for t in range(0, self.' + sentence_count_str + '.tree_length):')
-        match_lines.append(' ' * 4 + 'if t in self.' + index_node + ': continue')
-        match_lines.append(' ' * 4 + 'if self.filter_' + node.node_id + '(XXX): self.' + output_set + '.add_item(t)')
+        match_lines.append(' ' * 4 + 'if t not in self.' + index_node + ': continue')
+        match_lines.append(' ' * 4 + 'if ' + filtering_function_name + filtering_arguments + ': self.' + output_set + '.add_item(t)')
         match_lines.append('#Reporting ' + output_set + ' as output set')
         node_output_dict[node.node_id] = output_set
         #output_set
@@ -301,6 +477,46 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
         #       output_set.add_item(t)
 
     return match_lines, extra_functions
+
+
+def generate_filtering(filtering_function_name, deprels, input_sets, negateds):
+    lines = []
+
+    #Startin line
+    lines.append('cdef int ' + filtering_function_name+'(self, int t, tuple deprels, tuple input_sets, tuple negated_list):')
+
+    #Temporary full set which, we intersect these
+    #filter_temp_set = Tset()
+
+    #Start making the negated C-sets
+    #if not Mn[t]&S.is_empty(): return False
+
+    #Start making the compulsory C-sets 
+    #Cn = Mn[t]&Sn
+    #if Cn.is_empty: return False
+    #filter_temp_set.intersection_update(Cn)
+
+    #if filter_temp_set.is_empty(): return True
+
+    #Empty the temp_set
+
+    #Union all Csets with the temp_set
+    #if len(temp_set) < amount_of_C_sets: return False
+    
+    #The for loops
+
+    #for t1 in range(0, len(sentence)):
+        #if t1 not in C1:
+            #continue
+        #for t2 in range(0, len(sentence)):
+            #if t1 not in C1:
+                #continue
+            #if t2 == t1:
+                #continue 
+            #return True            
+
+
+
 
 def get_sentence_count_str(set_manager):
     #Search for some random set or array and return proper line
@@ -323,14 +539,11 @@ def get_sentence_count_str(set_manager):
             else:
                 non_compulsory.append(db_set)
 
-
     if len(compulsory) > 0:
         return compulsory[0]
     if len(non_compulsory) < 1:
         raise Exception('Cannot get sentence length!')
     return non_compulsory[0]
-
-
 
 def visualize_sets(set_manager, node_dict):
 
@@ -459,6 +672,7 @@ def id_the_nodes(node, pid, lev, negs_above, node_dict):
     else:
 
         id_the_nodes(node.index_node, pid + '_i', lev + 1, negs, node_dict)
+        node.index_node.parent_node = node
 
         #Check if the deprel is negative or not:
         for i, deprel_tuple in enumerate(node.deprels):
