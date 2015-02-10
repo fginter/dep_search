@@ -63,14 +63,14 @@ class NodeInterpreter():
         if self.node.negs_above:
             prechar = ''
         if self.node.dep_restriction.split('@')[0] == '<':
-            return [prechar + u'gov_a_anyrel']
-        if self.node.dep_restriction.split('@')[0] == '>':
             return [prechar + u'dep_a_anyrel']
+        if self.node.dep_restriction.split('@')[0] == '>':
+            return [prechar + u'gov_a_anyrel']
 
         if self.node.dep_restriction.startswith('>'):
-            return [prechar + u'dep_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
-        if self.node.dep_restriction.startswith('<'):
             return [prechar + u'gov_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
+        if self.node.dep_restriction.startswith('<'):
+            return [prechar + u'dep_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
 
 
     def set_node_token_into_db_label(self):
@@ -161,7 +161,7 @@ def generate_search_code(node):
         print l
 
     for l in generate_code(node, set_manager, node_dict, order_of_execution):
-        print l
+        if not '#' in l: print l
 
 
     import pdb;pdb.set_trace()
@@ -325,7 +325,7 @@ def generate_code(nodes, set_manager, node_dict, order_of_execution):
 
     for f in extra_functions:
         for l in f:
-            lines.append(l)
+            lines.append(' '*4 + l)
 
     return lines
 
@@ -450,17 +450,21 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
         #Now we need to start building the filtering function
         #0. The arguments
 
-        filtering_arguments = '(t,(' + ','.join(deprels) + ',),(' + ','.join(input_sets) + ',))'
+        #filtering_arguments = '(t,(' + ','.join(deprels) + ',),(' + ','.join(input_sets) + ',))'
+        filtering_arguments = ['t',]
+        for dr in deprels:
+            filtering_arguments.append(dr)
+        for iset in input_sets:
+            filtering_arguments.append(iset)
+
         filtering_function_name = 'self.filter_' + node.node_id
 
         #1. Start building the Filtering function itself
-        filtering_function = generate_filtering(filtering_function_name, deprels, input_sets, negateds)
-
-
-
-
-
         sentence_count_str = get_sentence_count_str(set_manager)
+        filtering_function = generate_filtering(filtering_function_name, deprels, input_sets, negateds, sentence_count_str)
+        extra_functions.append(filtering_function)
+
+
         #Index node
         index_node = node_output_dict[node.index_node.node_id]
         #output set
@@ -468,7 +472,7 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
 
         match_lines.append('for t in range(0, self.' + sentence_count_str + '.tree_length):')
         match_lines.append(' ' * 4 + 'if t not in self.' + index_node + ': continue')
-        match_lines.append(' ' * 4 + 'if ' + filtering_function_name + filtering_arguments + ': self.' + output_set + '.add_item(t)')
+        match_lines.append(' ' * 4 + 'if ' + filtering_function_name + '(' + ','.join(filtering_arguments) + '): self.' + output_set + '.add_item(t)')
         match_lines.append('#Reporting ' + output_set + ' as output set')
         node_output_dict[node.node_id] = output_set
         #output_set
@@ -479,15 +483,69 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
     return match_lines, extra_functions
 
 
-def generate_filtering(filtering_function_name, deprels, input_sets, negateds):
-    lines = []
+def generate_filtering(filtering_function_name, deprels, input_sets, negateds, sentence_count_str):
+    line = []
+    compulsory_sets = []
+    negated_sets = []
+    for i, neg in enumerate(negateds):
+        if neg:
+            negated_sets.append(i)
+        else:
+            compulsory_sets.append(i)
+    arguments = ['self', 'int t']
+    for i, dr in enumerate(deprels):
+        arguments.append('TsetArray *M' + str(i))
+    for i, iset in enumerate(input_sets):
+        arguments.append('Tset *S' + str(i))    
 
-    #Startin line
-    lines.append('cdef int ' + filtering_function_name+'(self, int t, tuple deprels, tuple input_sets, tuple negated_list):')
+    line.append('cdef bool ' + filtering_function_name + '(' + ','.join(arguments) + '):')
+    temp_set_name = filtering_function_name +'_temp_set'
 
     #Temporary full set which, we intersect these
-    #filter_temp_set = Tset()
+    #line.append(' '* 4 + filtering_function_name +'_temp_set.set_length(' + sentence_count_str + '.tree_length)')
+    #I'll just copy the temp_set
 
+    #line.append(' '*4 + 'for i in range(0, ' + str(len(negated_sets)) + '):')
+    for ns in negated_sets:
+        line.append(' '*4 + temp_set_name + ' = M' + str(ns) + '.get_set(t)')
+        line.append(' '*4 + temp_set_name + '.intersection_update(S' + str(ns) + ')')
+        line.append(' '*4 + 'if not ' + temp_set_name + '.is_empty(): return False')
+
+    for comp in compulsory_sets:
+        line.append(' '*4 + 'C' + str(comp) + ' = M' + str(comp) + '.get_set(t)')
+        line.append(' '*4 + 'C' + str(comp) + '.intersection_update(S' + str(comp) + ')')
+        line.append(' '*4 + 'if C' + str(comp) + '.is_empty(): return False')
+
+    if len(compulsory_sets) > 1:
+        
+        line.append(' '* 4 + temp_set_name + '.copy(C' + str(compulsory_sets[0]) + ')')
+        for cs in compulsory_sets[1:]:
+            line.append(' '* 4 + temp_set_name + '.intersection_update(C' + str(cs) + ')')
+        line.append(' '*4 + 'if ' + temp_set_name + '.is_empty(): return True')
+
+    if len(compulsory_sets) > 1:
+        
+        line.append(' '* 4 + temp_set_name + '.copy(C' + str(compulsory_sets[0]) + ')')
+        for cs in compulsory_sets[1:]:
+            line.append(' '* 4 + temp_set_name + '.union_update(C' + str(cs) + ')')
+        line.append(' '*4 + 'if len(' + temp_set_name + ') < ' + str(len(compulsory_sets)) + ': return False')
+
+    forbidden_tokens = []
+    for i, cs in enumerate(compulsory_sets):
+        #For block
+        line.append(' ' * (4 + 4*i) + 'for t' + str(cs) + ' in range(0, self.' + sentence_count_str + '.tree_length):') 
+        line.append(' ' * (8 + 4*i) + 'if not C' + str(cs) + '.has_item(t' + str(cs) + '): continue')
+        if len(forbidden_tokens) > 0:
+            logic = 't' + str(cs) + '==' + str(forbidden_tokens[0])
+            for ft in forbidden_tokens[1:]:
+                logic += ' | ' + 't' + str(cs) + '==' + str(ft)
+            line.append(' ' * (8 + 4*i) + 'if ' + logic + ': continue')
+        forbidden_tokens.append('t' + str(cs))
+
+    line.append(' ' * (8 + 4*i) + 'return True')
+    line.append(' ' * 4 + 'return False')
+
+    return line
     #Start making the negated C-sets
     #if not Mn[t]&S.is_empty(): return False
 
