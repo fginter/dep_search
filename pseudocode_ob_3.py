@@ -82,18 +82,31 @@ class NodeInterpreter():
     def deprel_node_into_db_label(self):
         #XXX change after format change!
         #This guy will need optimization later on!
+        return_list = []
         prechar = '!'
         if self.node.negs_above:
             prechar = ''
+
+        #XXX change after format change!
+        if self.node.dep_restriction.startswith('</!'):
+            return_list.append(prechar + u'dep_a_anyrel')
+        if self.node.dep_restriction.startswith('>/!'):
+            return_list.append(prechar + u'gov_a_anyrel')
+
         if self.node.dep_restriction.split('@')[0] == '<':
-            return [prechar + u'dep_a_anyrel']
+            return_list.append(prechar + u'dep_a_anyrel')
+            return return_list
         if self.node.dep_restriction.split('@')[0] == '>':
-            return [prechar + u'gov_a_anyrel']
+            return_list.append(prechar + u'gov_a_anyrel')
+            return return_list
 
         if self.node.dep_restriction.startswith('>'):
-            return [prechar + u'gov_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
+            return_list.append(prechar + u'gov_a_' + self.node.dep_restriction[2:-1].split('@')[0].lstrip('!'))
+            return return_list
+
         if self.node.dep_restriction.startswith('<'):
-            return [prechar + u'dep_a_' + self.node.dep_restriction[2:-1].split('@')[0]]
+            return_list.append(prechar + u'dep_a_' + self.node.dep_restriction[2:-1].split('@')[0].lstrip('!'))
+            return return_list
 
 
     def set_node_token_into_db_label(self):
@@ -424,18 +437,16 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
     elif isinstance(node, DeprelNode):
 
         #XXX hack!
-
-        #XXX left/right come here at least for now
-        
-
-
-
+        #XXX change after format change!
+        negated = False
+        if node.dep_restriction.startswith('</!'):
+            negated=True
+        if node.dep_restriction.startswith('>/!'):
+            negated=True
+ 
         output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
         #I'll find the name of the assigned array
         what_I_need_from_the_db = node_ni.deprel_node_into_db_label()
-
-        negated = False
-
 
         #Get the setname
         if not negated:
@@ -445,11 +456,39 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
             match_lines.append('#Reporting ' + output_set_name + ' as output array')
             node_output_dict[node.node_id] = output_set_name
         else:
+
+            #XXX Kind of a hacky solution
+
             db_set_labels = []
+            desires = []
+            #So in this case I've got like
+            for desire in what_I_need_from_the_db:
+                db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][desire]
+                db_set_labels.append(db_set)
+                desires.append(desire)
 
-            #db_set_labels = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[]
+            #Since this is negated we separate an anyrel
+            anyrel_set = None
+            the_db_set = None
+            for desire, label in zip(desires, db_set_labels):
+                if 'anyrel' in desire:
+                    anyrel_set = label
+                else:
+                    the_db_set = label
 
 
+            #minus update
+            match_lines.append('self.' + output_set_name + '.copy(self.' + anyrel_set + ')')
+            match_lines.append('self.' + output_set_name + '.minus_update(self.' + the_db_set + ')')
+            match_lines.append('#Reporting ' + output_set_name + ' as output array')
+            node_output_dict[node.node_id] = output_set_name
+
+        #XXX format change!
+        #Left/Right update comes here and is done to the output_set
+        if node.dep_restriction[-3:] == '@L/':
+            match_lines.append('self.' + output_set_name + '.filter_direction(True)')
+        elif node.dep_restriction[-3:] == '@R/':
+            match_lines.append('self.' + output_set_name + '.filter_direction(False)')
 
         return match_lines, extra_functions
         
