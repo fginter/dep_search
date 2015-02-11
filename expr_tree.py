@@ -277,9 +277,9 @@ def p_n_sn(t):
     u'''setnode : REGEX
                 | PROPLABEL REGEX'''
     if len(t) == 2:
-        t[0] = SetNode_Token(t[1])
+        t[0] = SetNode_Token(t[1].decode('utf-8'))
     elif len(t) == 3:
-        t[0] = SetNode_Token(t[2])
+        t[0] = SetNode_Token(t[2].decode('utf-8'))
         t[0].proplabel = t[1]
 
 

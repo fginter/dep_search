@@ -3,7 +3,7 @@
 #import re
 from expr_tree import *
 import sys
-
+import codecs
 
 #Taskilist:
 #1. The order of the nodes(this time there is a possibility of three input nodes for a node!)
@@ -422,15 +422,35 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
             return match_lines, extra_functions
 
     elif isinstance(node, DeprelNode):
+
+        #XXX hack!
+
+        #XXX left/right come here at least for now
+        
+
+
+
         output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
         #I'll find the name of the assigned array
         what_I_need_from_the_db = node_ni.deprel_node_into_db_label()
+
+        negated = False
+
+
         #Get the setname
-        db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]]
-        output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
-        match_lines.append('self.' + output_set_name + '.copy(self.' + db_set + ')')
-        match_lines.append('#Reporting ' + output_set_name + ' as output array')
-        node_output_dict[node.node_id] = output_set_name
+        if not negated:
+            db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]]
+            output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
+            match_lines.append('self.' + output_set_name + '.copy(self.' + db_set + ')')
+            match_lines.append('#Reporting ' + output_set_name + ' as output array')
+            node_output_dict[node.node_id] = output_set_name
+        else:
+            db_set_labels = []
+
+            #db_set_labels = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[]
+
+
+
         return match_lines, extra_functions
         
     elif isinstance(node, SetNode_And):
@@ -485,8 +505,13 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
 
         input_array = node_output_dict[node.dnode1.node_id]
         #Why? So that SetNode_Dep can have negative depres
-        if not isinstance(node.parent_node, SetNode_Dep):
-            match_lines.append('self.' + input_array + '.complement_update()')
+
+        #XXX terrible hack!
+        #the complement, if needed is done on Deprel
+        #This should be used only as an input to SetNode_Dep
+
+        #if not isinstance(node.parent_node, SetNode_Dep):
+        #    match_lines.append('self.' + input_array + '.complement_update()')
         match_lines.append('#Reporting ' + input_array + ' as output set')
         node_output_dict[node.node_id] = input_array
 
@@ -586,7 +611,7 @@ def generate_filtering(filtering_function_name, deprels, input_sets, negateds, s
         
         line.append(' '* 4 + temp_set_name + '.copy(self.' + filtering_function_name + '_C' + str(0) + ')')
         for i, cs in enumerate(compulsory_sets[1:]):
-            line.append(' '* 4 + temp_set_name + '.union_update(self.' + filtering_function_name + '_C' + str(i) + ')')
+            line.append(' '* 4 + temp_set_name + '.union_update(self.' + filtering_function_name + '_C' + str(i+1) + ')')
 
         line.append(' '*4 + 'len_temp_set = 0')
         line.append(' '*4 + 'for n in range(0, self.' + sentence_count_str + '.tree_length):')
@@ -781,7 +806,7 @@ def id_the_nodes(node, pid, lev, negs_above, node_dict):
 
 def write_cython_code(lines, output_file):
 
-    out = open(output_file, 'wt')
+    out = codecs.open(output_file, 'wt', 'utf8')
 
     magic_lines = '''# distutils: language = c++
 # distutils: include_dirs = setlib
