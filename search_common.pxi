@@ -27,6 +27,7 @@ cdef extern from "tset.h" namespace "tset":
         TSetArray(int length) except +
         void intersection_update(TSetArray *other)
         void union_update(TSetArray *other)
+        void minus_update(TSetArray *other)
         void erase()
         void get_set(int index, TSet *result)
         void deserialize(const void *data, int size)
