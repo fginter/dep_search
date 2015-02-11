@@ -113,13 +113,13 @@ class NodeInterpreter():
         if self.node.token_restriction == '_':
             return []
 
-
     def what_output_do_you_need(self):
-
-        if (isinstance(self.node, SetNode_Token) and not self.node.token_restriction == '_') or isinstance(self.node, DeprelNode) or isinstance(self.node, SetNode_Dep):        
-            return True, 'node_' + self.node.node_id + '_out'
+        if (isinstance(self.node, SetNode_Token) and not self.node.token_restriction == '_') or isinstance(self.node, SetNode_Dep):        
+            return True, 'node_' + self.node.node_id + '_out', 'set'
+        elif isinstance(self.node, DeprelNode):
+            return True, 'node_' + self.node.node_id + '_out', 'array'
         else:
-            return False, None
+            return False, None, None
 
 class SetManager():
 
@@ -141,8 +141,7 @@ class SetManager():
             self.node_needs[key]['temp_sets'] = ni.what_temp_sets_do_you_need()
             #4. What temporary arrays do you need?
             #5. Do you need an output set, what is your output set called?
-            self.node_needs[key]['own_output'], self.node_needs[key]['own_output_set'] = ni.what_output_do_you_need()
-
+            self.node_needs[key]['own_output'], self.node_needs[key]['own_output_set'], self.node_needs[key]['own_output_set_type'] = ni.what_output_do_you_need()
 
 def generate_search_code(node):
 
@@ -186,7 +185,8 @@ def generate_search_code(node):
         lines.append(l)
 
     for l in generate_code(node, set_manager, node_dict, order_of_execution):
-        if not '#' in l: lines.append(l)
+        #if not '#' in l: 
+        lines.append(l)
 
     return lines
 
@@ -213,8 +213,10 @@ def get_cinit_function(set_manager, max_len=2048):
         for ikey in set_manager.node_needs[key]['temp_sets']:
             temp_set_list.append(ikey)
         if set_manager.node_needs[key]['own_output']:
-            temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
-
+            if set_manager.node_needs[key]['own_output_set_type'] == 'set':
+                temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
+            elif set_manager.node_needs[key]['own_output_set_type'] == 'array':
+                temp_array_list.append(set_manager.node_needs[key]['own_output_set'])
 
     lines = []
     lines.append('    def __cinit__(self):')
@@ -223,12 +225,14 @@ def get_cinit_function(set_manager, max_len=2048):
 
     query_list = []
 
+    lines.append(' '*8 + 'self.empty_set = new TSet(' + str(max_len) + ')')
+
     for ts in temp_set_list:
         if ts not in load_list_set:
             lines.append(' '*8 + 'self.' + ts + ' = new TSet(' + str(max_len) + ')')
 
     for ts in temp_array_list:
-        if key not in self.load_list_dict.keys():
+        if ts not in load_list_set:
             lines.append(' '*8 + 'self.' + ts +   '= new TSetArray(' + str(max_len) + ')')
 
     load_list = load_list_set + load_list_array
@@ -236,8 +240,8 @@ def get_cinit_function(set_manager, max_len=2048):
     for i, key in enumerate(load_list):
         if 'set' in key[1]:
             lines.append(' '*8 + 'self.set_types[' + str(i) + '] = 1')
-            lines.append(' '*8 + key[1] + '= new TSet(' + str(max_len) + ')')
-            lines.append(' '*8 + 'self.sets[' + str(i) + '] = ' + key[1])
+            lines.append(' '*8 + 'self.' + key[1] + '= new TSet(' + str(max_len) + ')')
+            lines.append(' '*8 + 'self.sets[' + str(i) + '] = ' + 'self.' + key[1])
             query_list.append(u'' + key[0])
         elif 'array' in key[1]:
             lines.append(' '*8 + 'self.set_types[' + str(i) + '] = 2')
@@ -260,17 +264,25 @@ def get_init_function(set_manager):
 
     temp_set_list = []
     output_set_list = []
+    temp_array_list = []
 
     for key in set_manager.node_needs.keys():
 
         for ikey in set_manager.node_needs[key]['temp_sets']:
             temp_set_list.append(ikey)
+        #if set_manager.node_needs[key]['own_output']:
+        #    temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
         if set_manager.node_needs[key]['own_output']:
-            temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
+            if set_manager.node_needs[key]['own_output_set_type'] == 'set':
+                temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
+            elif set_manager.node_needs[key]['own_output_set_type'] == 'array':
+                temp_array_list.append(set_manager.node_needs[key]['own_output_set'])
+
 
     sentence_count_str = get_sentence_count_str(set_manager)
     lines = []
     lines.append(' '*4 + 'cdef void initialize(self):')
+    lines.append(' '*8 + 'self.empty_set.set_length(self.' + sentence_count_str + '.tree_length)')
 
     for key in all_tokens_list:
             lines.append(' '*8 + 'self.' + key + '.set_length(self.' + sentence_count_str + '.tree_length)')
@@ -279,6 +291,11 @@ def get_init_function(set_manager):
     #All sets and arrays , not lifted from the db,should be given len
     #There are output_sets, temp_sets, output_arrays
     for key in temp_set_list:
+            lines.append(' '*8 + 'self.' + key + '.set_length(self.' + sentence_count_str + '.tree_length)')
+            lines.append(' '*8 + 'self.' + key + '.copy(self.empty_set)')
+            #lines.append(' '*8 + 'self.' + key + '.complement()')
+
+    for key in temp_array_list:
             lines.append(' '*8 + 'self.' + key + '.set_length(self.' + sentence_count_str + '.tree_length)')
 
     #Maybe I should add the copies here?
@@ -323,7 +340,11 @@ def get_class_function(set_manager):
         for ikey in set_manager.node_needs[key]['temp_sets']:
             temp_set_list.append(ikey)
         if set_manager.node_needs[key]['own_output']:
-            temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
+            if set_manager.node_needs[key]['own_output_set_type'] == 'set':
+                temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
+            elif set_manager.node_needs[key]['own_output_set_type'] == 'array':
+                temp_array_list.append(set_manager.node_needs[key]['own_output_set'])
+
 
     lines.append('cdef class  GeneratedSearch(Search):')
     for key in load_list_set:
@@ -338,6 +359,8 @@ def get_class_function(set_manager):
     
     for key in temp_array_list:
         lines.append(' ' * 4 + 'cdef TSetArray *' + key)
+
+    lines.append(' ' * 4 + 'cdef TSet *empty_set')
     lines.append(' ' * 4 + 'cdef public object query_fields')
 
     return lines
@@ -417,7 +440,7 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
         input_set_2 = node_output_dict[node.setnode2.node_id]
         match_lines.append('self.' + input_set_1 + '.intersection_update(self.' + input_set_2 + ')')
         if not node.negs_above:
-            match_lines.append('if self.' + input_set_1 + '.is_empty: return self.' + input_set_1)
+            match_lines.append('if self.' + input_set_1 + '.is_empty(): return self.' + input_set_1)
         match_lines.append('#Reporting ' + input_set_1 + ' as output set')
         node_output_dict[node.node_id] = input_set_1
 
@@ -436,8 +459,8 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
         input_set_1 = node_output_dict[node.setnode1.node_id]
         input_set_2 = node_output_dict[node.setnode2.node_id]
         match_lines.append('self.' + input_set_1 + '.union_update(self.' + input_set_2 + ')')
-        if not node.negs:
-            match_lines.append('if self.' + input_set_1 + '.is_empty: return self.' + input_set_1)
+        if not node.negs_above:
+            match_lines.append('if self.' + input_set_1 + '.is_empty(): return self.' + input_set_1)
         match_lines.append('#Reporting ' + input_set_1 + ' as output set')
         node_output_dict[node.node_id] = input_set_1
 
@@ -454,7 +477,7 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
     elif isinstance(node, SetNode_Not):
 
         input_set = node_output_dict[node.setnode1.node_id]
-        match_lines.append('self.' + input_set + '.complement_update()')
+        match_lines.append('self.' + input_set + '.complement()')
         match_lines.append('#Reporting ' + input_set + ' as output set')
         node_output_dict[node.node_id] = input_set
 
@@ -526,9 +549,9 @@ def generate_filtering(filtering_function_name, deprels, input_sets, negateds, s
             compulsory_sets.append(i)
     arguments = ['self', 'int t']
     for i, dr in enumerate(deprels):
-        arguments.append('TsetArray *M' + str(i))
+        arguments.append('TSetArray *M' + str(i))
     for i, iset in enumerate(input_sets):
-        arguments.append('Tset *S' + str(i))    
+        arguments.append('TSet *S' + str(i))    
 
     line.append('cdef bool ' + filtering_function_name + '(' + ','.join(arguments) + '):')
 
@@ -788,7 +811,7 @@ def main():
     e_parser=yacc.yacc()
     for expression in args.expression:
         nodes = e_parser.parse(expression)
-        pass#print nodes.to_unicode()
+        print nodes.to_unicode()
 
     code_lines = generate_search_code(nodes)
     #cdd = code(nodes)
