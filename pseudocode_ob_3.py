@@ -496,9 +496,9 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
 
         #XXX format change!
         #Left/Right update comes here and is done to the output_set
-        if node.dep_restriction[-3:] == '@L':
+        if node.dep_restriction[-2:] == '@L':
             match_lines.append('self.' + output_set_name + '.filter_direction(True)')
-        elif node.dep_restriction[-3:] == '@R':
+        elif node.dep_restriction[-2:] == '@R':
             match_lines.append('self.' + output_set_name + '.filter_direction(False)')
 
         return match_lines, extra_functions
