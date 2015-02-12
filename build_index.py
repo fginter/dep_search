@@ -1,3 +1,4 @@
+import argparse
 import sys
 import cPickle as pickle
 import sqlite3
@@ -154,13 +155,18 @@ def fill_db(conn,src_data):
     return counter
 
 if __name__=="__main__":
+    parser = argparse.ArgumentParser(description='Train')
+    parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
+    parser.add_argument('--max', type=int, default=10000, help='How many sentences to read from stdin? default: %(default)d')
+    args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
-    os.system("rm -f /mnt/ssd/sdata/all/*")
-    src_data=read_conll(sys.stdin,40000000)
+    os.system("mkdir -p "+args.dir)
+    os.system("rm -f %s/*.db"%args.dir)
+    src_data=read_conll(sys.stdin,args.max)
     batch=500000
     counter=0
     while True:
-        conn=sqlite3.connect("/mnt/ssd/sdata/all/sdata_v7_1M_trees_%05d.db"%counter)
+        conn=sqlite3.connect(args.dir+"/trees_%05d.db"%counter)
         prepare_tables(conn)
         it=itertools.islice(src_data,batch)
         filled=fill_db(conn,it)
