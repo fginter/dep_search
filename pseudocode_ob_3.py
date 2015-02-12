@@ -650,12 +650,15 @@ def generate_filtering(filtering_function_name, deprels, input_sets, negateds, s
         line.append(' '*4 + 'self.' + filtering_function_name + '_C' + str(i) + '.intersection_update(S' + str(comp) + ')')
         line.append(' '*4 + 'if self.' + filtering_function_name + '_C' + str(i) + '.is_empty(): return False')
 
+    #This doesnt ensure correctness
+    '''
     if len(compulsory_sets) > 1:
         
         line.append(' '* 4 + temp_set_name + '.copy(self.' + filtering_function_name + '_C' + str(0) + ')')
         for i, cs in enumerate(compulsory_sets[1:]):
             line.append(' '* 4 + temp_set_name + '.intersection_update(self.' + filtering_function_name + '_C' + str(i+1) + ')')
         line.append(' '*4 + 'if ' + temp_set_name + '.is_empty(): return True')
+   '''
 
     if len(compulsory_sets) > 1:
         
@@ -675,7 +678,7 @@ def generate_filtering(filtering_function_name, deprels, input_sets, negateds, s
         if len(forbidden_tokens) > 0:
             logic = 't' + str(cs) + '==' + str(forbidden_tokens[0])
             for ft in forbidden_tokens[1:]:
-                logic += ' | ' + 't' + str(cs) + '==' + str(ft)
+                logic += ' or ' + 't' + str(cs) + '==' + str(ft)
             line.append(' ' * (8 + 4*i) + 'if ' + logic + ': continue')
         forbidden_tokens.append('t' + str(cs))
 
