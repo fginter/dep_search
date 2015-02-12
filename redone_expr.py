@@ -21,8 +21,16 @@ class SetNode_Token(BaseNode):
     #Makes a single operation, and returns a single set
     def __init__(self, token_restriction):
         self.node_id = ''
-        self.token_restriction = token_restriction
-        self.proplabel = ''
+        self.token_restriction = token_restriction.rstrip('"/').lstrip('"/')
+        if self.token_restriction.endswith('.l'):
+            self.token_restriction = self.token_restriction[:-2]
+            self.proplabel = '@CGBASE'
+        else:
+            self.proplabel = ''
+
+    def set_proplabel(self, label):
+        if self.proplabel == '':
+            self.proplabel = label
 
     def get_kid_nodes(self):
         return []
@@ -272,7 +280,7 @@ def p_exprp3(t):
            t[0]=SetNode_Token(t[1])
        else:
            t[0] = SetNode_Token('/' + t[1].decode('utf-8') + '/')
-           t[0].proplabel = '@CGTAG'
+           t[0].set_proplabel('@CGTAG')
 
 
 def p_dn_and(t):

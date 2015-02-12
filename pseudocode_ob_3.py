@@ -1,7 +1,7 @@
 #import lex as lex
 #import yacc as yacc
 #import re
-from expr_tree import *
+from redone_expr import *
 import sys
 import codecs
 
@@ -14,7 +14,14 @@ import codecs
 
 class NodeInterpreter():
 
-    def __init__(self, node):
+    def __init__(self, node, tag_list=[]):
+
+        self.tag_list = tag_list
+        if len(self.tag_list) < 1:
+            self.use_tag_list = False
+        else:
+            self.use_tag_list = True
+
         self.node = node
         self.array_count = 0
         self.set_count = 0
@@ -29,7 +36,6 @@ class NodeInterpreter():
                 return False, []
         else:
             return False, []
-
 
     def what_temp_sets_do_you_need(self):
         temp_sets = []
@@ -88,9 +94,9 @@ class NodeInterpreter():
             prechar = ''
 
         #XXX change after format change!
-        if self.node.dep_restriction.startswith('</!'):
+        if self.node.dep_restriction.startswith('<!'):
             return_list.append(prechar + u'dep_a_anyrel')
-        if self.node.dep_restriction.startswith('>/!'):
+        if self.node.dep_restriction.startswith('>!'):
             return_list.append(prechar + u'gov_a_anyrel')
 
         if self.node.dep_restriction.split('@')[0] == '<':
@@ -101,11 +107,11 @@ class NodeInterpreter():
             return return_list
 
         if self.node.dep_restriction.startswith('>'):
-            return_list.append(prechar + u'gov_a_' + self.node.dep_restriction[2:-1].split('@')[0].lstrip('!'))
+            return_list.append(prechar + u'gov_a_' + self.node.dep_restriction[1:].split('@')[0].lstrip('!'))
             return return_list
 
         if self.node.dep_restriction.startswith('<'):
-            return_list.append(prechar + u'dep_a_' + self.node.dep_restriction[2:-1].split('@')[0].lstrip('!'))
+            return_list.append(prechar + u'dep_a_' + self.node.dep_restriction[1:].split('@')[0].lstrip('!'))
             return return_list
 
 
@@ -116,11 +122,15 @@ class NodeInterpreter():
         if self.node.negs_above:
             prechar = ''
         if self.node.proplabel == '' and self.node.token_restriction != '_':
-            return [prechar + 'token_s_' + self.node.token_restriction[1:-1]]
+            return [prechar + 'token_s_' + self.node.token_restriction]
         if self.node.proplabel == '@CGTAG' and self.node.token_restriction != '_':
-            return [prechar + 'tag_s_' + self.node.token_restriction[1:-1]]
+            if not self.use_tag_list or self.use_tag_list and self.node.token_restriction in self.tag_list:
+                return [prechar + 'tag_s_' + self.node.token_restriction]
+            else:
+                return [prechar + 'token_s_' + self.node.token_restriction]
+
         if self.node.proplabel == '@CGBASE' and self.node.token_restriction != '_':
-            return [prechar + 'lemma_s_' + self.node.token_restriction[1:-1]]
+            return [prechar + 'lemma_s_' + self.node.token_restriction]
         if self.node.proplabel != '':
             raise Exception('Faulty Proplabel!', self.node.proplabel, self.node.token_restriction)
         if self.node.token_restriction == '_':
@@ -136,13 +146,14 @@ class NodeInterpreter():
 
 class SetManager():
 
-    def __init__(self, nodes, node_dict):
+    def __init__(self, nodes, node_dict, tag_list=[]):
         self.node_needs = {}
+        self.tag_list = []
         #Interrogate the nodes
         for key in node_dict.keys():
             node = node_dict[key]
             self.node_needs[key] = {}
-            ni = NodeInterpreter(node)
+            ni = NodeInterpreter(node, tag_list=self.tag_list)
 
             #0. Are you compulsory
             #1. What sets do you need from the db?
@@ -156,7 +167,7 @@ class SetManager():
             #5. Do you need an output set, what is your output set called?
             self.node_needs[key]['own_output'], self.node_needs[key]['own_output_set'], self.node_needs[key]['own_output_set_type'] = ni.what_output_do_you_need()
 
-def generate_search_code(node):
+def generate_search_code(node, tag_list=[]):
 
 
     #1. Go through the nodes
@@ -180,7 +191,7 @@ def generate_search_code(node):
     #visualize_order(order_of_execution)
 
     #Get all the sets this thing needs...
-    set_manager = SetManager(node, node_dict)
+    set_manager = SetManager(node, node_dict, tag_list=tag_list)
     #... and visualize!
     #visualize_sets(set_manager, node_dict)
     #Seems to work!
@@ -197,7 +208,7 @@ def generate_search_code(node):
     for l in get_init_function(set_manager):
         lines.append(l)
 
-    for l in generate_code(node, set_manager, node_dict, order_of_execution):
+    for l in generate_code(node, set_manager, node_dict, order_of_execution, tag_list=tag_list):
         #if not '#' in l: 
         lines.append(l)
 
@@ -378,7 +389,7 @@ def get_class_function(set_manager):
 
     return lines
 
-def generate_code(nodes, set_manager, node_dict, order_of_execution):
+def generate_code(nodes, set_manager, node_dict, order_of_execution, tag_list=[]):
 
     #Start building the match code, by going through the nodes in the order of ooe
     #A mysterious object will deal with the code_block creation
@@ -389,7 +400,7 @@ def generate_code(nodes, set_manager, node_dict, order_of_execution):
     node_output_dict = {}
 
     for node in order_of_execution:
-        match_block, node_extra_functions = generate_code_for_a_node(node, set_manager, node_dict, node_output_dict)
+        match_block, node_extra_functions = generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag_list=tag_list)
 
         match_code_lines.extend(match_block)
         extra_functions.extend(node_extra_functions)
@@ -406,14 +417,14 @@ def generate_code(nodes, set_manager, node_dict, order_of_execution):
 
     return lines
 
-def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict):
+def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag_list=[]):
 
     extra_functions = []
     match_lines = []
 
     match_lines.append('#' + node.node_id)
     match_lines.append('#' + node.to_unicode())
-    node_ni = NodeInterpreter(node)
+    node_ni = NodeInterpreter(node, tag_list=tag_list)
     #SetNode_Token
     if isinstance(node, SetNode_Token):
         #I'll find the name of the assigned set
@@ -877,10 +888,18 @@ def main():
         nodes = e_parser.parse(expression)
         print nodes.to_unicode()
 
-    code_lines = generate_search_code(nodes)
+    code_lines = generate_search_code(nodes, tag_list=[])
     #cdd = code(nodes)
     #lines = cdd.get_search_code()
     filename = str(args.output_file)
+    write_cython_code(code_lines, filename + '.pyx')
+
+
+def generate_and_write_search_code_from_expression(expression, filename, tag_list=[]):
+
+    e_parser=yacc.yacc()
+    nodes = e_parser.parse(expression)
+    code_lines = generate_search_code(nodes, tag_list=tag_list)
     write_cython_code(code_lines, filename + '.pyx')
 
 if __name__ == "__main__":

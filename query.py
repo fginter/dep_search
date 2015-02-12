@@ -134,7 +134,7 @@ if __name__=="__main__":
         mod=load(args.search)
     else:
         #This is a query, compile first
-        import pseudocode_ob_2 as pseudocode_ob
+        import pseudocode_ob_3 as pseudocode_ob
         pseudocode_ob.generate_and_write_search_code_from_expression(args.search, "q_autogen")
         mod=load("q_autogen")
     query_obj=mod.GeneratedSearch()
