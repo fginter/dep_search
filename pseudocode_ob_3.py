@@ -450,9 +450,9 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         #XXX hack!
         #XXX change after format change!
         negated = False
-        if node.dep_restriction.startswith('</!'):
+        if node.dep_restriction.startswith('<!'):
             negated=True
-        if node.dep_restriction.startswith('>/!'):
+        if node.dep_restriction.startswith('>!'):
             negated=True
  
         output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
