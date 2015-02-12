@@ -192,7 +192,7 @@ def t_error(t):
 
 
 #Main 
-precedence = ( ('right','DEPOP'), )
+precedence = ( ('left','DEPOP'), )
 
 def p_error(t):
     if t==None:
@@ -227,12 +227,12 @@ def p_sn_depres_a(t):
 
 
 def p_exprp(t):
-    u'''setnode : LPAR setnode RPAR
-              | ANYTOKEN'''
+    u'''tokendef : LPAR setnode RPAR'''
+    #          | ANYTOKEN'''
     if len(t)==4: #the upper rule
         t[0]=t[2] #...just return the embedded expression
-    elif len(t)==2:
-        t[0]=SetNode_Token(t[1])
+    #elif len(t)==2:
+    #    t[0]=SetNode_Token(t[1])
 
 
 def p_exprp_d(t):
@@ -263,13 +263,17 @@ def p_exprp2(t):
 
 def p_exprp3(t):
     u'''tokendef : WORD
-                | TEXT'''
+                | TEXT
+                | ANYTOKEN'''
     if len(t) == 2:
        if t[1].startswith('"'):
            t[0] = SetNode_Token(t[1].decode('utf-8'))
+       elif t[1]=='_':
+           t[0]=SetNode_Token(t[1])
        else:
            t[0] = SetNode_Token('/' + t[1].decode('utf-8') + '/')
            t[0].proplabel = '@CGTAG'
+
 
 def p_dn_and(t):
     u'''depnode : depnode AND depnode'''
@@ -306,7 +310,7 @@ if __name__=="__main__":
     parser.add_argument('expression', nargs='+', help='Training file name, or nothing for training on stdin')
     args = parser.parse_args()
     
-    e_parser=yacc.yacc(write_tables=1,debug=1,method='SLR')
+    e_parser=yacc.yacc(write_tables=0,debug=0,method='LALR')
     for expression in args.expression:
 
         import logging
