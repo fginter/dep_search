@@ -95,8 +95,10 @@ class NodeInterpreter():
 
         #XXX change after format change!
         if self.node.dep_restriction.startswith('<!'):
+            prechar = '!'
             return_list.append(prechar + u'dep_a_anyrel')
         if self.node.dep_restriction.startswith('>!'):
+            prechar = '!'
             return_list.append(prechar + u'gov_a_anyrel')
 
         if self.node.dep_restriction.split('@')[0] == '<':
