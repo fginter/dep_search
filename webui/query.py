@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
 import sys
+import os.path
 
 import flask
+
+# not in a module, but need an include from parent dir
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import query as depquery
 
 # App settings. IMPORTANT: set DEBUG = False for publicly accessible
 # installations, the debug mode allows arbitrary code execution.
@@ -22,15 +27,12 @@ visualization_start = '<pre><code class="conllu">'
 visualization_end = '</code></pre>'
 
 def perform_query(query):
-
-    ############################################################
-    #
-    # TODO: the actual invocation of the query code should go
-    # here. Just return valid CoNLL-U from this function and
-    # everything should work out.
-    #
-    ############################################################
-
+    # sorry, this is pretty clumsy ...
+    import tempfile
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    print >> sys.stderr, tmp.name
+    depquery.main(['-d', 'tmp_data/*.db', '-m 100', 
+                   '_ </nsubj/ _'])
     return open('result.conllu').read()
 
 def get_index(fn=INDEX_TEMPLATE):
