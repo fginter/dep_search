@@ -1,0 +1,147 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="css/bootstrap.css">
+        <link rel="stylesheet" href="css/bootstrap-theme.css">
+        <link rel="stylesheet" href="css/depsearch-main.css">
+
+	<!-- annotation visualization stuff --> 
+	<link rel="stylesheet" href="css/jquery-ui-redmond.css">
+	<link rel="stylesheet" href="css/annodoc-main.css">
+	<link rel="stylesheet" href="css/style-vis.css">
+	<script type="text/javascript" src="js/ext/head.load.min.js"></script>
+	<!-- end annotation visualization stuff --> 
+
+        <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+    </head>
+    <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Dependency corpus search</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <form class="navbar-form navbar-right" role="form">
+            <div class="form-group">
+              <input type="text" placeholder="Email" class="form-control">
+            </div>
+            <div class="form-group">
+              <input type="password" placeholder="Password" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-success">Sign in</button>
+          </form>
+        </div><!--/.navbar-collapse -->
+      </div>
+    </nav>
+
+    <div class="jumbotron">
+      <div class="container">
+        <h1>Dependency corpus search</h1>
+        <p>Simple and fast search for dependency corpora of any size.</p>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <form class="query-form" action="http://127.0.0.1:5042" method="GET">
+	<div class="form-group">
+<!-- 	  <label for="queryInput">Query</label> -->
+	  <input id="queryInput" class="form-control"
+		 type="text" name="q"
+		 placeholder="Enter query (e.g. &quot;<nsubj&quot;)">
+	  <button type="submit" class="btn btn-primary">Search!</button>
+	</div>
+      </form>
+
+      <hr>
+
+      <!-- Don't change the "CONTENT" comments or stuff will break. -->
+      <!-- CONTENT-START -->
+
+      <p>This is a test visualization. Delete this before deploying.</p>
+      <pre><code class="conllu">
+# graph id: 1
+# visual-style	4	bgColor:red
+# visual-style	2	bgColor:red
+1	Viikonlopun	viikon#loppu	NOUN	N	Case=Gen|Number=Sing	2	nmod:poss	_	_
+2	pyöritys	pyöritys	NOUN	N	Case=Nom|Number=Sing	3	nsubj	_	_
+3	alkoi	alkaa	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin|Voice=Act	0	root	_	_
+4	H&M:n	H&M	NOUN	N	Abbr=Yes|Case=Gen|Number=Sing	5	nsubj	_	_
+5	järjestämällä	järjestää	VERB	V	Case=Ade|Degree=Pos|Number=Sing|PartForm=Agt|VerbForm=Part|Voice=Act	6	acl	_	_
+6	bloggaajabrunssilla	bloggaaja#brunssi	NOUN	N	Case=Ade|Number=Sing	3	nmod	_	_
+7	Helsingissä	Helsinki	PROPN	N	Case=Ine|Number=Sing	3	nmod	_	_
+8	.	.	PUNCT	Punct	_	3	punct	_	_
+
+      </code></pre>
+
+      <!-- CONTENT-END -->
+
+      <hr>
+      <footer>
+        <p>&copy; University of Turku 2015</p>
+      </footer>
+    </div> <!-- /container -->        
+    
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.2.min.js"><\/script>')</script>
+      <script src="js/vendor/bootstrap.min.js"></script>
+      
+      <script src="js/main.js"></script>
+
+<!-- annotation visualization stuff --> 
+<script type="text/javascript">
+    var root = '';
+    head.js(
+        // External libraries
+        root + 'js/ext/jquery.min.js',
+        root + 'js/ext/jquery.svg.min.js',
+        root + 'js/ext/jquery.svgdom.min.js',
+        root + 'js/ext/jquery-ui.min.js',
+        root + 'js/ext/waypoints.min.js',
+        // brat helper modules
+        root + 'js/brat/configuration.js',
+        root + 'js/brat/util.js',
+        root + 'js/brat/annotation_log.js',
+        root + 'js/ext/webfont.js',
+        // brat main modules
+        root + 'js/brat/dispatcher.js',
+        root + 'js/brat/url_monitor.js',
+        root + 'js/brat/visualizer.js',
+        // external parsing libraries
+        root + 'js/ext/conllu.js/conllu.js',
+        // annotation documentation support
+        root + 'js/local/annodoc.js',
+        // project-specific collection data
+        root + 'js/local/collections.js',
+        // project-specific configuration
+        root + 'js/local/config.js'
+    );
+
+    var webFontURLs = [
+        root + 'static/fonts/PT_Sans-Caption-Web-Regular.ttf',
+        root + 'static/fonts/Liberation_Sans-Regular.ttf'
+    ];
+
+    head.ready(function() {
+        // mark current collection (filled in by Jekyll)
+        Collections.listing['_current'] = '{{ page.collection }}';
+
+	// performs all embedding and support functions
+	Annodoc.activate(Config.bratCollData, Collections.listing);
+    });
+</script>
+<!-- end annotation visualization stuff -->
+
+    </body>
+</html>
