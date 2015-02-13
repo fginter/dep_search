@@ -326,5 +326,6 @@ if __name__=="__main__":
         log = logging.getLogger()
 
 
-        print e_parser.parse(expression, debug=0).to_unicode()
-    
+        ebin = e_parser.parse(expression, debug=0)
+        print ebin.to_unicode()
+        import pdb;pdb.set_trace() 
