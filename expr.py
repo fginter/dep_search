@@ -162,5 +162,11 @@ if __name__=="__main__":
     
     e_parser=yacc.yacc()
     for expression in args.expression:
-        print e_parser.parse(expression).to_unicode()
+
+        import logging
+        logging.basicConfig(filename='myapp.log', level=logging.INFO)
+        log = logging.getLogger()
+
+
+        print e_parser.parse(expression, debug=log).to_unicode()
     
