@@ -27,7 +27,9 @@ def perform_query(query):
     # sorry, this is pretty clumsy ...
     script_dir = os.path.dirname(os.path.realpath(__file__))
     query_cmd = os.path.join(script_dir, '..', 'query.py')
-    args = [query_cmd, '-d', 'tmp_data/*.db', '-m', '100', query]
+
+    #args = [query_cmd, '-d', 'tmp_data/*.db', '-m', '100', query]
+    args = [query_cmd, '-d', '/mnt/ssd/sdata/all/*.db', '-m', 100, query]
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (out, err) = p.communicate()
     return out
@@ -79,9 +81,9 @@ def serve_js(path):
 
 def main(argv):
     # debug mode (local access only)
-    app.run(debug=DEBUG, port=PORT)
+    #app.run(debug=False, host='epsilon-it.utu.fi', port=PORT)
     # deployed
-    # app.run(host='0.0.0.0', port=PORT)
+    app.run(host='0.0.0.0', port=PORT)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

@@ -179,7 +179,7 @@ tokens=('TEXT',    #/..../
 
 #Here's regular expressions for the tokens defined above
 
-t_TEXT=ur'[^"<>_()&|!\s]+'
+t_TEXT=ur'[^"<>()&|!\s]+'
 t_WORD=ur'"[^"]+"'
 t_DEPOP=ur'(<|>)([^"<>_()&|\s]+)?'
 t_LPAR=ur"\("
