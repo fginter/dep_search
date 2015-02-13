@@ -2,12 +2,9 @@
 
 import sys
 import os.path
+import subprocess
 
 import flask
-
-# not in a module, but need an include from parent dir
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-import query as depquery
 
 # App settings. IMPORTANT: set DEBUG = False for publicly accessible
 # installations, the debug mode allows arbitrary code execution.
@@ -28,12 +25,12 @@ visualization_end = '</code></pre>'
 
 def perform_query(query):
     # sorry, this is pretty clumsy ...
-    import tempfile
-    tmp = tempfile.NamedTemporaryFile(delete=False)
-    print >> sys.stderr, tmp.name
-    depquery.main(['-d', 'tmp_data/*.db', '-m 100', 
-                   '_ </nsubj/ _'])
-    return open('result.conllu').read()
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    query_cmd = os.path.join(script_dir, '..', 'query.py')
+    args = [query_cmd, '-d', 'tmp_data/*.db', '-m', '100', query]
+    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (out, err) = p.communicate()
+    return out
 
 def get_index(fn=INDEX_TEMPLATE):
     with open(fn) as f:
