@@ -16,65 +16,6 @@ ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
 symbs=re.compile(ur"[^A-Za-z0-9_]",re.U)
 
-def prepare_tables(conn):
-    build=\
-    """
-    CREATE TABLE graph (
-       graph_id INTEGER,
-       token_count INTEGER,
-       conllu_data_compressed BLOB,
-       conllu_comment_compressed BLOB
-    );
-    CREATE TABLE token_index (
-       token TEXT,
-       graph_id INTEGER,
-       token_set BLOB
-    );
-    CREATE TABLE lemma_index (
-       lemma TEXT,
-       graph_id INTEGER,
-       token_set BLOB
-    );
-    CREATE TABLE tag_index (
-        graph_id INTEGER,
-        tag TEXT,
-        token_set BLOB
-    );
-    CREATE TABLE rel (
-        graph_id INTEGER,
-        dtype TEXT,
-        token_gov_set BLOB,
-        token_gov_map BLOB,
-        token_dep_set BLOB,
-        token_dep_map BLOB
-    );
-    """
-    
-    for q in build.split(";"):        
-        q=q.strip()
-        if q:
-            print q
-            conn.execute(q)
-    conn.commit()
-
-def build_indices(conn):
-    build=\
-    """
-    CREATE UNIQUE INDEX tok_gid ON token_index(token,graph_id);
-    CREATE UNIQUE INDEX lemma_gid ON lemma_index(lemma,graph_id);
-    CREATE UNIQUE INDEX gid_tag ON tag_index(graph_id,tag);
-    CREATE INDEX tag_gid ON tag_index(tag,graph_id);
-    CREATE UNIQUE INDEX gid ON graph(graph_id);
-    CREATE UNIQUE INDEX gid_dtype ON rel(graph_id,dtype);
-    analyze;
-    """
-    for q in build.split(";"):
-        if q.strip():
-            print q
-            conn.execute(q)
-    conn.commit()
-
-
 def read_conll(inp,maxsent=0):
     """ Read conll format file and yield one sentence at a time as a list of lists of columns. If inp is a string it will be interpreted as fi
 lename, otherwise as open file for reading in unicode"""
@@ -119,7 +60,7 @@ def serialize_as_tset_array(tree_len,sets):
         for item in s:
             indices.append(struct.pack("@HH",set_idx,item))
     #print "IDXs", len(indices)
-    res=struct.pack("@H",tree_len)+("".join(indices))
+    res=("".join(indices))
     return res
 
 
@@ -127,10 +68,13 @@ def fill_db(conn,src_data):
     """
     `src_data` - iterator over sentences -result of read_conll()
     """
+    symbols={} #key: symbol  value: id 
     counter=0
     for sent_idx,(sent,comments) in enumerate(src_data):
         counter+=1
         t=Tree.from_conll(comments,sent)
+
+        
         
         conn.execute('INSERT INTO graph VALUES(?,?,?,?)', [sent_idx,len(sent),buffer(zlib.compress(t.conllu.encode("utf-8"))),buffer(zlib.compress(t.comments.encode("utf-8")))])
         for token, token_set in t.tokens.iteritems():

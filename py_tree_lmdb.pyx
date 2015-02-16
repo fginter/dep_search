@@ -2,6 +2,18 @@
 # distutils: libraries = lmdb
 # distutils: sources = tree_lmdb.cpp
 
+def serialize_as_tset_array(tree_len,sets):
+    """
+    tree_len -> length of the tree to be serialized
+    sets: array of tree_len sets, each set holding the indices of the elements
+    """
+    indices=[]
+    for set_idx,s in enumerate(sets):
+        for item in s:
+            indices.append(struct.pack("@HH",set_idx,item))
+    #print "IDXs", len(indices)
+    res=struct.pack("@H",tree_len)+("".join(indices))
+    return res
 
 
 cdef class Py_LMDB:

@@ -57,6 +57,25 @@ class Tree(object):
         gidx[gov_idx].add(dep_idx)
         didx[dep_idx].add(gov_idx)
 
+
+    def serialized(self,symbols_table):
+        zipped_txt=zlib.compress((self.comments+u"\n"+self.conllu).encode("utf-8"))
+        
+
+        for token, token_set in t.tokens.iteritems():
+            conn.execute('INSERT INTO token_index VALUES(?,?,?)', [token,sent_idx,buffer(token_set.tobytes())])
+        for lemma, token_set in t.lemmas.iteritems():
+            conn.execute('INSERT INTO lemma_index VALUES(?,?,?)', [lemma,sent_idx,buffer(token_set.tobytes())])
+        for tag, token_set in t.tags.iteritems():
+            conn.execute('INSERT INTO tag_index VALUES(?,?,?)', [sent_idx,tag,buffer(token_set.tobytes())])
+        for dtype, (govs,deps) in t.rels.iteritems():
+            ne_g=[x for x in govs if x]
+            ne_d=[x for x in deps if x]
+            assert ne_g and ne_d
+            gov_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(govs) if s))
+            dep_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(deps) if s))
+            conn.execute('INSERT INTO rel VALUES(?,?,?,?,?,?)', [sent_idx,dtype,buffer(gov_set.tobytes()),buffer(serialize_as_tset_array(len(sent),govs)),buffer(dep_set.tobytes()),buffer(serialize_as_tset_array(len(sent),deps))])
+
     
     def __init__(self):
         self.rels={}  #key: rel or "anyrel"  value: ([govs as a list of set(), deps as a list of set()]) e.g. ([set(2),_,_],[_,_,set(0)]) means token 0 governs token 2, and token 2 is governed by token 0
