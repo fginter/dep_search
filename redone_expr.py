@@ -302,9 +302,17 @@ def p_sn_or(t):
 def p_dn_not(t):
     u'''depnode : NEG depnode'''
     t[0] = DeprelNode_Not(t[2])
+
+#def p_sn_not(t):
+#    u'''setnode : NEG setnode'''
+#    t[0] = SetNode_Not(t[2])
+
+#???
+
 def p_sn_not(t):
-    u'''setnode : NEG setnode'''
+    u'''tokendef : NEG tokendef'''
     t[0] = SetNode_Not(t[2])
+
 
 
 
