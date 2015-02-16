@@ -163,6 +163,7 @@ if __name__=="__main__":
     os.system("mkdir -p "+args.dir)
     os.system("rm -f %s/*.db"%args.dir)
     src_data=read_conll(sys.stdin,args.max)
+        
     batch=500000
     counter=0
     while True:
