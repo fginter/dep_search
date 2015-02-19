@@ -37,7 +37,7 @@ class Tree(object):
             t.tokens[cols[FORM]].add_item(idx)
             t.lemmas[cols[LEMMA]].add_item(idx)
             if cols[POS]!=u"_":
-                pos=u"POS_"+cols[POS]
+                pos=cols[POS]
                 if pos not in t.tags:
                     t.tags[pos]=pytset.PyTSet(len(conll))
                 t.tags[pos].add_item(idx)
