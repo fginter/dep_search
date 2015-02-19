@@ -11,7 +11,7 @@ class Tree(object):
         for idx,cols in enumerate(conll):
             # convert second layer into conll-u
             if len(cols)==10: #conllu
-                ID,FORM,LEMMA,CPOS,POS,FEAT,HEAD,DEPREL,DEPS,MISC=range(10)
+                ID,FORM,LEMMA,POS,LANGPOS,FEAT,HEAD,DEPREL,DEPS,MISC=range(10)
                 lines.append(cols) #this is conll-u already
                 deps=cols[DEPS] #conll09 doesn't have this, so we have it in a variable
             else:
