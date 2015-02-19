@@ -78,7 +78,7 @@ def query(query_fields):
 def get_data_from_db(db_conn,graph_id):
     results=db_conn.execute('SELECT conllu_data_compressed FROM graph WHERE graph_id=?',(str(graph_id),))
     for sent in results.fetchall():
-        print zlib.decompress(sent[0]).strip()
+        return zlib.decompress(sent[0]).strip()
 
 
 def load(pyxFile):
@@ -92,7 +92,7 @@ def load(pyxFile):
     mod=importlib.import_module(pyxFile)
     return mod
 
-def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits):
+def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
     db=db_util.DB()
     db.open_db(unicode(db_name))
     res_db=sqlite3.connect(unicode(db_name))
@@ -108,7 +108,23 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits):
         print "# graph id:",idx
         for x in r:
             print "# visual-style\t%s\tbgColor:red"%(x+1)
-        get_data_from_db(res_db,idx)
+        hit=get_data_from_db(res_db,idx)
+        if context:
+            texts=[]
+            # get +/- 2 sentences from db
+            for i in range(idx-2,idx+3):
+                if i==idx:
+                    data=hit
+                else:
+                    data=get_data_from_db(res_db,i)
+                    if data is None:
+                        continue
+                text=u" ".join(t.split(u"\t")[1] for t in data.decode(u"utf-8").split(u"\n"))
+                if i==idx:
+                    text=u"***"+text+u"***"
+                texts.append(text)
+            print u"# context:",(u" ".join(text for text in texts)).encode(u"utf-8")
+        print hit
         print
         counter+=1
         if max_hits!=0 and counter>=max_hits:
@@ -127,9 +143,11 @@ def main(argv):
     #print q,args
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
-    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/all/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
+    #parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/all/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
+    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/pb-10M/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
     parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
+    parser.add_argument('--context', required=False, action="store_true", default=False, help='Print the context (+/- 2 sentences) as comment. Default: %(default)d.')
     args = parser.parse_args(argv[1:])
 
     if args.output is not None:
@@ -149,7 +167,7 @@ def main(argv):
     dbs=glob.glob(args.database)
     dbs.sort()
     for d in dbs:
-        query_from_db(query_obj,d,sql_query,sql_args,args.max)
+        query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)
 
 if __name__=="__main__":
     sys.exit(main(sys.argv))
