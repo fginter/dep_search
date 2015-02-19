@@ -44,9 +44,7 @@ def prepare_tables(conn):
     CREATE TABLE rel (
         graph_id INTEGER,
         dtype TEXT,
-        token_gov_set BLOB,
         token_gov_map BLOB,
-        token_dep_set BLOB,
         token_dep_map BLOB
     );
     """
@@ -146,7 +144,7 @@ def fill_db(conn,src_data):
             assert ne_g and ne_d
             gov_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(govs) if s))
             dep_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(deps) if s))
-            conn.execute('INSERT INTO rel VALUES(?,?,?,?,?,?)', [sent_idx,dtype,buffer(gov_set.tobytes()),buffer(serialize_as_tset_array(len(sent),govs)),buffer(dep_set.tobytes()),buffer(serialize_as_tset_array(len(sent),deps))])
+            conn.execute('INSERT INTO rel VALUES(?,?,?,?)', [sent_idx,dtype,buffer(serialize_as_tset_array(len(sent),govs)),buffer(serialize_as_tset_array(len(sent),deps))])
         if sent_idx%10000==0:
             print str(datetime.now()), sent_idx
         if sent_idx%10000==0:
