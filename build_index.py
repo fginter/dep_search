@@ -4,7 +4,7 @@ import cPickle as pickle
 import sqlite3
 import codecs
 from datetime import datetime
-from tree import Tree
+from tree import Tree, SymbolStats
 import json
 import re
 import struct
@@ -122,14 +122,14 @@ def serialize_as_tset_array(tree_len,sets):
     return res
 
 
-def fill_db(conn,src_data):
+def fill_db(conn,src_data,stats):
     """
     `src_data` - iterator over sentences -result of read_conll()
     """
     counter=0
     for sent_idx,(sent,comments) in enumerate(src_data):
         counter+=1
-        t=Tree.from_conll(comments,sent)
+        t=Tree.from_conll(comments,sent,stats)
         
         conn.execute('INSERT INTO graph VALUES(?,?,?,?)', [sent_idx,len(sent),buffer(zlib.compress(t.conllu.encode("utf-8"))),buffer(zlib.compress(t.comments.encode("utf-8")))])
         for token, token_set in t.tokens.iteritems():
@@ -160,6 +160,8 @@ if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     os.system("mkdir -p "+args.dir)
     os.system("rm -f %s/*.db"%args.dir)
+
+    stats=SymbolStats()
     src_data=read_conll(sys.stdin,args.max)
         
     batch=500000
@@ -168,10 +170,13 @@ if __name__=="__main__":
         conn=sqlite3.connect(args.dir+"/trees_%05d.db"%counter)
         prepare_tables(conn)
         it=itertools.islice(src_data,batch)
-        filled=fill_db(conn,it)
+        filled=fill_db(conn,it,stats)
         if filled==0:
             break
         build_indices(conn)
         conn.close()
         counter+=1
+    
+    stats.save_json(os.path.join(args.dir,"symbols.json"))
+
 

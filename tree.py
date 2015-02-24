@@ -1,11 +1,30 @@
 import setlib.pytset as pytset
+import json
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
+
+class SymbolStats(object):
+
+    def __init__(self):
+        self.d={} #{(symbol,type):count}
+
+    def symb(self,symb,s_type,full_form):
+        self.d[(symb,s_type,full_form)]=self.d.get((symb,s_type,full_form),0)+1
+        
+    def save_json(self,f_name):
+        #Make a dictionary where a symbol can be loooked up right away
+        new_d={}
+        for (symb,s_type,full_f),cnt in self.d.iteritems():
+            new_d.setdefault(symb,[]).append((s_type,full_f,cnt))
+        for v in new_d.itervalues():
+            v.sort(key=lambda x:x[-1],reverse=True)
+        with open(f_name,"w") as f:
+            json.dump(new_d,f,sort_keys=True)
 
 class Tree(object):
 
     @classmethod
-    def from_conll(cls,comments,conll):
+    def from_conll(cls,comments,conll,symb_stats):
         t=cls()
         lines=[] #will accumulate here conll-u lines
         for idx,cols in enumerate(conll):
@@ -41,12 +60,16 @@ class Tree(object):
                 if pos not in t.tags:
                     t.tags[pos]=pytset.PyTSet(len(conll))
                 t.tags[pos].add_item(idx)
+                symb_stats.symb(pos,u"TAG",None)
             if cols[FEAT]!=u"_":
                 for f in cols[FEAT].split(u"|"):
                     if u"=" in f:
                         cat,val=f.split(u"=",1)
+                        symb_stats.symb(cat,u"CAT",None)
+                        symb_stats.symb(val,u"VAL",f)
                     else:
                         cat,val=None,None
+                    symb_stats.symb(f,u"CAT=VAL",None)
                     if f not in t.tags:
                         t.tags[f]=pytset.PyTSet(len(conll))
                     if cat is not None and cat not in t.tags:
@@ -56,11 +79,13 @@ class Tree(object):
                         t.tags[cat].add_item(idx)
             if cols[HEAD] not in (u"_",u"0"):
                 t.add_rel(int(cols[HEAD])-1,idx,cols[DEPREL],len(conll))
+                symb_stats.symb(cols[DEPREL],"DTYPE",None)
                 t.add_rel(int(cols[HEAD])-1,idx,u"anyrel",len(conll))
                 if deps!=u"_":
                     for dep in deps.split(u"|"):
                         g,dtype=dep.split(u":",1)
                         t.add_rel(int(g)-1,idx,dtype,len(conll))
+                        symb_stats.symb(dtype,"DTYPE",None)
         t.comments=u"\n".join(comments)
         t.conllu=u"\n".join(u"\t".join(l) for l in lines)
         return t
