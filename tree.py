@@ -43,9 +43,17 @@ class Tree(object):
                 t.tags[pos].add_item(idx)
             if cols[FEAT]!=u"_":
                 for f in cols[FEAT].split(u"|"):
+                    if u"=" in f:
+                        cat,val=f.split(u"=",1)
+                    else:
+                        cat,val=None,None
                     if f not in t.tags:
                         t.tags[f]=pytset.PyTSet(len(conll))
+                    if cat is not None and cat not in t.tags:
+                        t.tags[cat]=pytset.PyTSet(len(conll))
                     t.tags[f].add_item(idx)
+                    if cat is not None:
+                        t.tags[cat].add_item(idx)
             if cols[HEAD] not in (u"_",u"0"):
                 t.add_rel(int(cols[HEAD])-1,idx,cols[DEPREL],len(conll))
                 t.add_rel(int(cols[HEAD])-1,idx,u"anyrel",len(conll))
