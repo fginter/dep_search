@@ -228,8 +228,8 @@ def p_expr2(t):
         t[0] = SetNode_Dep(t[1], t[2][1], t[2][0])
 
 def p_sn_depres_a(t):
-    u'''depres : depnode tokendef
-             | depnode setnode'''
+    u'''depres : depnode setnode
+             | depnode tokendef'''
     t[0] = (t[1], t[2])
 
 
@@ -244,7 +244,7 @@ def p_exprp(t):
 
 
 def p_exprp_d(t):
-    u'''depnode : LPAR depnode RPAR
+    u'''depdef : LPAR depnode RPAR
               | DEPOP'''
     if len(t)==4: #the upper rule
         t[0]=t[2] #...just return the embedded expression
@@ -255,6 +255,11 @@ def p_exprp_d(t):
 # /token/
 def p_exprp2(t):
     u'''setnode : tokendef'''
+    t[0]=t[1]  #if tokendef returns a Node(), this will also return a Node()
+
+
+def p_exprp5(t):
+    u'''depnode : depdef'''
     t[0]=t[1]  #if tokendef returns a Node(), this will also return a Node()
 
 #def p_expr2(t):
@@ -300,11 +305,22 @@ def p_sn_or(t):
     t[0] = SetNode_Or(t[1], t[3])
 
 def p_dn_not(t):
-    u'''depnode : NEG depnode'''
+    u'''depdef : NEG depdef'''
     t[0] = DeprelNode_Not(t[2])
+
+#def p_sn_not(t):
+#    u'''setnode : NEG setnode'''
+#    t[0] = SetNode_Not(t[2])
+
+#???
+
+
+
+
 def p_sn_not(t):
-    u'''setnode : NEG setnode'''
+    u'''tokendef : NEG tokendef'''
     t[0] = SetNode_Not(t[2])
+
 
 
 

@@ -157,9 +157,14 @@ def main(argv):
         print >> sys.stderr, "Loading "+args.search+".pyx"
         mod=load(args.search)
     else:
+        #Get the location of the symbols.json file
+        #Can this fail somehow??
+        path = '/'.join(args.database.split('/')[:-1])
+        json_filename = path + '/symbols.json' 
+        #import pdb;pdb.set_trace()
         #This is a query, compile first
         import pseudocode_ob_3 as pseudocode_ob
-        pseudocode_ob.generate_and_write_search_code_from_expression(args.search, "q_autogen")
+        pseudocode_ob.generate_and_write_search_code_from_expression(args.search, "q_autogen", json_filename=json_filename)
         mod=load("q_autogen")
     query_obj=mod.GeneratedSearch()
     sql_query,sql_args=query(query_obj.query_fields)
