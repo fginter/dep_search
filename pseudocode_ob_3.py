@@ -937,10 +937,13 @@ def main():
 
 def generate_and_write_search_code_from_expression(expression, filename, json_filename=''):
 
-    json_f = open(json_filename, 'rt')
-    json_line = json_f.readline()
-    json_f.close()
-    json_dict = json.loads(json_line)
+    try:
+        json_f = open(json_filename, 'rt')
+        json_line = json_f.readline()
+        json_f.close()
+        json_dict = json.loads(json_line)
+    except:
+        json_dict = {}
 
     tag_list = []
     val_dict = {}
