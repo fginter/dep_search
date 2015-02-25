@@ -4,7 +4,7 @@
 from redone_expr import *
 import sys
 import codecs
-
+import json
 #Taskilist:
 #1. The order of the nodes(this time there is a possibility of three input nodes for a node!)
 #And other stuffs
@@ -14,9 +14,11 @@ import codecs
 
 class NodeInterpreter():
 
-    def __init__(self, node, tag_list=[]):
+    def __init__(self, node, tag_list=[], val_dict={}):
 
         self.tag_list = tag_list
+        self.val_dict = val_dict
+
         if len(self.tag_list) < 1:
             self.use_tag_list = False
         else:
@@ -126,8 +128,12 @@ class NodeInterpreter():
         if self.node.proplabel == '' and self.node.token_restriction != '_':
             return [prechar + 'token_s_' + self.node.token_restriction]
         if self.node.proplabel == '@CGTAG' and self.node.token_restriction != '_':
-            if not self.use_tag_list or self.use_tag_list and self.node.token_restriction in self.tag_list:
-                return [prechar + 'tag_s_' + self.node.token_restriction]
+            if not self.use_tag_list or self.use_tag_list and self.node.token_restriction in self.tag_list + self.val_dict.keys():
+
+                if self.node.token_restriction in self.val_dict.keys():
+                    return [prechar + 'tag_s_' + self.val_dict[self.node.token_restriction]]
+                else:
+                    return [prechar + 'tag_s_' + self.node.token_restriction]
             else:
                 return [prechar + 'token_s_' + self.node.token_restriction]
 
@@ -148,14 +154,15 @@ class NodeInterpreter():
 
 class SetManager():
 
-    def __init__(self, nodes, node_dict, tag_list=[]):
+    def __init__(self, nodes, node_dict, tag_list=[], val_dict={}):
         self.node_needs = {}
-        self.tag_list = []
+        self.tag_list = tag_list
+        self.val_dict = val_dict
         #Interrogate the nodes
         for key in node_dict.keys():
             node = node_dict[key]
             self.node_needs[key] = {}
-            ni = NodeInterpreter(node, tag_list=self.tag_list)
+            ni = NodeInterpreter(node, tag_list=self.tag_list, val_dict=self.val_dict)
 
             #0. Are you compulsory
             #1. What sets do you need from the db?
@@ -169,8 +176,7 @@ class SetManager():
             #5. Do you need an output set, what is your output set called?
             self.node_needs[key]['own_output'], self.node_needs[key]['own_output_set'], self.node_needs[key]['own_output_set_type'] = ni.what_output_do_you_need()
 
-def generate_search_code(node, tag_list=[]):
-
+def generate_search_code(node, tag_list=[], val_dict={}):
 
     #1. Go through the nodes
     #...and while doing it:
@@ -193,7 +199,7 @@ def generate_search_code(node, tag_list=[]):
     #visualize_order(order_of_execution)
 
     #Get all the sets this thing needs...
-    set_manager = SetManager(node, node_dict, tag_list=tag_list)
+    set_manager = SetManager(node, node_dict, tag_list=tag_list, val_dict=val_dict)
     #... and visualize!
     #visualize_sets(set_manager, node_dict)
     #Seems to work!
@@ -210,7 +216,7 @@ def generate_search_code(node, tag_list=[]):
     for l in get_init_function(set_manager):
         lines.append(l)
 
-    for l in generate_code(node, set_manager, node_dict, order_of_execution, tag_list=tag_list):
+    for l in generate_code(node, set_manager, node_dict, order_of_execution, tag_list=tag_list, val_dict=val_dict):
         #if not '#' in l: 
         lines.append(l)
 
@@ -391,7 +397,7 @@ def get_class_function(set_manager):
 
     return lines
 
-def generate_code(nodes, set_manager, node_dict, order_of_execution, tag_list=[]):
+def generate_code(nodes, set_manager, node_dict, order_of_execution, tag_list=[], val_dict={}):
 
     #Start building the match code, by going through the nodes in the order of ooe
     #A mysterious object will deal with the code_block creation
@@ -402,7 +408,7 @@ def generate_code(nodes, set_manager, node_dict, order_of_execution, tag_list=[]
     node_output_dict = {}
 
     for node in order_of_execution:
-        match_block, node_extra_functions = generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag_list=tag_list)
+        match_block, node_extra_functions = generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag_list=tag_list, val_dict=val_dict)
 
         match_code_lines.extend(match_block)
         extra_functions.extend(node_extra_functions)
@@ -419,14 +425,14 @@ def generate_code(nodes, set_manager, node_dict, order_of_execution, tag_list=[]
 
     return lines
 
-def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag_list=[]):
+def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag_list=[], val_dict={}):
 
     extra_functions = []
     match_lines = []
 
     match_lines.append('#' + node.node_id)
     match_lines.append('#' + node.to_unicode())
-    node_ni = NodeInterpreter(node, tag_list=tag_list)
+    node_ni = NodeInterpreter(node, tag_list=tag_list, val_dict=val_dict)
     #SetNode_Token
     if isinstance(node, SetNode_Token):
         #I'll find the name of the assigned set
@@ -683,9 +689,11 @@ def generate_filtering(filtering_function_name, deprels, input_sets, negateds, s
                 logic += ' or ' + 't' + str(cs) + '==' + str(ft)
             line.append(' ' * (8 + 4*i) + 'if ' + logic + ': continue')
         forbidden_tokens.append('t' + str(cs))
-
-    line.append(' ' * (8 + 4*i) + 'return True')
-    line.append(' ' * 4 + 'return False')
+    if len(compulsory_sets) > 0:
+        line.append(' ' * (8 + 4*i) + 'return True')
+        line.append(' ' * 4 + 'return False')
+    else:
+        line.append(' ' * 4 + 'return True')
 
     return line
 
@@ -882,6 +890,33 @@ def main():
     With a naive attempt at code generation
     '''
 
+    json_filename = 'symbols.json'
+    json_lines = open(json_filename, 'rt').readline()
+    json_dict = json.loads(json_lines)
+
+    tag_list = []
+    val_dict = {}
+
+    for key in json_dict.keys():
+        should_be_in_val_dict = True
+        val_tuples = []
+        for tpl in json_dict[key]:
+            if tpl[0] == 'VAL':
+                val_tuples.append(tpl)
+            else:
+                #If this is also tag or something else, then it shouldn't be interpreted as anything else
+                should_be_in_val_dict = False
+                if tpl[0] in ['TAG', 'CAT', 'CAT=VAL']:
+                    tag_list.append(key)
+
+        if len(val_tuples) > 0 and should_be_in_val_dict:
+            #Find the maximum
+            max_tuple = val_tuples[0]
+            for vt in val_tuples[1:]:
+                if vt[-1] > max_tuple[-1]:
+                    max_tuple = vt
+            val_dict[key] = max_tuple[1]
+
     import argparse
     parser = argparse.ArgumentParser(description='Expression parser')
     parser.add_argument('expression', nargs='+', help='Training file name, or nothing for training on stdin')
@@ -893,18 +928,49 @@ def main():
         nodes = e_parser.parse(expression)
         print nodes.to_unicode()
 
-    code_lines = generate_search_code(nodes, tag_list=[])
+    code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
     #cdd = code(nodes)
     #lines = cdd.get_search_code()
     filename = str(args.output_file)
     write_cython_code(code_lines, filename + '.pyx')
 
 
-def generate_and_write_search_code_from_expression(expression, filename, tag_list=[]):
+def generate_and_write_search_code_from_expression(expression, filename, json_filename=''):
+
+    json_f = open(json_filename, 'rt')
+    json_line = json_f.readline()
+    json_f.close()
+    json_dict = json.loads(json_line)
+
+    tag_list = []
+    val_dict = {}
+
+    for key in json_dict.keys():
+        should_be_in_val_dict = True
+        val_tuples = []
+        for tpl in json_dict[key]:
+            if tpl[0] == 'VAL':
+                val_tuples.append(tpl)
+            else:
+                #If this is also tag or something else, then it shouldn't be interpreted as anything else
+                should_be_in_val_dict = False
+                if tpl[0] in ['TAG', 'CAT', 'CAT=VAL']:
+                    tag_list.append(key)
+
+        if len(val_tuples) > 0 and should_be_in_val_dict:
+            #Find the maximum
+            max_tuple = val_tuples[0]
+            for vt in val_tuples[1:]:
+                if vt[-1] > max_tuple[-1]:
+                    max_tuple = vt
+            val_dict[key] = max_tuple[1]
+
+
 
     e_parser=yacc.yacc()
     nodes = e_parser.parse(expression)
-    code_lines = generate_search_code(nodes, tag_list=tag_list)
+    #print nodes.to_unicode()
+    code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
     write_cython_code(code_lines, filename + '.pyx')
 
 if __name__ == "__main__":

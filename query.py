@@ -127,7 +127,7 @@ def main(argv):
     #print q,args
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
-    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/all/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
+    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/pb-10M/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
     parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
     args = parser.parse_args(argv[1:])
@@ -139,9 +139,14 @@ def main(argv):
         print >> sys.stderr, "Loading "+args.search+".pyx"
         mod=load(args.search)
     else:
+        #Get the location of the symbols.json file
+        #Can this fail somehow??
+        path = '/'.join(args.database.split('/')[:-1])
+        json_filename = path + '/symbols.json' 
+        #import pdb;pdb.set_trace()
         #This is a query, compile first
         import pseudocode_ob_3 as pseudocode_ob
-        pseudocode_ob.generate_and_write_search_code_from_expression(args.search, "q_autogen")
+        pseudocode_ob.generate_and_write_search_code_from_expression(args.search, "q_autogen", json_filename=json_filename)
         mod=load("q_autogen")
     query_obj=mod.GeneratedSearch()
     sql_query,sql_args=query(query_obj.query_fields)
