@@ -135,6 +135,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
     print >> sys.stderr, counter, "hits in", db_name
     db.close_db()
     res_db.close()
+    return counter
     
 def main(argv):
     global query_obj
@@ -171,8 +172,10 @@ def main(argv):
     
     dbs=glob.glob(args.database)
     dbs.sort()
+    total_hits=0
     for d in dbs:
-        query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)
+        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)
+    print >> sys.stderr, "Total number of hits:",total_hits
 
 if __name__=="__main__":
     sys.exit(main(sys.argv))
