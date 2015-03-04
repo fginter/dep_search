@@ -22,8 +22,8 @@ class SetNode_Token(BaseNode):
     def __init__(self, token_restriction):
         self.node_id = ''
         self.token_restriction = token_restriction.rstrip('"/').lstrip('"/')
-        if self.token_restriction.endswith('.l'):
-            self.token_restriction = self.token_restriction[:-2]
+        if self.token_restriction.startswith('L=') and not token_restriction.startswith('"'):
+            self.token_restriction = self.token_restriction[2:]
             self.proplabel = '@CGBASE'
         else:
             self.proplabel = ''
@@ -200,7 +200,8 @@ def t_error(t):
 
 
 #Main 
-precedence = ( ('left','DEPOP'), )
+precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), )
+#precedence = (('left','DEPOP'),)
 
 def p_error(t):
     if t==None:
@@ -228,11 +229,13 @@ def p_expr2(t):
         t[0] = SetNode_Dep(t[1], t[2][1], t[2][0])
 
 def p_sn_depres_a(t):
-    u'''depres : depnode setnode
-             | depnode tokendef'''
+    u'''depres : depnode tokendef'''
     t[0] = (t[1], t[2])
 
-
+#def p_sn_depres_a(t):
+#    u'''depres : depnode setnode
+#             | depnode tokendef'''
+#    t[0] = (t[1], t[2])
 
 def p_exprp(t):
     u'''tokendef : LPAR setnode RPAR'''
@@ -279,7 +282,7 @@ def p_exprp3(t):
                 | TEXT
                 | ANYTOKEN'''
     if len(t) == 2:
-       if t[1].startswith('"'):
+       if t[1].startswith('"') and t[1].endswith('"'):
            t[0] = SetNode_Token(t[1].decode('utf-8'))
        elif t[1]=='_':
            t[0]=SetNode_Token(t[1])
@@ -292,17 +295,29 @@ def p_dn_and(t):
     u'''depnode : depnode AND depnode'''
     t[0] = DeprelNode_And(t[1], t[3])
 
+#def p_sn_and(t):
+#    u'''setnode : setnode AND setnode'''
+#    t[0] = SetNode_And(t[1], t[3])
+
 def p_sn_and(t):
     u'''setnode : setnode AND setnode'''
     t[0] = SetNode_And(t[1], t[3])
+
+def p_sn_or(t):
+    u'''setnode : setnode OR setnode'''
+    t[0] = SetNode_Or(t[1], t[3])
+
+
+
+
 
 def p_dn_or(t):
     u'''depnode : depnode OR depnode'''
     t[0] = DeprelNode_Or(t[1], t[3])
 
-def p_sn_or(t):
-    u'''setnode : setnode OR setnode'''
-    t[0] = SetNode_Or(t[1], t[3])
+#def p_sn_or(t):
+#    u'''setnode : setnode OR setnode'''
+#    t[0] = SetNode_Or(t[1], t[3])
 
 def p_dn_not(t):
     u'''depdef : NEG depdef'''
@@ -313,10 +328,6 @@ def p_dn_not(t):
 #    t[0] = SetNode_Not(t[2])
 
 #???
-
-
-
-
 def p_sn_not(t):
     u'''tokendef : NEG tokendef'''
     t[0] = SetNode_Not(t[2])
@@ -325,7 +336,7 @@ def p_sn_not(t):
 
 
 lex.lex(reflags=re.UNICODE)
-yacc.yacc(write_tables=1,debug=1,method='SLR')
+yacc.yacc(write_tables=0,debug=1,method='SLR')
 
  
 if __name__=="__main__":
@@ -334,7 +345,7 @@ if __name__=="__main__":
     parser.add_argument('expression', nargs='+', help='Training file name, or nothing for training on stdin')
     args = parser.parse_args()
     
-    e_parser=yacc.yacc(write_tables=0,debug=0,method='LALR')
+    e_parser=yacc.yacc(write_tables=0,debug=1,method='LALR')
     for expression in args.expression:
 
         import logging
@@ -344,4 +355,4 @@ if __name__=="__main__":
 
         ebin = e_parser.parse(expression, debug=0)
         print ebin.to_unicode()
-        import pdb;pdb.set_trace() 
+        #import pdb;pdb.set_trace() 
