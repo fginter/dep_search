@@ -300,11 +300,11 @@ def p_dn_and(t):
 #    t[0] = SetNode_And(t[1], t[3])
 
 def p_sn_and(t):
-    u'''setnode : setnode AND setnode'''
+    u'''tokendef : tokendef AND tokendef'''
     t[0] = SetNode_And(t[1], t[3])
 
 def p_sn_or(t):
-    u'''setnode : setnode OR setnode'''
+    u'''tokendef : tokendef OR tokendef'''
     t[0] = SetNode_Or(t[1], t[3])
 
 
