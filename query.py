@@ -76,9 +76,9 @@ def query(query_fields):
     return q,args
 
 def get_data_from_db(db_conn,graph_id):
-    results=db_conn.execute('SELECT conllu_data_compressed FROM graph WHERE graph_id=?',(str(graph_id),))
-    for sent in results.fetchall():
-        return zlib.decompress(sent[0]).strip()
+    results=db_conn.execute('SELECT conllu_data_compressed,conllu_comment_compressed FROM graph WHERE graph_id=?',(str(graph_id),))
+    for sent,comment in results.fetchall():
+        return zlib.decompress(sent).strip(),zlib.decompress(comment).strip()
 
 
 def load(pyxFile):
@@ -108,7 +108,9 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
         print "# graph id:",idx
         for x in r:
             print "# visual-style\t%s\tbgColor:red"%(x+1)
-        hit=get_data_from_db(res_db,idx)
+        hit,hit_comment=get_data_from_db(res_db,idx)
+        if hit_comment:
+            print hit_comment
         if context:
             texts=[]
             # get +/- 2 sentences from db
@@ -116,7 +118,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
                 if i==idx:
                     data=hit
                 else:
-                    data=get_data_from_db(res_db,i)
+                    data,data_comment=get_data_from_db(res_db,i)
                     if data is None:
                         continue
                 text=u" ".join(t.split(u"\t")[1] for t in data.decode(u"utf-8").split(u"\n"))

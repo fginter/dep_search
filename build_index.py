@@ -108,6 +108,28 @@ lename, otherwise as open file for reading in unicode"""
     if isinstance(inp,basestring):
         f.close() #Close it if you opened it
 
+def add_doc_comments(sents):
+    """
+    in goes an iterator over sent,comments pairs
+    out goes an iterator with comments enriched by URLs
+    """
+    doc_counter,sent_in_doc_counter=-1,0
+    current_url=None
+    for sent,comments in sents:
+        ###PB3 style URLs
+        if len(sent)==1 and sent[0][1].startswith("####FIPBANK-BEGIN-MARKER:"):
+            current_url=sent[0][1].split(u":",1)[1]
+            doc_counter+=1
+            sent_in_doc_counter=0
+            continue
+        ###Todo: PB4 style URL comments
+        ###C:<doc id="3-1954112" length="1k-10k" crawl_date="2014-07-26" url="http://parolanasema.blogspot.fi/2013/02/paris-paris-maison-objet-messut-osa-1.html" langdiff="0.37">
+        if current_url is not None:
+            comments.append(u"# URL: "+current_url)
+            comments.append(u"# DOC/SENT: %d/%d"%(doc_counter,sent_in_doc_counter))
+        yield sent,comments
+        sent_in_doc_counter+=1
+
 def serialize_as_tset_array(tree_len,sets):
     """
     tree_len -> length of the tree to be serialized
@@ -127,7 +149,7 @@ def fill_db(conn,src_data,stats):
     `src_data` - iterator over sentences -result of read_conll()
     """
     counter=0
-    for sent_idx,(sent,comments) in enumerate(src_data):
+    for sent_idx,(sent,comments) in enumerate(add_doc_comments(src_data)):
         counter+=1
         t=Tree.from_conll(comments,sent,stats)
         
