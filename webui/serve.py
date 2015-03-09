@@ -3,8 +3,13 @@
 import sys
 import os.path
 import subprocess
+import codecs
+import json
 
 import flask
+
+# Name of JSON containing information on available DBs.
+CORPORA_FILENAME = 'corpora.json'
 
 # App settings. IMPORTANT: set DEBUG = False for publicly accessible
 # installations, the debug mode allows arbitrary code execution.
@@ -12,13 +17,15 @@ DEBUG = False
 HOST = 'epsilon-it.utu.fi'
 PORT = 5042
 STATIC_PATH = '/static'
-QUERY_PARAMETER = 'q'
+DB_PARAMETER = 'db'
+QUERY_PARAMETER = 'search'
 
 # Template-related constants
 INDEX_TEMPLATE = 'index.html'
 RESULT_TEMPLATE = 'index.html'
 SERVER_URL_PLACEHOLDER = '{{ SERVER_URL }}'
 QUERY_PLACEHOLDER = '{{ QUERY }}'
+DBS_PLACEHOLDER = '{{ OPTIONS }}'
 CONTENT_START = '<!-- CONTENT-START -->'
 CONTENT_END = '<!-- CONTENT-END -->'
 
@@ -32,63 +39,94 @@ def server_url(host=HOST, port=PORT):
         url = 'http://' + url # TODO do this properly
     return url
 
-def perform_query(query):
+def load_corpora(filename=CORPORA_FILENAME):
+    try:
+        with open(filename) as f:
+            return json.loads(f.read())
+    except Exception, e:
+        print 'Failed to load data on corpora from', filename
+        raise
+
+def get_database_directory(dbname):
+    return load_corpora().get(dbname, '')
+
+def perform_query(dbname, query):
     # sorry, this is pretty clumsy ...
     script_dir = os.path.dirname(os.path.realpath(__file__))
     query_cmd = os.path.join(script_dir, '..', 'query.py')
 
-    #args = [query_cmd, '-d', 'tmp_data/*.db', '-m', '100', query]
-    args = [query_cmd, '-d', '/mnt/ssd/sdata/all/*.db', '-m', '100', str(query)]
+    dbdir = get_database_directory(dbname)
+    dbs = os.path.join(dbdir, '*.db')
+    args = [query_cmd, '-d', dbs, '-m', '100', query.encode('utf-8')]
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (out, err) = p.communicate()
     return out
 
 def get_index(fn=INDEX_TEMPLATE):
-    with open(fn) as f:
+    with codecs.open(fn, encoding='utf-8') as f:
         return f.read()
 
 def get_template(fn=RESULT_TEMPLATE):
-    with open(fn) as f:
+    with codecs.open(fn, encoding='utf-8') as f:
         return f.read()
 
-def fill_template(template, content, query=''):
+def render_dbs(selected):
+    corpora = load_corpora()
+    options = []
+    for name in corpora:
+        s = ' selected="selected"' if name == selected else ''
+        options.append('<option value="%s"%s>%s</option>' % (name, s, name))
+    return '\n'.join(options)
+
+def fill_template(template, content='', dbname='', query=''):
     # TODO: use jinja
     assert CONTENT_START in template
     assert CONTENT_END in template
     header = template[:template.find(CONTENT_START)]
     trailer = template[template.find(CONTENT_END):]
+    print type(header), type(content), type(trailer)
     filled = header + content + trailer
     filled = filled.replace(SERVER_URL_PLACEHOLDER, server_url())
     filled = filled.replace(QUERY_PLACEHOLDER, query)
+    filled = filled.replace(DBS_PLACEHOLDER, render_dbs(dbname))
     return filled
 
 app = flask.Flask(__name__, static_url_path=STATIC_PATH)
 
-def query_and_fill_template(query):
+def query_and_fill_template(dbname, query):
     template = get_template()
     try:
-        results = perform_query(query)
+        results = perform_query(dbname, query)
     except Exception, e:
         return "Internal error: %s" % (str(e))
     # plug in separate visualizations to allow for progressive loading
     visualizations = []
     for block in results.split('\n\n'):
+        block = block.decode('utf-8')
         visualizations.append(visualization_start +
                               block + '\n\n' +
                               visualization_end)
-    return fill_template(template, ''.join(visualizations), query)
+    return fill_template(template, ''.join(visualizations), dbname, query)
+
+def _root():
+    dbname = flask.request.args.get(DB_PARAMETER)
+    query = flask.request.args.get(QUERY_PARAMETER)
+
+    if not dbname or not query:
+        # missing info, just show index
+        template = get_index()
+        return fill_template(template)
+    else:
+        # non-empty query, search and display
+        return query_and_fill_template(dbname, query)
 
 @app.route("/", methods=['GET', 'POST'])
 def root():
-    query = flask.request.args.get(QUERY_PARAMETER)
-
-    if not query:
-        # no query, just show index
-        template = get_index()
-        return fill_template(template, '', '')
-    else:
-        # non-empty query, search and display
-        return query_and_fill_template(query)
+    try:
+        return _root()
+    except Exception, e:
+        import traceback
+        return "Internal error: %s\n%s" % (str(e), traceback.format_exc())
 
 @app.route('/css/<path:path>')
 def serve_css(path):
@@ -114,7 +152,7 @@ def main(argv):
     else:
         print_debug_warning(sys.stdout)
         host='127.0.0.1'
-    app.run(host=host, port=PORT, debug=DEBUG)
+    app.run(host=host, port=PORT, debug=DEBUG, use_reloader=True)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

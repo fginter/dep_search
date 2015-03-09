@@ -1,7 +1,6 @@
 {
-  "Finnish": "/mnt/ssd/sdata/fi/",
-  "English": "/mnt/ssd/sdata/en/",
-  "Swedish": "/mnt/ssd/sdata/sv/",
-  "French": "/mnt/ssd/sdata/fr/",
-  "German": "/mnt/ssd/sdata/de/",
+  "Finnish": "/home/smp/git_checkout/dep_search/Finnish.data",
+  "English": "/home/smp/git_checkout/dep_search/English.data",
+  "Japanese": "/home/smp/git_checkout/dep_search/Japanese.data",
+  "Czech": "/home/smp/git_checkout/dep_search/Czech.data"
 }

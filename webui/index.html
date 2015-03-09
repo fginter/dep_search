@@ -57,8 +57,13 @@
       <form class="query-form" action="{{ SERVER_URL }}" method="GET">
 	<div class="form-group">
 <!-- 	  <label for="queryInput">Query</label> -->
+          <select name="db"
+	          class="form-control btn btn-primary"
+		  style="display:inline; width:auto">
+	  {{ OPTIONS }}
+	  </select>
 	  <input id="queryInput" class="form-control"
-		 type="text" name="q"
+		 type="text" name="search"
 		 placeholder="Enter query (e.g. &quot;_ <nsubj _&quot;)"
 		 value="{{ QUERY }}">
 	  <button type="submit" class="btn btn-primary">Search!</button>
