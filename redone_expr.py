@@ -200,7 +200,8 @@ def t_error(t):
 
 
 #Main 
-precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), )
+precedence = (('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), )
+
 #precedence = (('left','DEPOP'),)
 
 def p_error(t):
