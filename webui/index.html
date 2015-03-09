@@ -54,12 +54,13 @@
 
     <div class="container">
 
-      <form class="query-form" action="http://epsilon-it.utu.fi:5042" method="GET">
+      <form class="query-form" action="{{ SERVER_URL }}" method="GET">
 	<div class="form-group">
 <!-- 	  <label for="queryInput">Query</label> -->
 	  <input id="queryInput" class="form-control"
 		 type="text" name="q"
-		 placeholder="Enter query (e.g. &quot;<nsubj&quot;)">
+		 placeholder="Enter query (e.g. &quot;<nsubj&quot;)"
+		 value="{{ QUERY }}">
 	  <button type="submit" class="btn btn-primary">Search!</button>
 	</div>
       </form>

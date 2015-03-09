@@ -8,7 +8,8 @@ import flask
 
 # App settings. IMPORTANT: set DEBUG = False for publicly accessible
 # installations, the debug mode allows arbitrary code execution.
-DEBUG = True
+DEBUG = False
+HOST = 'epsilon-it.utu.fi'
 PORT = 5042
 STATIC_PATH = '/static'
 QUERY_PARAMETER = 'q'
@@ -16,12 +17,20 @@ QUERY_PARAMETER = 'q'
 # Template-related constants
 INDEX_TEMPLATE = 'index.html'
 RESULT_TEMPLATE = 'index.html'
+SERVER_URL_PLACEHOLDER = '{{ SERVER_URL }}'
+QUERY_PLACEHOLDER = '{{ QUERY }}'
 CONTENT_START = '<!-- CONTENT-START -->'
 CONTENT_END = '<!-- CONTENT-END -->'
 
 # Visualization wrapping
 visualization_start = '<pre><code class="conllu">'
 visualization_end = '</code></pre>'
+
+def server_url(host=HOST, port=PORT):
+    url = '%s:%d' % (host, port)
+    if not url.startswith('http://'):
+        url = 'http://' + url # TODO do this properly
+    return url
 
 def perform_query(query):
     # sorry, this is pretty clumsy ...
@@ -42,12 +51,16 @@ def get_template(fn=RESULT_TEMPLATE):
     with open(fn) as f:
         return f.read()
 
-def fill_template(template, content):
+def fill_template(template, content, query=''):
+    # TODO: use jinja
     assert CONTENT_START in template
     assert CONTENT_END in template
     header = template[:template.find(CONTENT_START)]
     trailer = template[template.find(CONTENT_END):]
-    return header + content + trailer
+    filled = header + content + trailer
+    filled = filled.replace(SERVER_URL_PLACEHOLDER, server_url())
+    filled = filled.replace(QUERY_PLACEHOLDER, query)
+    return filled
 
 app = flask.Flask(__name__, static_url_path=STATIC_PATH)
 
@@ -58,7 +71,7 @@ def root():
     if not query:
         # no query, just show index
         template = get_index()
-        return fill_template(template, '')
+        return fill_template(template, '', '')
     else:
         template = get_template()
         results = perform_query(query)
@@ -69,7 +82,7 @@ def root():
             visualizations.append(visualization_start + 
                                   block + '\n\n' + 
                                   visualization_end)
-        return fill_template(template, ''.join(visualizations))
+        return fill_template(template, ''.join(visualizations), query)
 
 @app.route('/css/<path:path>')
 def serve_css(path):
@@ -79,12 +92,23 @@ def serve_css(path):
 def serve_js(path):
     return flask.send_from_directory('js', path)
 
+def print_debug_warning(out):
+    print >> out, """
+##############################################################################
+#
+# WARNING: RUNNING IN DEBUG MODE. NEVER DO THIS IN PRODUCTION, IT
+# ALLOWS ARBITRARY CODE EXECUTION.
+#
+##############################################################################
+"""
+
 def main(argv):
-    # debug mode (local access only)
-    #app.run(debug=False, host='epsilon-it.utu.fi', port=PORT)
-    # deployed
-    app.run(host='0.0.0.0', port=PORT)
+    if not DEBUG:
+        host='0.0.0.0'
+    else:
+        print_debug_warning(sys.stdout)
+        host='127.0.0.1'
+    app.run(host=host, port=PORT, debug=DEBUG)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
-
