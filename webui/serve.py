@@ -38,7 +38,7 @@ def perform_query(query):
     query_cmd = os.path.join(script_dir, '..', 'query.py')
 
     #args = [query_cmd, '-d', 'tmp_data/*.db', '-m', '100', query]
-    args = [query_cmd, '-d', '/mnt/ssd/sdata/all/*.db', '-m', 100, query]
+    args = [query_cmd, '-d', '/mnt/ssd/sdata/all/*.db', '-m', '100', str(query)]
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (out, err) = p.communicate()
     return out
@@ -64,6 +64,20 @@ def fill_template(template, content, query=''):
 
 app = flask.Flask(__name__, static_url_path=STATIC_PATH)
 
+def query_and_fill_template(query):
+    template = get_template()
+    try:
+        results = perform_query(query)
+    except Exception, e:
+        return "Internal error: %s" % (str(e))
+    # plug in separate visualizations to allow for progressive loading
+    visualizations = []
+    for block in results.split('\n\n'):
+        visualizations.append(visualization_start +
+                              block + '\n\n' +
+                              visualization_end)
+    return fill_template(template, ''.join(visualizations), query)
+
 @app.route("/", methods=['GET', 'POST'])
 def root():
     query = flask.request.args.get(QUERY_PARAMETER)
@@ -73,16 +87,8 @@ def root():
         template = get_index()
         return fill_template(template, '', '')
     else:
-        template = get_template()
-        results = perform_query(query)
         # non-empty query, search and display
-        # plug in separate visualizations to allow for progressive loading
-        visualizations = []
-        for block in results.split('\n\n'):
-            visualizations.append(visualization_start + 
-                                  block + '\n\n' + 
-                                  visualization_end)
-        return fill_template(template, ''.join(visualizations), query)
+        return query_and_fill_template(query)
 
 @app.route('/css/<path:path>')
 def serve_css(path):
