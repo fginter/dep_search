@@ -98,7 +98,6 @@ def fill_template(template, content='', dbname='', query=''):
     assert CONTENT_END in template
     header = template[:template.find(CONTENT_START)]
     trailer = template[template.find(CONTENT_END):]
-    print type(header), type(content), type(trailer)
     filled = header + content + trailer
     filled = filled.replace(SERVER_URL_PLACEHOLDER, server_url())
     filled = filled.replace(QUERY_PLACEHOLDER, query)
