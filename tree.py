@@ -51,7 +51,7 @@ class Tree(object):
                 lines.append([cols[ID],cols[FORM],cols[LEMMA],cols[POS],cols[POS],cols[FEAT],cols[HEAD],cols[DEPREL],deps,u"_"])
             if cols[FORM] not in t.tokens:
                 t.tokens[cols[FORM]]=pytset.PyTSet(len(conll))
-            if LEMMA not in t.lemmas:
+            if cols[LEMMA] not in t.lemmas:
                 t.lemmas[cols[LEMMA]]=pytset.PyTSet(len(conll))
             t.tokens[cols[FORM]].add_item(idx)
             t.lemmas[cols[LEMMA]].add_item(idx)

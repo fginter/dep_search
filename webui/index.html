@@ -6,18 +6,19 @@
         <title></title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="css/bootstrap.css">
-        <link rel="stylesheet" href="css/bootstrap-theme.css">
-        <link rel="stylesheet" href="css/depsearch-main.css">
+        <link rel="stylesheet" href="/css/bootstrap.css">
+        <link rel="stylesheet" href="/css/bootstrap-theme.css">
+        <link rel="stylesheet" href="/css/depsearch-main.css">
 
 	<!-- annotation visualization stuff --> 
-	<link rel="stylesheet" href="css/jquery-ui-redmond.css">
-	<link rel="stylesheet" href="css/annodoc-main.css">
-	<link rel="stylesheet" href="css/style-vis.css">
-	<script type="text/javascript" src="js/ext/head.load.min.js"></script>
+	<link rel="stylesheet" href="/css/jquery-ui-redmond.css">
+	<link rel="stylesheet" href="/css/annodoc-main.css">
+	<link rel="stylesheet" href="/css/style-vis.css">
+	<link rel="stylesheet" href="/css/depsearch.css">
+	<script type="text/javascript" src="/js/ext/head.load.min.js"></script>
 	<!-- end annotation visualization stuff --> 
 
-        <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+        <script src="/js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
     </head>
     <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -57,11 +58,17 @@
       <form class="query-form" action="{{ SERVER_URL }}" method="GET">
 	<div class="form-group">
 <!-- 	  <label for="queryInput">Query</label> -->
+          <select name="db"
+	          class="form-control btn btn-primary"
+		  style="display:inline; width:auto">
+	  {{ OPTIONS }}
+	  </select>
 	  <input id="queryInput" class="form-control"
-		 type="text" name="q"
-		 placeholder="Enter query (e.g. &quot;<nsubj&quot;)"
+		 type="text" name="search"
+		 placeholder="Enter query (e.g. &quot;_ <nsubj _&quot;)"
 		 value="{{ QUERY }}">
 	  <button type="submit" class="btn btn-primary">Search!</button>
+	<a class="type-link" href="/types/{{ DBNAME }}">Show types</a>
 	</div>
       </form>
 
@@ -69,23 +76,6 @@
 
       <!-- Don't change the "CONTENT" comments or stuff will break. -->
       <!-- CONTENT-START -->
-
-      <p>This is a test visualization. Delete this before deploying.</p>
-      <pre><code class="conllu">
-# graph id: 1
-# visual-style	4	bgColor:red
-# visual-style	2	bgColor:red
-1	Viikonlopun	viikon#loppu	NOUN	N	Case=Gen|Number=Sing	2	nmod:poss	_	_
-2	pyöritys	pyöritys	NOUN	N	Case=Nom|Number=Sing	3	nsubj	_	_
-3	alkoi	alkaa	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin|Voice=Act	0	root	_	_
-4	H&M:n	H&M	NOUN	N	Abbr=Yes|Case=Gen|Number=Sing	5	nsubj	_	_
-5	järjestämällä	järjestää	VERB	V	Case=Ade|Degree=Pos|Number=Sing|PartForm=Agt|VerbForm=Part|Voice=Act	6	acl	_	_
-6	bloggaajabrunssilla	bloggaaja#brunssi	NOUN	N	Case=Ade|Number=Sing	3	nmod	_	_
-7	Helsingissä	Helsinki	PROPN	N	Case=Ine|Number=Sing	3	nmod	_	_
-8	.	.	PUNCT	Punct	_	3	punct	_	_
-
-      </code></pre>
-
       <!-- CONTENT-END -->
 
       <hr>
