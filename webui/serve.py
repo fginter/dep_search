@@ -131,6 +131,9 @@ def _types(db):
     for key, value in symbols.iteritems():
         for item in value:
             groups[item[0]].append((key, item))
+    # sort each group
+    for group in groups.keys():
+        groups[group].sort()
     # convert each group to HTML
     output = {}
     for group in groups:
