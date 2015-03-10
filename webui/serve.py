@@ -86,10 +86,14 @@ def render_dbs(selected):
         options.append('<option value="%s"%s>%s</option>' % (name, s, name))
     return '\n'.join(options)
 
+def default_db():
+    # choose at random
+    return load_corpora().keys()[0]
+
 def fill_template(template, content='', dbname='', query=''):
     # TODO: use jinja
-    if dbname is None:
-        dbname = ''
+    if not dbname:
+        dbname = default_db()
     assert CONTENT_START in template
     assert CONTENT_END in template
     header = template[:template.find(CONTENT_START)]
