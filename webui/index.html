@@ -6,18 +6,19 @@
         <title></title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="css/bootstrap.css">
-        <link rel="stylesheet" href="css/bootstrap-theme.css">
-        <link rel="stylesheet" href="css/depsearch-main.css">
+        <link rel="stylesheet" href="/css/bootstrap.css">
+        <link rel="stylesheet" href="/css/bootstrap-theme.css">
+        <link rel="stylesheet" href="/css/depsearch-main.css">
 
 	<!-- annotation visualization stuff --> 
-	<link rel="stylesheet" href="css/jquery-ui-redmond.css">
-	<link rel="stylesheet" href="css/annodoc-main.css">
-	<link rel="stylesheet" href="css/style-vis.css">
-	<script type="text/javascript" src="js/ext/head.load.min.js"></script>
+	<link rel="stylesheet" href="/css/jquery-ui-redmond.css">
+	<link rel="stylesheet" href="/css/annodoc-main.css">
+	<link rel="stylesheet" href="/css/style-vis.css">
+	<link rel="stylesheet" href="/css/depsearch.css">
+	<script type="text/javascript" src="/js/ext/head.load.min.js"></script>
 	<!-- end annotation visualization stuff --> 
 
-        <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+        <script src="/js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
     </head>
     <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -67,6 +68,7 @@
 		 placeholder="Enter query (e.g. &quot;_ <nsubj _&quot;)"
 		 value="{{ QUERY }}">
 	  <button type="submit" class="btn btn-primary">Search!</button>
+	<a class="type-link" href="/types/{{ DBNAME }}">Show types</a>
 	</div>
       </form>
 

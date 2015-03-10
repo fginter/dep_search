@@ -6,6 +6,8 @@ import subprocess
 import codecs
 import json
 
+from collections import defaultdict
+
 import flask
 
 # Name of JSON containing information on available DBs.
@@ -26,6 +28,7 @@ RESULT_TEMPLATE = 'index.html'
 SERVER_URL_PLACEHOLDER = '{{ SERVER_URL }}'
 QUERY_PLACEHOLDER = '{{ QUERY }}'
 DBS_PLACEHOLDER = '{{ OPTIONS }}'
+DB_PLACEHOLDER = '{{ DBNAME }}'
 CONTENT_START = '<!-- CONTENT-START -->'
 CONTENT_END = '<!-- CONTENT-END -->'
 
@@ -49,6 +52,11 @@ def load_corpora(filename=CORPORA_FILENAME):
 
 def get_database_directory(dbname):
     return load_corpora().get(dbname, '')
+
+def get_database_symbols(dbname):
+    dbdir = get_database_directory(dbname)
+    with open(os.path.join(dbdir, 'symbols.json')) as f:
+        return json.loads(f.read())
 
 def perform_query(dbname, query):
     # sorry, this is pretty clumsy ...
@@ -80,6 +88,8 @@ def render_dbs(selected):
 
 def fill_template(template, content='', dbname='', query=''):
     # TODO: use jinja
+    if dbname is None:
+        dbname = ''
     assert CONTENT_START in template
     assert CONTENT_END in template
     header = template[:template.find(CONTENT_START)]
@@ -89,6 +99,7 @@ def fill_template(template, content='', dbname='', query=''):
     filled = filled.replace(SERVER_URL_PLACEHOLDER, server_url())
     filled = filled.replace(QUERY_PLACEHOLDER, query)
     filled = filled.replace(DBS_PLACEHOLDER, render_dbs(dbname))
+    filled = filled.replace(DB_PLACEHOLDER, dbname)
     return filled
 
 app = flask.Flask(__name__, static_url_path=STATIC_PATH)
@@ -108,6 +119,39 @@ def query_and_fill_template(dbname, query):
                               visualization_end)
     return fill_template(template, ''.join(visualizations), dbname, query)
 
+def _types(db):
+    symbols = get_database_symbols(db)
+    # symbols is a dict with a structure like this:
+    # "nummod": [ [ "DTYPE", null, 2401 ] ]
+    # group by the first value ("DTYPE" above)
+    groups = defaultdict(list)
+    for key, value in symbols.iteritems():
+        for item in value:
+            groups[item[0]].append((key, item))
+    # convert each group to HTML
+    output = {}
+    for group in groups:
+        html = ['<h3>%s</h3>\n<ul>' % group]
+        for type_, item in groups[group]:
+            # Note: currently just writing out the type name, not any
+            # of the other information in the file.
+            html.append('<li>%s</li>' % type_)
+        html.append('</ul')
+        output[group] = '\n'.join(html)
+    merged = '\n'.join(output.values())
+
+    # fill template and return
+    template = get_index()
+    return fill_template(template, merged, db)
+
+@app.route("/types/<db>")
+def types(db):
+    try:
+        return _types(db)
+    except Exception, e:
+        import traceback
+        return "Internal error: %s\n%s" % (str(e), traceback.format_exc())
+
 def _root():
     dbname = flask.request.args.get(DB_PARAMETER)
     query = flask.request.args.get(QUERY_PARAMETER)
@@ -115,7 +159,7 @@ def _root():
     if not dbname or not query:
         # missing info, just show index
         template = get_index()
-        return fill_template(template)
+        return fill_template(template, dbname=dbname)
     else:
         # non-empty query, search and display
         return query_and_fill_template(dbname, query)
