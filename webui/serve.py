@@ -86,15 +86,18 @@ def render_dbs(selected):
         options.append('<option value="%s"%s>%s</option>' % (name, s, name))
     return '\n'.join(options)
 
+def default_db():
+    # choose at random
+    return load_corpora().keys()[0]
+
 def fill_template(template, content='', dbname='', query=''):
     # TODO: use jinja
-    if dbname is None:
-        dbname = ''
+    if not dbname:
+        dbname = default_db()
     assert CONTENT_START in template
     assert CONTENT_END in template
     header = template[:template.find(CONTENT_START)]
     trailer = template[template.find(CONTENT_END):]
-    print type(header), type(content), type(trailer)
     filled = header + content + trailer
     filled = filled.replace(SERVER_URL_PLACEHOLDER, server_url())
     filled = filled.replace(QUERY_PLACEHOLDER, query)
@@ -128,6 +131,9 @@ def _types(db):
     for key, value in symbols.iteritems():
         for item in value:
             groups[item[0]].append((key, item))
+    # sort each group
+    for group in groups.keys():
+        groups[group].sort()
     # convert each group to HTML
     output = {}
     for group in groups:

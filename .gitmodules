@@ -1,4 +1,4 @@
 [submodule "setlib"]
 	path = setlib
-	url = git@github.com:jmnybl/setlib.git
+	url = https://github.com/jmnybl/setlib.git
 	branch = master
