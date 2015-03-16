@@ -1,16 +1,7 @@
-#import lex as lex
-#import yacc as yacc
-#import re
 from redone_expr import *
 import sys
 import codecs
 import json
-#Taskilist:
-#1. The order of the nodes(this time there is a possibility of three input nodes for a node!)
-#And other stuffs
-
-#2. SetManager
-#3. CodeGenerator
 
 class NodeInterpreter():
 
@@ -29,7 +20,6 @@ class NodeInterpreter():
         self.set_count = 0
 
     def do_you_need_all_tokens(self):
-        #XXX Needs Optimization
         if isinstance(self.node, SetNode_Token):
             if self.node.token_restriction == '_':
                 self.set_count += 1
@@ -67,7 +57,6 @@ class NodeInterpreter():
             #Tag, Lemma or Word
             db_orders = self.set_node_token_into_db_label()
             if db_orders == None: import pdb;pdb.set_trace()
-        #Give these needed sets a name
         name_dict = {}
         for dbo in db_orders:
             self.set_count += 1
@@ -78,7 +67,6 @@ class NodeInterpreter():
         db_orders = []
         if isinstance(self.node, DeprelNode):
             db_orders = self.deprel_node_into_db_label()
-        #Give these needed sets a name
         name_dict = {}
         for dbo in db_orders:
             self.array_count += 1
@@ -88,14 +76,11 @@ class NodeInterpreter():
         return db_orders, name_dict
 
     def deprel_node_into_db_label(self):
-        #XXX change after format change!
-        #This guy will need optimization later on!
         return_list = []
         prechar = '!'
         if self.node.negs_above:
             prechar = ''
 
-        #XXX change after format change!
         if self.node.dep_restriction.startswith('<!'):
             prechar = ''
             return_list.append(prechar + u'dep_a_anyrel')
@@ -120,7 +105,6 @@ class NodeInterpreter():
 
 
     def set_node_token_into_db_label(self):
-        #XXX change after format change!
         #Raise Error if faulty query!
         prechar = '!'
         if self.node.negs_above:
@@ -178,34 +162,9 @@ class SetManager():
 
 def generate_search_code(node, tag_list=[], val_dict={}):
 
-    #1. Go through the nodes
-    #...and while doing it:
-    #   -gather the needed sets, and their status(compulsory or non-compulsory)
-    #   -the order in which these nodes should be executed
-    #   -id each and every node
-    #   -for these nodes give the proper inputs(as nodes, and stuff from the db)
-    #   -the needed temporary sets and such
-    #   -the names of the sets gathered from the db
-
-    #This will id all the nodes, give them levels and fill negs_above
     node_dict = process_nodes(node)
-
-    #Visualize the nodes :3
-    #visualize(node, node_dict)
-    #Works
-
-    #Now, the order of execution
     order_of_execution = get_order_of_execution(node, node_dict)
-    #visualize_order(order_of_execution)
-
-    #Get all the sets this thing needs...
     set_manager = SetManager(node, node_dict, tag_list=tag_list, val_dict=val_dict)
-    #... and visualize!
-    #visualize_sets(set_manager, node_dict)
-    #Seems to work!
-
-
-    #Now for the code generation itself
     lines = []
     for l in get_class_function(set_manager):
         lines.append(l)
@@ -217,7 +176,6 @@ def generate_search_code(node, tag_list=[], val_dict={}):
         lines.append(l)
 
     for l in generate_code(node, set_manager, node_dict, order_of_execution, tag_list=tag_list, val_dict=val_dict):
-        #if not '#' in l: 
         lines.append(l)
 
     return lines
@@ -330,23 +288,6 @@ def get_init_function(set_manager):
     for key in temp_array_list:
             lines.append(' '*8 + 'self.' + key + '.set_length(self.' + sentence_count_str + '.tree_length)')
 
-    #Maybe I should add the copies here?
-    #    else:
-    #        if key not in self.load_list_dict.keys():
-    #            #Get the name of the set and clone
-    #            lines.append(' '*8 + key + '.copy(' + inv_list_dict[self.init_dict[key]] + ')')
-
-    #XXX uncomment if needed
-    #The extras as well
-    #for ts in self.temp_set_list:
-    #    lines.append(' '*8 + ts + '.set_length(' + stuff + '.tree_length)')
-            #lines.append(' '*4 + key + '.fill_ones()')            
-    #stuff = inv_list_dict[self.all_arrays[0]]
-    #for ts in self.temp_array_list:
-    #    lines.append(' '*8 + ts + '.set_length(' + stuff + '.tree_length)')
-    #        #lines.append(' '*4 + key + '.fill_ones()')      
-    #Reverse the load_list_dict
-
     if len(lines) < 2:
         lines.append(' '*8 + 'pass')  
     return lines
@@ -399,10 +340,6 @@ def get_class_function(set_manager):
 
 def generate_code(nodes, set_manager, node_dict, order_of_execution, tag_list=[], val_dict={}):
 
-    #Start building the match code, by going through the nodes in the order of ooe
-    #A mysterious object will deal with the code_block creation
-
-    #This will be practically for filtering functions
     extra_functions = []
     match_code_lines = []
     node_output_dict = {}
@@ -455,8 +392,6 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
 
     elif isinstance(node, DeprelNode):
 
-        #XXX hack!
-        #XXX change after format change!
         negated = False
         if node.dep_restriction.startswith('<!'):
             negated=True
@@ -475,8 +410,6 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             match_lines.append('#Reporting ' + output_set_name + ' as output array')
             node_output_dict[node.node_id] = output_set_name
         else:
-
-            #XXX Kind of a hacky solution
 
             db_set_labels = []
             desires = []
@@ -562,25 +495,11 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
     elif isinstance(node, DeprelNode_Not):
 
         input_array = node_output_dict[node.dnode1.node_id]
-        #Why? So that SetNode_Dep can have negative depres
-
-        #XXX terrible hack!
-        #the complement, if needed is done on Deprel
-        #This should be used only as an input to SetNode_Dep
-
-        #if not isinstance(node.parent_node, SetNode_Dep):
-        #    match_lines.append('self.' + input_array + '.complement_update()')
         match_lines.append('#Reporting ' + input_array + ' as output set')
         node_output_dict[node.node_id] = input_array
 
     elif isinstance(node, SetNode_Dep):
 
-        #0. Create the tables needed for the filtering function
-        #   (mapping_array, input_set, negated)
-        #   ....
-
-        #[(deprel, setnode2), ...... ]
-        #table_of_restrictions = []
         deprels = []
         input_sets = []
         negateds = []
@@ -588,7 +507,6 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             negated = False
             if isinstance(deprel, DeprelNode_Not):
                 negated = True
-            #table_of_restrictions.append((deprel, input_set, negated))
             deprels.append('self.' + node_output_dict[deprel.node_id])
             input_sets.append('self.' + node_output_dict[input_set.node_id])
             negateds.append(negated)
@@ -606,10 +524,7 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         filtering_function = generate_filtering(filtering_function_name, deprels, input_sets, negateds, sentence_count_str)
         extra_functions.append(filtering_function)
 
-
-        #Index node
         index_node = node_output_dict[node.index_node.node_id]
-        #output set
         output_set = set_manager.node_needs[node.node_id]['own_output_set']
 
         match_lines.append('for t in range(0, self.' + sentence_count_str + '.tree_length):')
@@ -641,11 +556,6 @@ def generate_filtering(filtering_function_name, deprels, input_sets, negateds, s
     temp_set_name = 'self.' + filtering_function_name +'_temp_set'
     temp_set_name_2 = 'self.' + filtering_function_name +'_temp_set_2'
 
-    #Temporary full set which, we intersect these
-    #line.append(' '* 4 + filtering_function_name +'_temp_set.set_length(' + sentence_count_str + '.tree_length)')
-    #I'll just copy the temp_set
-
-    #line.append(' '*4 + 'for i in range(0, ' + str(len(negated_sets)) + '):')
     for ns in negated_sets:
         line.append(' '*4 + 'M' + str(ns) + '.get_set(t, ' + temp_set_name + ')')
         line.append(' '*4 + temp_set_name_2 + '.copy(' + temp_set_name + ')')
@@ -658,15 +568,6 @@ def generate_filtering(filtering_function_name, deprels, input_sets, negateds, s
         line.append(' '*4 + 'self.' + filtering_function_name + '_C' + str(i) + '.intersection_update(S' + str(comp) + ')')
         line.append(' '*4 + 'if self.' + filtering_function_name + '_C' + str(i) + '.is_empty(): return False')
 
-    #This doesnt ensure correctness
-    '''
-    if len(compulsory_sets) > 1:
-        
-        line.append(' '* 4 + temp_set_name + '.copy(self.' + filtering_function_name + '_C' + str(0) + ')')
-        for i, cs in enumerate(compulsory_sets[1:]):
-            line.append(' '* 4 + temp_set_name + '.intersection_update(self.' + filtering_function_name + '_C' + str(i+1) + ')')
-        line.append(' '*4 + 'if ' + temp_set_name + '.is_empty(): return True')
-   '''
 
     if len(compulsory_sets) > 1:
         
@@ -698,7 +599,6 @@ def generate_filtering(filtering_function_name, deprels, input_sets, negateds, s
     return line
 
 def get_sentence_count_str(set_manager):
-    #Search for some random set or array and return proper line
     compulsory = []
     non_compulsory = []
 
@@ -755,9 +655,6 @@ def visualize_order(order):
 def get_order_of_execution(node, node_dict):
 
     order_of_exec = []
-    #Get levels
-    #Go through the levels, starting from the bottom
-    #Do the compulsory ones first
     
     levels = set()
     lev_nodes = {}
@@ -789,12 +686,6 @@ def get_order_of_execution(node, node_dict):
 
 def visualize(node, node_dict):
 
-
-    #Hmmm...
-    #The point is to see whether it worked!
-
-    #Get levels
-    #Print node info per level
     levels = set()
     lev_nodes = {}
     for key in node_dict.keys():
