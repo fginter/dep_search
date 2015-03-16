@@ -16,7 +16,8 @@ CORPORA_FILENAME = 'corpora.json'
 # App settings. IMPORTANT: set DEBUG = False for publicly accessible
 # installations, the debug mode allows arbitrary code execution.
 DEBUG = False
-HOST = 'epsilon-it.utu.fi'
+HOST = '0.0.0.0'
+PATH = '/'
 PORT = 5042
 STATIC_PATH = '/static'
 DB_PARAMETER = 'db'
@@ -36,8 +37,8 @@ CONTENT_END = '<!-- CONTENT-END -->'
 visualization_start = '<pre><code class="conllu">'
 visualization_end = '</code></pre>'
 
-def server_url(host=HOST, port=PORT):
-    url = '%s:%d' % (host, port)
+def server_url(host=HOST, port=PORT, path=PATH):
+    url = '%s:%d%s' % (host, port, path)
     if not url.startswith('http://'):
         url = 'http://' + url # TODO do this properly
     return url
@@ -99,7 +100,7 @@ def fill_template(template, content='', dbname='', query=''):
     header = template[:template.find(CONTENT_START)]
     trailer = template[template.find(CONTENT_END):]
     filled = header + content + trailer
-    filled = filled.replace(SERVER_URL_PLACEHOLDER, server_url())
+    filled = filled.replace(SERVER_URL_PLACEHOLDER, server_url().rstrip('/'))
     filled = filled.replace(QUERY_PLACEHOLDER, query)
     filled = filled.replace(DBS_PLACEHOLDER, render_dbs(dbname))
     filled = filled.replace(DB_PLACEHOLDER, dbname)
@@ -115,7 +116,7 @@ def query_and_fill_template(dbname, query):
         return "Internal error: %s" % (str(e))
     # plug in separate visualizations to allow for progressive loading
     visualizations = []
-    for block in results.split('\n\n'):
+    for block in results.split('\n\n')[:-1]:
         block = block.decode('utf-8')
         visualizations.append(visualization_start +
                               block + '\n\n' +
