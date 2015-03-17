@@ -167,7 +167,7 @@ def main(argv):
         #import pdb;pdb.set_trace()
         #This is a query, compile first
         import pseudocode_ob_3 as pseudocode_ob
-        #pseudocode_ob.generate_and_write_search_code_from_expression(args.search, "q_autogen", json_filename=json_filename)
+        pseudocode_ob.generate_and_write_search_code_from_expression(args.search, "q_autogen", json_filename=json_filename)
         mod=load("q_autogen")
     query_obj=mod.GeneratedSearch()
     sql_query,sql_args=query(query_obj.query_fields)
@@ -177,6 +177,8 @@ def main(argv):
     total_hits=0
     for d in dbs:
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)
+        if total_hits > args.max:
+            break
     print >> sys.stderr, "Total number of hits:",total_hits
 
 if __name__=="__main__":

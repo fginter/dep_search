@@ -464,6 +464,29 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         match_lines.append('#Reporting ' + input_array_1 + ' as output array')
         node_output_dict[node.node_id] = input_array_1
 
+    elif isinstance(node, SetNode_Eq):
+
+        #Get input nodes
+        input_set_1 = node_output_dict[node.setnode1.node_id]
+        input_set_2 = node_output_dict[node.setnode2.node_id]
+        match_lines.append('self.' + input_set_1 + '.intersection_update(self.' + input_set_2 + ')')
+        #input_set_1 is the output
+
+        sentence_count_str = get_sentence_count_str(set_manager)
+        match_lines.append('for t in range(0, self.' + sentence_count_str + '.tree_length):')
+        match_lines.append(' ' * 4 + 'if not self.' + input_set_1 + '.has_item(t) and self.' + input_set_2 + '.has_item(t):')
+        match_lines.append(' '*8 + 'self.'+ input_set_1 + '.copy(self.empty_set)')
+        match_lines.append(' '*8 + 'break')
+
+        match_lines.append(' ' * 4 + 'if self.' + input_set_1 + '.has_item(t) and not self.' + input_set_2 + '.has_item(t):')
+        match_lines.append(' '*8 + 'self.'+ input_set_1 + '.copy(self.empty_set)')
+        match_lines.append(' '*8 + 'break')
+
+        if not node.negs_above:
+            match_lines.append('if self.' + input_set_1 + '.is_empty(): return self.' + input_set_1)
+        match_lines.append('#Reporting ' + input_set_1 + ' as output set')
+        node_output_dict[node.node_id] = input_set_1
+
     elif isinstance(node, SetNode_Or):
 
         #Get input nodes

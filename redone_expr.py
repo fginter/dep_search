@@ -38,6 +38,20 @@ class SetNode_Token(BaseNode):
     def to_unicode(self):
         return u'SetNode(Token:' + self.proplabel + self.token_restriction + u')' 
 
+class SetNode_Eq(BaseNode):
+
+    def __init__(self, setnode1, setnode2):
+        self.node_id = ''
+        self.setnode1 = setnode1
+        self.setnode2 = setnode2
+        self.proplabel = ''
+
+    def get_kid_nodes(self):
+        return [self.setnode1, self.setnode2]
+
+    def to_unicode(self):
+        return u'Node(' + self.setnode1.to_unicode() + ' == ' + self.setnode2.to_unicode() + ')'
+
 
 class SetNode_And(BaseNode):
 
@@ -175,11 +189,12 @@ tokens=('TEXT',    #/..../
         'NEG',       #!
         'AND',       #&
         'OR',        #|
+        'EQ',
         'ANYTOKEN')  #_
 
 #Here's regular expressions for the tokens defined above
 
-t_TEXT=ur'[^"<>()&|!\s]+'
+t_TEXT=ur'[^"=<>()&|!\s]+'
 t_WORD=ur'"[^"]+"'
 t_DEPOP=ur'(<|>)([^"<>_()&|\s]+)?'
 t_LPAR=ur"\("
@@ -187,6 +202,7 @@ t_RPAR=ur"\)"
 t_NEG=ur"\!"
 t_AND=ur"\&"
 t_OR=ur"\|"
+t_EQ=ur"=="
 t_ANYTOKEN=ur"_"
 
 t_ignore=u" \t"
@@ -200,7 +216,7 @@ def t_error(t):
 
 
 #Main 
-precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), )
+precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'),('left','EQ'))
 
 #precedence = (('left','DEPOP'),)
 
@@ -308,8 +324,9 @@ def p_sn_or(t):
     u'''tokendef : tokendef OR tokendef'''
     t[0] = SetNode_Or(t[1], t[3])
 
-
-
+def p_sn_eq(t):
+    u'''tokendef : tokendef EQ tokendef'''
+    t[0] = SetNode_Eq(t[1], t[3])
 
 
 def p_dn_or(t):
@@ -334,8 +351,6 @@ def p_sn_not(t):
     t[0] = SetNode_Not(t[2])
 
 
-
-
 lex.lex(reflags=re.UNICODE)
 yacc.yacc(write_tables=0,debug=1,method='SLR')
 
@@ -347,6 +362,11 @@ if __name__=="__main__":
     args = parser.parse_args()
     
     e_parser=yacc.yacc(write_tables=0,debug=1,method='LALR')
+
+    lex.input(args.expression[0])
+    for tok in iter(lex.token, None):
+        print repr(tok.type), repr(tok.value)
+
     for expression in args.expression:
 
         import logging
