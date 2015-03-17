@@ -194,15 +194,15 @@ tokens=('TEXT',    #/..../
 
 #Here's regular expressions for the tokens defined above
 
-t_TEXT=ur'[^"=<>()&|!\s]+'
+t_TEXT=ur'[^"-<>()&|!\s]+'
 t_WORD=ur'"[^"]+"'
-t_DEPOP=ur'(<|>)([^"<>_()&|\s]+)?'
+t_DEPOP=ur'([^-]?)(<|>)([^"<>_()&|\s]+)?'
 t_LPAR=ur"\("
 t_RPAR=ur"\)"
 t_NEG=ur"\!"
 t_AND=ur"\&"
 t_OR=ur"\|"
-t_EQ=ur"=="
+t_EQ=ur"->"
 t_ANYTOKEN=ur"_"
 
 t_ignore=u" \t"
