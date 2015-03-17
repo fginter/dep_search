@@ -455,6 +455,33 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         match_lines.append('#Reporting ' + input_set_1 + ' as output set')
         node_output_dict[node.node_id] = input_set_1
 
+
+
+
+
+
+    elif isinstance(node, SetNode_Plus):
+
+        #Get input nodes
+        input_set_1 = node_output_dict[node.setnode1.node_id]
+        input_set_2 = node_output_dict[node.setnode2.node_id]
+
+        match_lines.append('if not self.' + input_set_1 + '.is_empty() and not self.' + input_set_2 + '.is_empty():')
+        match_lines.append(' '*4 + 'self.' + input_set_1 + '.union_update(self.' + input_set_2 + ')')
+        match_lines.append('else:')
+        match_lines.append(' '*4 + 'self.' + input_set_1 + '.copy(self.empty_set)')
+
+
+        
+
+
+        #match_lines.append('self.' + input_set_1 + '.intersection_update(self.' + input_set_2 + ')')
+        if not node.negs_above:
+            match_lines.append('if self.' + input_set_1 + '.is_empty(): return self.' + input_set_1)
+        match_lines.append('#Reporting ' + input_set_1 + ' as output set')
+        node_output_dict[node.node_id] = input_set_1
+
+
     elif isinstance(node, DeprelNode_And):
 
         #Get input nodes

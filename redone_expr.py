@@ -53,6 +53,21 @@ class SetNode_And(BaseNode):
     def to_unicode(self):
         return u'Node(' + self.setnode1.to_unicode() + ' AND ' + self.setnode2.to_unicode() + ')'
 
+class SetNode_Plus(BaseNode):
+
+    def __init__(self, setnode1, setnode2):
+        self.node_id = ''
+        self.setnode1 = setnode1
+        self.setnode2 = setnode2
+        self.proplabel = ''
+
+    def get_kid_nodes(self):
+        return [self.setnode1, self.setnode2]
+
+    def to_unicode(self):
+        return u'Node(' + self.setnode1.to_unicode() + ' PLUS ' + self.setnode2.to_unicode() + ')'
+
+
 class SetNode_Or(BaseNode):
 
     def __init__(self, setnode1, setnode2):
@@ -175,11 +190,12 @@ tokens=('TEXT',    #/..../
         'NEG',       #!
         'AND',       #&
         'OR',        #|
+        'PLUS',
         'ANYTOKEN')  #_
 
 #Here's regular expressions for the tokens defined above
 
-t_TEXT=ur'[^"<>()&|!\s]+'
+t_TEXT=ur'[^"+<>()&|!\s]+'
 t_WORD=ur'"[^"]+"'
 t_DEPOP=ur'(<|>)([^"<>_()&|\s]+)?'
 t_LPAR=ur"\("
@@ -187,6 +203,7 @@ t_RPAR=ur"\)"
 t_NEG=ur"\!"
 t_AND=ur"\&"
 t_OR=ur"\|"
+t_PLUS=ur"\+"
 t_ANYTOKEN=ur"_"
 
 t_ignore=u" \t"
@@ -200,7 +217,7 @@ def t_error(t):
 
 
 #Main 
-precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), )
+precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), ('left','PLUS'))
 
 #precedence = (('left','DEPOP'),)
 
@@ -311,6 +328,11 @@ def p_sn_or(t):
 
 
 
+
+
+def p_sn_plus(t):
+    u'''tokendef : tokendef PLUS tokendef'''
+    t[0] = SetNode_Plus(t[1], t[3])
 
 def p_dn_or(t):
     u'''depnode : depnode OR depnode'''
