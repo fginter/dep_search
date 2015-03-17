@@ -181,7 +181,8 @@ class DeprelNode_Not(BaseNode):
 
 #Lexer - tokens
 
-tokens=('TEXT',    #/..../
+tokens=('EQ',
+        'TEXT',    #/..../
         'WORD', #@...
         'DEPOP',     #</nsubj/
         'LPAR',      #(
@@ -189,12 +190,11 @@ tokens=('TEXT',    #/..../
         'NEG',       #!
         'AND',       #&
         'OR',        #|
-        'EQ',
         'ANYTOKEN')  #_
 
 #Here's regular expressions for the tokens defined above
 
-t_TEXT=ur'[^"-<>()&|!\s]+'
+t_TEXT=ur'[^"(->)<>()&|!\s]+'
 t_WORD=ur'"[^"]+"'
 t_DEPOP=ur'([^-]?)(<|>)([^"<>_()&|\s]+)?'
 t_LPAR=ur"\("
