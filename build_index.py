@@ -179,7 +179,7 @@ def fill_db(conn,src_data,stats):
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Train')
     parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
-    parser.add_argument('--max', type=int, default=10000, help='How many sentences to read from stdin? default: %(default)d')
+    parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
     args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     os.system("mkdir -p "+args.dir)
