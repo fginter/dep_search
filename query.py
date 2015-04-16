@@ -176,6 +176,8 @@ def main(argv):
     dbs.sort()
     total_hits=0
     for d in dbs:
+        if os.path.exists(d+"-journal"):
+            continue #this db is being indexed, ignore not to get stuck
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)
     print >> sys.stderr, "Total number of hits:",total_hits
 
