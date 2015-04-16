@@ -115,6 +115,7 @@ def add_doc_comments(sents):
     in goes an iterator over sent,comments pairs
     out goes an iterator with comments enriched by URLs
     """
+    urlRe=re.compile(ur'url="(.*?)"',re.U)
     doc_counter,sent_in_doc_counter=-1,0
     current_url=None
     for sent,comments in sents:
@@ -125,6 +126,15 @@ def add_doc_comments(sents):
             sent_in_doc_counter=0
             continue
         ###Todo: PB4 style URL comments
+        for c in comments:
+            if c.startswith(u"###C:</doc"):
+                current_url=None
+            elif c.startswith(u"###C:<doc"):
+                match=urlRe.search(c)
+                if not match: #WHoa!
+                    print >> sys.stderr, "Missing url", c.encode("utf-8")
+                else:
+                    current_url=match.group(1)
         ###C:<doc id="3-1954112" length="1k-10k" crawl_date="2014-07-26" url="http://parolanasema.blogspot.fi/2013/02/paris-paris-maison-objet-messut-osa-1.html" langdiff="0.37">
         if current_url is not None:
             comments.append(u"# URL: "+current_url)
