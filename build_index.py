@@ -162,6 +162,10 @@ def fill_db(conn,src_data,stats):
     """
     counter=0
     for sent_idx,(sent,comments) in enumerate(add_doc_comments(src_data)):
+        if len(sent)>256:
+            print >> sys.stderr, "skipping length", len(sent)
+            sys.stderr.flush()
+            continue
         counter+=1
         t=Tree.from_conll(comments,sent,stats)
         
