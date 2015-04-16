@@ -197,7 +197,7 @@ if __name__=="__main__":
     args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     os.system("mkdir -p "+args.dir)
-    os.system("rm -f %s/*.db"%args.dir)
+    #os.system("rm -f %s/*.db"%args.dir)
 
     stats=SymbolStats()
     src_data=read_conll(sys.stdin,args.max)
@@ -205,7 +205,10 @@ if __name__=="__main__":
     batch=500000
     counter=0
     while True:
-        conn=sqlite3.connect(args.dir+"/trees_%05d.db"%counter)
+        db_name=args.dir+"/trees_%05d.db"%counter
+        if os.path.exists(db_name):
+            os.system("rm -f "+db_name)
+        conn=sqlite3.connect(db_name)
         prepare_tables(conn)
         it=itertools.islice(src_data,batch)
         filled=fill_db(conn,it,stats)
