@@ -217,7 +217,6 @@ if __name__=="__main__":
         build_indices(conn)
         conn.close()
         counter+=1
-    
-    stats.save_json(os.path.join(args.dir,"symbols.json"))
+        stats.save_json(os.path.join(args.dir,"symbols.json"))
 
 
