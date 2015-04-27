@@ -18,7 +18,7 @@ import importlib
 import argparse
 import db_util
 import glob
-
+import tempfile
 
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 def query(query_fields):
@@ -89,6 +89,7 @@ def load(pyxFile):
     if error!=0:
         print >> sys.stderr, "Cannot compile search code, error:",error
         sys.exit(1)
+    print pyxFile
     mod=importlib.import_module(pyxFile)
     return mod
 
@@ -167,19 +168,32 @@ def main(argv):
         #import pdb;pdb.set_trace()
         #This is a query, compile first
         import pseudocode_ob_3 as pseudocode_ob
-        pseudocode_ob.generate_and_write_search_code_from_expression(args.search, "q_autogen", json_filename=json_filename)
-        mod=load("q_autogen")
+
+        f = tempfile.NamedTemporaryFile(dir='.', delete=False, suffix='.pyx')
+        temp_file_name = f.name
+        pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename)
+        #print f.name[:-4]
+        #This is kind of hacky?!
+        mod=load(f.name[:-4].split('/')[-1])
+
     query_obj=mod.GeneratedSearch()
     sql_query,sql_args=query(query_obj.query_fields)
     
     dbs=glob.glob(args.database)
     dbs.sort()
+
+    #import pdb;pdb.set_trace()
+
     total_hits=0
     for d in dbs:
-        if os.path.exists(d+"-journal"):
-            continue #this db is being indexed, ignore not to get stuck
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)
+        if total_hits > args.max:
+            break
     print >> sys.stderr, "Total number of hits:",total_hits
+
+    os.remove(temp_file_name)
+    os.remove(temp_file_name[:-4] + '.cpp')
+    os.remove(temp_file_name[:-4] + '.so')
 
 if __name__=="__main__":
     sys.exit(main(sys.argv))

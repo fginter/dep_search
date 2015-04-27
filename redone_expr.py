@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import re
 import logging
 import lex as lex
@@ -37,6 +38,37 @@ class SetNode_Token(BaseNode):
 
     def to_unicode(self):
         return u'SetNode(Token:' + self.proplabel + self.token_restriction + u')' 
+
+
+class SetNode_Eq(BaseNode):
+
+    def __init__(self, setnode1, setnode2):
+        self.node_id = ''
+        self.setnode1 = setnode1
+        self.setnode2 = setnode2
+        self.proplabel = ''
+
+    def get_kid_nodes(self):
+        return [self.setnode1, self.setnode2]
+
+    def to_unicode(self):
+        return u'Node(' + self.setnode1.to_unicode() + ' == ' + self.setnode2.to_unicode() + ')'
+
+
+
+class SetNode_SubEq(BaseNode):
+
+    def __init__(self, setnode1, setnode2):
+        self.node_id = ''
+        self.setnode1 = setnode1
+        self.setnode2 = setnode2
+        self.proplabel = ''
+
+    def get_kid_nodes(self):
+        return [self.setnode1, self.setnode2]
+
+    def to_unicode(self):
+        return u'Node(' + self.setnode1.to_unicode() + ' -> ' + self.setnode2.to_unicode() + ')'
 
 
 class SetNode_And(BaseNode):
@@ -191,21 +223,25 @@ tokens=('TEXT',    #/..../
         'AND',       #&
         'OR',        #|
         'PLUS',
+        'EQ',
+        'SE',
         'ANYTOKEN')  #_
 
 #Here's regular expressions for the tokens defined above
 
-t_TEXT=ur'[^"+<>()&|!\s]+'
+t_TEXT=ur'[^"=\-\+<>\(\)\&\|\!\s]+'
+#t_TEXT=ur'[A-Za-zäöÄÖÅå=]'
 t_WORD=ur'"[^"]+"'
-t_DEPOP=ur'(<|>)([^"<>_()&|\s]+)?'
+t_DEPOP=ur'([^!-]?)(<|>)([^="<>_()&|\s]+)?'
 t_LPAR=ur"\("
 t_RPAR=ur"\)"
 t_NEG=ur"\!"
 t_AND=ur"\&"
 t_OR=ur"\|"
+t_EQ=ur"=="
+t_SE=ur"->"
 t_PLUS=ur"\+"
 t_ANYTOKEN=ur"_"
-
 t_ignore=u" \t"
 
 def t_error(t):
@@ -217,7 +253,12 @@ def t_error(t):
 
 
 #Main 
-precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), ('left','PLUS'))
+#precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), ('left','PLUS'),('left','EQ'))
+
+#precedence = (('right','EQ'),('left','PLUS'),('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'))
+
+precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), ('left','PLUS'),('left','EQ'),('left','SE'), ('left','TEXT'))
+
 
 #precedence = (('left','DEPOP'),)
 
@@ -331,8 +372,22 @@ def p_sn_or(t):
 
 
 def p_sn_plus(t):
-    u'''tokendef : tokendef PLUS tokendef'''
+    u'''setnode : setnode PLUS setnode'''
     t[0] = SetNode_Plus(t[1], t[3])
+
+
+#def p_sn_plus(t):
+#    u'''tokendef : tokendef PLUS tokendef'''
+#    t[0] = SetNode_Plus(t[1], t[3])
+
+def p_sn_eq(t):
+    u'''setnode : setnode EQ setnode'''
+    t[0] = SetNode_Eq(t[1], t[3])
+
+def p_sn_seq(t):
+    u'''setnode : setnode SE setnode'''
+    t[0] = SetNode_SubEq(t[1], t[3])
+
 
 def p_dn_or(t):
     u'''depnode : depnode OR depnode'''

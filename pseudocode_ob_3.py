@@ -456,8 +456,57 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         node_output_dict[node.node_id] = input_set_1
 
 
+    elif isinstance(node, SetNode_Eq):
+
+        #Get input nodes
+        input_set_1 = node_output_dict[node.setnode1.node_id]
+        input_set_2 = node_output_dict[node.setnode2.node_id]
+        #input_set_1 is the output
+
+        #match_lines.append('self.' + input_set_1 + '.print_set()')
+        #match_lines.append('self.' + input_set_2 + '.print_set()')
+
+        sentence_count_str = get_sentence_count_str(set_manager)
+        match_lines.append('for t in range(0, self.' + sentence_count_str + '.tree_length):')
+        match_lines.append(' ' * 4 + 'if not self.' + input_set_1 + '.has_item(t) and self.' + input_set_2 + '.has_item(t):')
+        match_lines.append(' '*8 + 'self.'+ input_set_1 + '.copy(self.empty_set)')
+        match_lines.append(' '*8 + 'break')
+
+        match_lines.append(' ' * 4 + 'if self.' + input_set_1 + '.has_item(t) and not self.' + input_set_2 + '.has_item(t):')
+        match_lines.append(' '*8 + 'self.'+ input_set_1 + '.copy(self.empty_set)')
+        match_lines.append(' '*8 + 'break')
+
+        #match_lines.append('self.' + input_set_1 + '.print_set()')
+
+        if not node.negs_above:
+            match_lines.append('if self.' + input_set_1 + '.is_empty(): return self.' + input_set_1)
+        match_lines.append('#Reporting ' + input_set_1 + ' as output set')
+        node_output_dict[node.node_id] = input_set_1
 
 
+    elif isinstance(node, SetNode_SubEq):
+
+        #Get input nodes
+        input_set_1 = node_output_dict[node.setnode1.node_id]
+        input_set_2 = node_output_dict[node.setnode2.node_id]
+
+        #An intersection update for the set no 2.
+        match_lines.append(' ' * 4 + 'self.' + input_set_2 + '.intersection_update(self.' + input_set_1  + ')')
+
+        sentence_count_str = get_sentence_count_str(set_manager)
+        match_lines.append('for t in range(0, self.' + sentence_count_str + '.tree_length):')
+        match_lines.append(' ' * 4 + 'if not self.' + input_set_1 + '.has_item(t) and self.' + input_set_2 + '.has_item(t):')
+        match_lines.append(' '*8 + 'self.'+ input_set_1 + '.copy(self.empty_set)')
+        match_lines.append(' '*8 + 'break')
+
+        match_lines.append(' ' * 4 + 'if self.' + input_set_1 + '.has_item(t) and not self.' + input_set_2 + '.has_item(t):')
+        match_lines.append(' '*8 + 'self.'+ input_set_1 + '.copy(self.empty_set)')
+        match_lines.append(' '*8 + 'break')
+
+        if not node.negs_above:
+            match_lines.append('if self.' + input_set_1 + '.is_empty(): return self.' + input_set_1)
+        match_lines.append('#Reporting ' + input_set_1 + ' as output set')
+        node_output_dict[node.node_id] = input_set_1
 
 
     elif isinstance(node, SetNode_Plus):
@@ -785,9 +834,9 @@ def id_the_nodes(node, pid, lev, negs_above, node_dict):
                 id_the_nodes(deprel_tuple[1], pid + '_' + str(i) + '_0', lev + 1, negs, node_dict)
                 id_the_nodes(deprel_tuple[0], pid + '_' + str(i) + '_1', lev + 1, negs, node_dict)
 
-def write_cython_code(lines, output_file):
+def write_cython_code(lines, out):
 
-    out = codecs.open(output_file, 'wt', 'utf8')
+    #out = codecs.open(output_file, 'wt', 'utf8')
 
     magic_lines = '''# distutils: language = c++
 # distutils: include_dirs = setlib
@@ -853,7 +902,7 @@ def main():
     write_cython_code(code_lines, filename + '.pyx')
 
 
-def generate_and_write_search_code_from_expression(expression, filename, json_filename=''):
+def generate_and_write_search_code_from_expression(expression, f, json_filename=''):
 
     try:
         json_f = open(json_filename, 'rt')
@@ -892,7 +941,7 @@ def generate_and_write_search_code_from_expression(expression, filename, json_fi
     nodes = e_parser.parse(expression)
     #print nodes.to_unicode()
     code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
-    write_cython_code(code_lines, filename + '.pyx')
+    write_cython_code(code_lines, f)
 
 if __name__ == "__main__":
     main()
