@@ -229,8 +229,9 @@ tokens=('TEXT',    #/..../
 
 #Here's regular expressions for the tokens defined above
 
-t_TEXT=ur'[^"=\-\+<>\(\)\&\|\!\s]+'
+#t_TEXT=ur'[^"=\-\+<>\(\)\&\|\!\s]+'
 #t_TEXT=ur'[A-Za-zäöÄÖÅå=]'
+t_TEXT=ur'([A-Za-z0-9äöÄÖÅå]+[=]?[A-Za-z0-9äöÄÖÅå]*)+'
 t_WORD=ur'"[^"]+"'
 t_DEPOP=ur'([^!-]?)(<|>)([^="<>_()&|\s]+)?'
 t_LPAR=ur"\("
