@@ -847,7 +847,7 @@ include "search_common.pxi"\n'''
     out.write(magic_lines)
 
     for line in lines:
-        out.write(line + '\n')
+        out.write(line.encode('utf8') + '\n')
 
     out.close()
 
