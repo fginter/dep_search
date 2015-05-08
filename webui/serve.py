@@ -101,7 +101,7 @@ def fill_template(template, content='', dbname='', query=''):
     trailer = template[template.find(CONTENT_END):]
     filled = header + content + trailer
     filled = filled.replace(SERVER_URL_PLACEHOLDER, server_url().rstrip('/'))
-    filled = filled.replace(QUERY_PLACEHOLDER, query)
+    filled = filled.replace(QUERY_PLACEHOLDER, query.replace('"', '&quot;')
     filled = filled.replace(DBS_PLACEHOLDER, render_dbs(dbname))
     filled = filled.replace(DB_PLACEHOLDER, dbname)
     return filled

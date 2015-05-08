@@ -258,7 +258,7 @@ def t_error(t):
 
 #precedence = (('right','EQ'),('left','PLUS'),('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'))
 
-precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), ('left','PLUS'),('left','EQ'),('left','SE'), ('left','TEXT'))
+precedence = (('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left','PLUS'),('left','EQ'),('left','SE'), ('left','TEXT'))
 
 
 #precedence = (('left','DEPOP'),)
@@ -343,11 +343,11 @@ def p_exprp3(t):
                 | ANYTOKEN'''
     if len(t) == 2:
        if t[1].startswith('"') and t[1].endswith('"'):
-           t[0] = SetNode_Token(t[1].decode('utf-8'))
+           t[0] = SetNode_Token(t[1])
        elif t[1]=='_':
            t[0]=SetNode_Token(t[1])
        else:
-           t[0] = SetNode_Token('/' + t[1].decode('utf-8') + '/')
+           t[0] = SetNode_Token('/' + t[1] + '/')
            t[0].set_proplabel('@CGTAG')
 
 
@@ -432,6 +432,6 @@ if __name__=="__main__":
         log = logging.getLogger()
 
 
-        ebin = e_parser.parse(expression, debug=0)
+        ebin = e_parser.parse(expression.decode('utf8'), debug=0)
         print ebin.to_unicode()
         #import pdb;pdb.set_trace() 
