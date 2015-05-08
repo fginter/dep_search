@@ -892,7 +892,7 @@ def main():
 
     e_parser=yacc.yacc()
     for expression in args.expression:
-        nodes = e_parser.parse(expression)
+        nodes = e_parser.parse(expression.decode('utf8'))
         print nodes.to_unicode()
 
     code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
