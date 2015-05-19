@@ -231,18 +231,49 @@ tokens=('TEXT',    #/..../
 
 #t_TEXT=ur'[^"=\-\+<>\(\)\&\|\!\s]+'
 #t_TEXT=ur'[A-Za-zäöÄÖÅå=]'
-t_TEXT=ur'([A-Za-z0-9äöÄÖÅå]+[=]?[A-Za-z0-9äöÄÖÅå]*)+'
-t_WORD=ur'"[^"]+"'
-t_DEPOP=ur'([^!-]?)(<|>)([^="<>_()&|\s]+)?'
-t_LPAR=ur"\("
-t_RPAR=ur"\)"
-t_NEG=ur"\!"
-t_AND=ur"\&"
-t_OR=ur"\|"
-t_EQ=ur"=="
-t_SE=ur"->"
-t_PLUS=ur"\+"
-t_ANYTOKEN=ur"_"
+
+t_TEXT = ur'((?!(->|\+|&|\(|\)|\||==|<|>|"|\s)).)+'
+t_DEPOP = ur'(<|>)([^="<>_()&|\s]+)?'
+
+def t_WORD(t):
+    ur'"[^"]+"'
+    return t
+
+def t_LPAR(t):
+    ur"\("
+    return t
+
+def t_RPAR(t):
+     ur"\)"
+     return t
+
+def t_NEG(t):
+    ur"\!"
+    return t
+
+def t_AND(t):
+    ur"\&"
+    return t
+
+def t_OR(t):
+    ur"\|"
+    return t
+
+def t_EQ(t):
+    ur"=="
+    return t
+
+def t_SE(t):
+    ur"->"
+    return t
+
+def t_PLUS(t):
+    ur"\+"
+    return t
+
+def t_ANYTOKEN(t):
+     ur"_"
+     return t
 t_ignore=u" \t"
 
 def t_error(t):
@@ -423,15 +454,11 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Expression parser')
     parser.add_argument('expression', nargs='+', help='Training file name, or nothing for training on stdin')
     args = parser.parse_args()
-    
     e_parser=yacc.yacc(write_tables=0,debug=1,method='LALR')
     for expression in args.expression:
 
         import logging
         logging.basicConfig(filename='myapp.log', level=logging.INFO)
         log = logging.getLogger()
-
-
         ebin = e_parser.parse(expression.decode('utf8'), debug=0)
         print ebin.to_unicode()
-        #import pdb;pdb.set_trace() 

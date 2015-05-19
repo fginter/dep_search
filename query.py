@@ -163,6 +163,8 @@ def main(argv):
     else:
         #Get the location of the symbols.json file
         #Can this fail somehow??
+        #print argv
+
         path = '/'.join(args.database.split('/')[:-1])
         json_filename = path + '/symbols.json' 
         #import pdb;pdb.set_trace()
@@ -173,7 +175,6 @@ def main(argv):
         temp_file_name = f.name
         pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename)
         #print f.name[:-4]
-        #This is kind of hacky?!
         mod=load(f.name[:-4].split('/')[-1])
 
     query_obj=mod.GeneratedSearch()
@@ -191,9 +192,12 @@ def main(argv):
             break
     print >> sys.stderr, "Total number of hits:",total_hits
 
-    os.remove(temp_file_name)
-    os.remove(temp_file_name[:-4] + '.cpp')
-    os.remove(temp_file_name[:-4] + '.so')
+    try:
+        os.remove(temp_file_name)
+        os.remove(temp_file_name[:-4] + '.cpp')
+        os.remove(temp_file_name[:-4] + '.so')
+    except:
+        pass
 
 if __name__=="__main__":
     sys.exit(main(sys.argv))

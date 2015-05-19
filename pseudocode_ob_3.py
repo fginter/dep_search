@@ -491,7 +491,7 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         input_set_2 = node_output_dict[node.setnode2.node_id]
 
         #An intersection update for the set no 2.
-        match_lines.append(' ' * 4 + 'self.' + input_set_2 + '.intersection_update(self.' + input_set_1  + ')')
+        match_lines.append('self.' + input_set_2 + '.intersection_update(self.' + input_set_1  + ')')
 
         sentence_count_str = get_sentence_count_str(set_manager)
         match_lines.append('for t in range(0, self.' + sentence_count_str + '.tree_length):')
@@ -904,6 +904,9 @@ def main():
 
 def generate_and_write_search_code_from_expression(expression, f, json_filename=''):
 
+    import sys
+    print >> sys.stderr, expression
+
     try:
         json_f = open(json_filename, 'rt')
         json_line = json_f.readline()
@@ -938,7 +941,8 @@ def generate_and_write_search_code_from_expression(expression, f, json_filename=
 
 
     e_parser=yacc.yacc()
-    nodes = e_parser.parse(expression)
+
+    nodes = e_parser.parse(expression.decode('utf8'))
     #print nodes.to_unicode()
     code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
     write_cython_code(code_lines, f)

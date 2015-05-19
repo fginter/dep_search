@@ -7,3 +7,4 @@ VERB&!InfForm=3 >nsubj (NOUN&Par !>nummod _) >dobj _ !<xcomp _ !<xcomp:ds _	Node
 VERB -> (_ <acl:relcl _)	Node(SetNode(Token:@CGTAGVERB) -> Node(index_node:SetNode(Token:_) << DeprelNode(<acl:relcl):SetNode(Token:_) >> ))
 _ -> (_ <!@R _) | (_ !< _)	Node(SetNode(Token:_) -> Node(Node(index_node:SetNode(Token:_) << DeprelNode(<!@R):SetNode(Token:_) >> ) OR Node(index_node:SetNode(Token:_) << DeprelNode(NOT DeprelNode(<)):SetNode(Token:_) >> )))
 är >nmod _ >nmod _	Node(index_node:SetNode(Token:@CGTAGär) << DeprelNode(>nmod):SetNode(Token:_),DeprelNode(>nmod):SetNode(Token:_) >> )
+_ <nsubj|<nsubj:cop _	Node(index_node:SetNode(Token:_) << DeprelNode(DeprelNode(<nsubj) OR DeprelNode(<nsubj:cop)):SetNode(Token:_) >> )

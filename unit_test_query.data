@@ -1,0 +1,10 @@
+L=olla&!Person=3	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	72133	2e8d66a6a7dcf83c2a0484ccc364f01f
+NOUN&!Nom&!Par	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	351572	d270c543cd30e99106f521aa545fb5d8
+_ >nsubj _ >dobj _	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	107383	edf4a3439f0d412ed9435ea38a8e7527
+NOUN >amod@L _ >amod@R _ !>cc _	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	194	119dab7fd305fbd8b24666c3d71ccb14
+_ >amod _ >amod _ >amod _	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	1939	8ac00424720a9f9d11b84601c26a098c
+VERB&!InfForm=3 >nsubj (NOUN&Par !>nummod _) >dobj _ !<xcomp _ !<xcomp:ds _	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	1005	822d8c2268a083ffd2bbaf0fa8a6e5a7
+VERB -> (_ <acl:relcl _)	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	1417	206f7f0cf994a97393e8bddd6fa904d8
+_ -> (_ <!@R _) | (_ !< _)	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	26216	3fd0283c1384413e0701683af2dadf05
+är >nmod _ >nmod _	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	0	3fd0283c1384413e0701683af2dadf05
+_ <nsubj|<nsubj:cop _	/mnt/ssd/sdata/pb4-ud-100M/trees_00100.db	326538	37f39ce5d255bcb25b2714973f0d1f60
