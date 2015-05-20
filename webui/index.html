@@ -6,19 +6,19 @@
         <title></title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="{{ SERVER_URL }}/css/bootstrap.css">
-        <link rel="stylesheet" href="{{ SERVER_URL }}/css/bootstrap-theme.css">
-        <link rel="stylesheet" href="{{ SERVER_URL }}/css/depsearch-main.css">
+        <link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/bootstrap.css">
+        <link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/bootstrap-theme.css">
+        <link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/depsearch-main.css">
 
 	<!-- annotation visualization stuff --> 
-	<link rel="stylesheet" href="{{ SERVER_URL }}/css/jquery-ui-redmond.css">
-	<link rel="stylesheet" href="{{ SERVER_URL }}/css/annodoc-main.css">
-	<link rel="stylesheet" href="{{ SERVER_URL }}/css/style-vis.css">
-	<link rel="stylesheet" href="{{ SERVER_URL }}/css/depsearch.css">
-	<script type="text/javascript" src="{{ SERVER_URL }}/js/ext/head.load.min.js"></script>
+	<link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/jquery-ui-redmond.css">
+	<link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/annodoc-main.css">
+	<link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/style-vis.css">
+	<link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/depsearch.css">
+	<script type="text/javascript" src="js/ext/head.load.min.js"></script>
 	<!-- end annotation visualization stuff --> 
 
-        <script src="{{ SERVER_URL }}/js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+        <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
     </head>
     <body>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -30,25 +30,17 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">Dependency corpus search</a>
+          <a class="navbar-brand" href="#">SETS: Scalable and Efficient Tree Search in Dependency Graphs
+</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
-          <form class="navbar-form navbar-right" role="form">
-            <div class="form-group">
-              <input type="text" placeholder="Email" class="form-control">
-            </div>
-            <div class="form-group">
-              <input type="password" placeholder="Password" class="form-control">
-            </div>
-            <button type="submit" class="btn btn-success">Sign in</button>
-          </form>
         </div><!--/.navbar-collapse -->
       </div>
     </nav>
 
     <div class="jumbotron">
       <div class="container">
-        <h1>Dependency corpus search</h1>
+        <h1>SETS</h1>
         <p>Simple and fast search for dependency corpora of any size.</p>
       </div>
     </div>
@@ -68,12 +60,17 @@
 		 placeholder="Enter query (e.g. &quot;_ <nsubj _&quot;)"
 		 value="{{ QUERY }}">
 	  <button type="submit" class="btn btn-primary">Search!</button>
-	<a class="type-link" href="{{ SERVER_URL }}/types/{{ DBNAME }}">Show types</a>
+        <p>
+	<a class="type-link" href="http://bionlp-www.utu.fi/dep_search/types/{{ DBNAME }}">Show types</a>
+        <a class="Query Language" href="http://bionlp.utu.fi/searchexpressions-new.html">Query Language</a>
+        </p>
+
 	</div>
       </form>
 
-      <hr>
+      {{ ERROR }}
 
+      <hr>
       <!-- Don't change the "CONTENT" comments or stuff will break. -->
       <!-- CONTENT-START -->
       <!-- CONTENT-END -->
