@@ -6,15 +6,15 @@
         <title></title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/bootstrap.css">
-        <link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/bootstrap-theme.css">
-        <link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/depsearch-main.css">
+        <link rel="stylesheet" href="{{ SERVER_URL }}/css/bootstrap.css">
+        <link rel="stylesheet" href="{{ SERVER_URL }}/css/bootstrap-theme.css">
+        <link rel="stylesheet" href="{{ SERVER_URL }}/css/depsearch-main.css">
 
 	<!-- annotation visualization stuff --> 
-	<link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/jquery-ui-redmond.css">
-	<link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/annodoc-main.css">
-	<link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/style-vis.css">
-	<link rel="stylesheet" href="http://bionlp-www.utu.fi/dep_search/css/depsearch.css">
+	<link rel="stylesheet" href="{{ SERVER_URL }}/css/jquery-ui-redmond.css">
+	<link rel="stylesheet" href="{{ SERVER_URL }}/css/annodoc-main.css">
+	<link rel="stylesheet" href="{{ SERVER_URL }}/css/style-vis.css">
+	<link rel="stylesheet" href="{{ SERVER_URL }}/css/depsearch.css">
 	<script type="text/javascript" src="js/ext/head.load.min.js"></script>
 	<!-- end annotation visualization stuff --> 
 
@@ -61,7 +61,7 @@
 		 value="{{ QUERY }}">
 	  <button type="submit" class="btn btn-primary">Search!</button>
         <p>
-	<a class="type-link" href="http://bionlp-www.utu.fi/dep_search/types/{{ DBNAME }}">Show types</a>
+	<a class="type-link" href="{{ SERVER_URL }}/types/{{ DBNAME }}">Show types</a>
         <a class="Query Language" href="http://bionlp.utu.fi/searchexpressions-new.html">Query Language</a>
         </p>
 
