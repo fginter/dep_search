@@ -171,11 +171,16 @@ def main(argv):
         #This is a query, compile first
         import pseudocode_ob_3 as pseudocode_ob
 
-        f = tempfile.NamedTemporaryFile(dir='.', delete=False, suffix='.pyx')
-        temp_file_name = f.name
-        pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename)
-        #print f.name[:-4]
-        mod=load(f.name[:-4].split('/')[-1])
+        import hashlib
+        m = hashlib.md5()
+        m.update(args.search)
+        temp_file_name = 'qry_' + m.hexdigest() + '.pyx'#tempfile.NamedTemporaryFile(dir='.', delete=False, suffix='.pyx')
+
+        if not os.path.isfile(temp_file_name):
+            f = open('qry_' + m.hexdigest() + '.pyx', 'wt')#tempfile.NamedTemporaryFile(dir='.', delete=False, suffix='.pyx')
+            pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename)
+            #print f.name[:-4]
+        mod=load(temp_file_name[:-4].split('/')[-1])
 
     query_obj=mod.GeneratedSearch()
     sql_query,sql_args=query(query_obj.query_fields)
@@ -192,12 +197,12 @@ def main(argv):
             break
     print >> sys.stderr, "Total number of hits:",total_hits
 
-    try:
-        os.remove(temp_file_name)
-        os.remove(temp_file_name[:-4] + '.cpp')
-        os.remove(temp_file_name[:-4] + '.so')
-    except:
-        pass
+    #try:
+    #    os.remove(temp_file_name)
+    #    os.remove(temp_file_name[:-4] + '.cpp')
+    #    os.remove(temp_file_name[:-4] + '.so')
+    #except:
+    #    pass
 
 if __name__=="__main__":
     sys.exit(main(sys.argv))
