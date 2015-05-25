@@ -139,10 +139,13 @@ class NodeInterpreter():
 class SetManager():
 
     def __init__(self, nodes, node_dict, tag_list=[], val_dict={}):
+
         self.node_needs = {}
         self.tag_list = tag_list
         self.val_dict = val_dict
         #Interrogate the nodes
+        set_and_array_labels = []
+
         for key in node_dict.keys():
             node = node_dict[key]
             self.node_needs[key] = {}
@@ -159,6 +162,15 @@ class SetManager():
             #4. What temporary arrays do you need?
             #5. Do you need an output set, what is your output set called?
             self.node_needs[key]['own_output'], self.node_needs[key]['own_output_set'], self.node_needs[key]['own_output_set_type'] = ni.what_output_do_you_need()
+
+            set_and_array_labels.extend(self.node_needs[key]['db_sets_label'])
+            set_and_array_labels.extend(self.node_needs[key]['db_arrays_label'])
+
+        #If nothing was found add a virtual node 'extra' just to add something into the db
+        if len(set_and_array_labels) < 1:
+            self.node_needs['extra'] = {'temp_sets': [], 'all_tokens': False, 'all_tokens_label': [], 'db_arrays_label': {u'!dep_a_anyrel': 'extra_array'}, 'db_sets': [], 'db_arrays': [u'!dep_a_anyrel'], 'db_sets_label': {}, 'own_output_set': '', 'own_output_set_type': '', 'own_output': False}
+
+
 
 def generate_search_code(node, tag_list=[], val_dict={}):
 
