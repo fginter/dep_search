@@ -152,6 +152,8 @@ def main(argv):
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
     parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
     parser.add_argument('--context', required=False, action="store_true", default=False, help='Print the context (+/- 2 sentences) as comment. Default: %(default)d.')
+    parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
+
     args = parser.parse_args(argv[1:])
 
     if args.output is not None:
@@ -197,12 +199,13 @@ def main(argv):
             break
     print >> sys.stderr, "Total number of hits:",total_hits
 
-    #try:
-    #    os.remove(temp_file_name)
-    #    os.remove(temp_file_name[:-4] + '.cpp')
-    #    os.remove(temp_file_name[:-4] + '.so')
-    #except:
-    #    pass
+    if not args.keep_query:
+        try:
+            os.remove(temp_file_name)
+            os.remove(temp_file_name[:-4] + '.cpp')
+            os.remove(temp_file_name[:-4] + '.so')
+        except:
+            pass
 
 if __name__=="__main__":
     sys.exit(main(sys.argv))
