@@ -2,6 +2,7 @@ from redone_expr import *
 import sys
 import codecs
 import json
+import sys
 
 class NodeInterpreter():
 
@@ -848,15 +849,21 @@ def id_the_nodes(node, pid, lev, negs_above, node_dict):
 
 def write_cython_code(lines, out):
 
-    #out = codecs.open(output_file, 'wt', 'utf8')
-
-    magic_lines = '''# distutils: language = c++
+    magic_lines_linux = '''# distutils: language = c++
 # distutils: include_dirs = setlib
 # distutils: extra_objects = setlib/pytset.so
 # distutils: sources = query_functions.cpp
 include "search_common.pxi"\n'''
 
-    out.write(magic_lines)
+    magic_lines_other = '''# distutils: language = c++
+# distutils: include_dirs = setlib
+# distutils: sources = query_functions.cpp setlib/pytset.cpp
+include "search_common.pxi"\n'''
+
+    if 'linux' in sys.platform:
+        out.write(magic_lines_linux)
+    else:
+        out.write(magic_lines_other)
 
     for line in lines:
         out.write(line.encode('utf8') + '\n')
