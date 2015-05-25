@@ -89,7 +89,6 @@ def load(pyxFile):
     if error!=0:
         print >> sys.stderr, "Cannot compile search code, error:",error
         sys.exit(1)
-    print pyxFile
     mod=importlib.import_module(pyxFile)
     return mod
 
