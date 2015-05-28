@@ -92,6 +92,12 @@ def load(pyxFile):
     mod=importlib.import_module(pyxFile)
     return mod
 
+def get_url(comments):
+    for c in comments:
+        if c.startswith(u"# URL:"):
+            return c.split(u":",1)[1].strip()
+    return None
+
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
     db=db_util.DB()
     db.open_db(unicode(db_name))
@@ -112,6 +118,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
         if hit_comment:
             print hit_comment
         if context:
+            hit_url=get_url(hit_comment.decode("utf-8"))
             texts=[]
             # get +/- 2 sentences from db
             for i in range(idx-2,idx+3):
@@ -119,13 +126,16 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
                     data=hit
                 else:
                     data,data_comment=get_data_from_db(res_db,i)
-                    if data is None:
+                    if data is None or get_url(data_comment.decode("utf-8"))!=hit_url:
                         continue
-                text=u" ".join(t.split(u"\t")[1] for t in data.decode(u"utf-8").split(u"\n"))
-                if i==idx:
-                    text=u"***"+text+u"***"
-                texts.append(text)
-            print u"# context:",(u" ".join(text for text in texts)).encode(u"utf-8")
+                text=u" ".join(t.split(u"\t",2)[1] for t in data.decode(u"utf-8").split(u"\n"))
+                if i<idx:
+                    texts.append(u"# context-before: "+text)
+                elif i==idx:
+                    texts.append(u"# context-hit: "+text)
+                else:
+                    texts.append(u"# context-after: "+text)
+            print (u"\n".join(text for text in texts)).encode(u"utf-8")
         print hit
         print
         counter+=1
