@@ -79,7 +79,7 @@ def get_data_from_db(db_conn,graph_id):
     results=db_conn.execute('SELECT conllu_data_compressed,conllu_comment_compressed FROM graph WHERE graph_id=?',(str(graph_id),))
     for sent,comment in results.fetchall():
         return zlib.decompress(sent).strip(),zlib.decompress(comment).strip()
-
+    return None,None
 
 def load(pyxFile):
     """Loads a search pyx file, returns the module"""
