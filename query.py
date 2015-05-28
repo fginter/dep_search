@@ -117,11 +117,11 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
         hit,hit_comment=get_data_from_db(res_db,idx)
         if hit_comment:
             print hit_comment
-        if context:
+        if context>0:
             hit_url=get_url(hit_comment.decode("utf-8"))
             texts=[]
             # get +/- 2 sentences from db
-            for i in range(idx-2,idx+3):
+            for i in range(idx-context,idx+context+1):
                 if i==idx:
                     data=hit
                 else:
@@ -160,7 +160,7 @@ def main(argv):
     parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/pb-10M/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
     parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
-    parser.add_argument('--context', required=False, action="store_true", default=False, help='Print the context (+/- 2 sentences) as comment. Default: %(default)d.')
+    parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
 
     args = parser.parse_args(argv[1:])
