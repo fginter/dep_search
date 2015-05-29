@@ -79,7 +79,7 @@ def get_data_from_db(db_conn,graph_id):
     results=db_conn.execute('SELECT conllu_data_compressed,conllu_comment_compressed FROM graph WHERE graph_id=?',(str(graph_id),))
     for sent,comment in results.fetchall():
         return zlib.decompress(sent).strip(),zlib.decompress(comment).strip()
-
+    return None,None
 
 def load(pyxFile):
     """Loads a search pyx file, returns the module"""
@@ -89,9 +89,14 @@ def load(pyxFile):
     if error!=0:
         print >> sys.stderr, "Cannot compile search code, error:",error
         sys.exit(1)
-    print pyxFile
     mod=importlib.import_module(pyxFile)
     return mod
+
+def get_url(comments):
+    for c in comments:
+        if c.startswith(u"# URL:"):
+            return c.split(u":",1)[1].strip()
+    return None
 
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
     db=db_util.DB()
@@ -112,21 +117,25 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
         hit,hit_comment=get_data_from_db(res_db,idx)
         if hit_comment:
             print hit_comment
-        if context:
+        if context>0:
+            hit_url=get_url(hit_comment.decode("utf-8"))
             texts=[]
             # get +/- 2 sentences from db
-            for i in range(idx-2,idx+3):
+            for i in range(idx-context,idx+context+1):
                 if i==idx:
                     data=hit
                 else:
                     data,data_comment=get_data_from_db(res_db,i)
-                    if data is None:
+                    if data is None or get_url(data_comment.decode("utf-8"))!=hit_url:
                         continue
-                text=u" ".join(t.split(u"\t")[1] for t in data.decode(u"utf-8").split(u"\n"))
-                if i==idx:
-                    text=u"***"+text+u"***"
-                texts.append(text)
-            print u"# context:",(u" ".join(text for text in texts)).encode(u"utf-8")
+                text=u" ".join(t.split(u"\t",2)[1] for t in data.decode(u"utf-8").split(u"\n"))
+                if i<idx:
+                    texts.append(u"# context-before: "+text)
+                elif i==idx:
+                    texts.append(u"# context-hit: "+text)
+                else:
+                    texts.append(u"# context-after: "+text)
+            print (u"\n".join(text for text in texts)).encode(u"utf-8")
         print hit
         print
         counter+=1
@@ -151,7 +160,7 @@ def main(argv):
     parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/pb-10M/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
     parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
-    parser.add_argument('--context', required=False, action="store_true", default=False, help='Print the context (+/- 2 sentences) as comment. Default: %(default)d.')
+    parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
 
     args = parser.parse_args(argv[1:])
