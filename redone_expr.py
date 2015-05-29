@@ -323,6 +323,10 @@ def p_sn_depres_a(t):
     u'''depres : depnode tokendef'''
     t[0] = (t[1], t[2])
 
+def p_sn_depres_b(t):
+    u'''depres : neg_depnode tokendef'''
+    t[0] = (t[1], t[2])
+
 #def p_sn_depres_a(t):
 #    u'''depres : depnode setnode
 #             | depnode tokendef'''
@@ -354,6 +358,10 @@ def p_exprp2(t):
 
 def p_exprp5(t):
     u'''depnode : depdef'''
+    t[0]=t[1]  #if tokendef returns a Node(), this will also return a Node()
+
+def p_exprp6(t):
+    u'''neg_depnode : neg_depdef'''
     t[0]=t[1]  #if tokendef returns a Node(), this will also return a Node()
 
 #def p_expr2(t):
@@ -430,7 +438,7 @@ def p_dn_or(t):
 #    t[0] = SetNode_Or(t[1], t[3])
 
 def p_dn_not(t):
-    u'''depdef : NEG depdef'''
+    u'''neg_depdef : NEG depdef'''
     t[0] = DeprelNode_Not(t[2])
 
 #def p_sn_not(t):
