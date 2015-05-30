@@ -277,7 +277,9 @@ def t_ANYTOKEN(t):
 t_ignore=u" \t"
 
 def t_error(t):
-    raise ExpressionError(u"Unexpected character '%s'\nHERE: '%s'..."%(t.value[0],t.value[:5]))
+
+
+    raise ExpressionError(u"%s:::Unexpected character '%s'\nHERE: '%s'..."%(t, t.value[0],t.value[:5]))
 
 
 #......and here's where starts the CFG describing the expressions
@@ -323,10 +325,6 @@ def p_sn_depres_a(t):
     u'''depres : depnode tokendef'''
     t[0] = (t[1], t[2])
 
-def p_sn_depres_b(t):
-    u'''depres : neg_depnode tokendef'''
-    t[0] = (t[1], t[2])
-
 #def p_sn_depres_a(t):
 #    u'''depres : depnode setnode
 #             | depnode tokendef'''
@@ -360,10 +358,6 @@ def p_exprp5(t):
     u'''depnode : depdef'''
     t[0]=t[1]  #if tokendef returns a Node(), this will also return a Node()
 
-def p_exprp6(t):
-    u'''neg_depnode : neg_depdef'''
-    t[0]=t[1]  #if tokendef returns a Node(), this will also return a Node()
-
 #def p_expr2(t):
 #    u'''setnode : setnode depres'''
 #    if isinstance(t[1], SetNode_Dep):
@@ -392,11 +386,10 @@ def p_exprp3(t):
 
 def p_dn_and(t):
     u'''depnode : depnode AND depnode'''
-    t[0] = DeprelNode_And(t[1], t[3])
-
-#def p_sn_and(t):
-#    u'''setnode : setnode AND setnode'''
-#    t[0] = SetNode_And(t[1], t[3])
+    if not isinstance(t[1], DeprelNode_Not) and not isinstance(t[3], DeprelNode_Not):
+        t[0] = DeprelNode_And(t[1], t[3])
+    else:
+        raise ExpressionError(u"Negated depency restrictions are not allowed inside AND operators, maybe try to include negation outside the AND operator.")
 
 def p_sn_and(t):
     u'''tokendef : tokendef AND tokendef'''
@@ -428,17 +421,20 @@ def p_sn_seq(t):
     u'''setnode : setnode SE setnode'''
     t[0] = SetNode_SubEq(t[1], t[3])
 
-
+ 
 def p_dn_or(t):
     u'''depnode : depnode OR depnode'''
-    t[0] = DeprelNode_Or(t[1], t[3])
-
+    if not isinstance(t[1], DeprelNode_Not) and not isinstance(t[3], DeprelNode_Not):
+        t[0] = DeprelNode_Or(t[1], t[3])
+    else:
+        raise ExpressionError(u"Negated depency restrictions are not allowed inside OR operators, maybe try to include negation outside the OR operator.")
+ 
 #def p_sn_or(t):
 #    u'''setnode : setnode OR setnode'''
 #    t[0] = SetNode_Or(t[1], t[3])
 
 def p_dn_not(t):
-    u'''neg_depdef : NEG depdef'''
+    u'''depdef : NEG depdef'''
     t[0] = DeprelNode_Not(t[2])
 
 #def p_sn_not(t):
@@ -449,9 +445,6 @@ def p_dn_not(t):
 def p_sn_not(t):
     u'''tokendef : NEG tokendef'''
     t[0] = SetNode_Not(t[2])
-
-
-
 
 lex.lex(reflags=re.UNICODE)
 yacc.yacc(write_tables=0,debug=1,method='SLR')

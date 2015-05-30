@@ -172,34 +172,25 @@ def main(argv):
         print >> sys.stderr, "Loading "+args.search+".pyx"
         mod=load(args.search)
     else:
-        #Get the location of the symbols.json file
-        #Can this fail somehow??
-        #print argv
-
         path = '/'.join(args.database.split('/')[:-1])
         json_filename = path + '/symbols.json' 
-        #import pdb;pdb.set_trace()
         #This is a query, compile first
         import pseudocode_ob_3 as pseudocode_ob
 
         import hashlib
         m = hashlib.md5()
         m.update(args.search)
-        temp_file_name = 'qry_' + m.hexdigest() + '.pyx'#tempfile.NamedTemporaryFile(dir='.', delete=False, suffix='.pyx')
-
+        temp_file_name = 'qry_' + m.hexdigest() + '.pyx'
         if not os.path.isfile(temp_file_name):
-            f = open('qry_' + m.hexdigest() + '.pyx', 'wt')#tempfile.NamedTemporaryFile(dir='.', delete=False, suffix='.pyx')
+            f = open('qry_' + m.hexdigest() + '.pyx', 'wt')
             pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename)
-            #print f.name[:-4]
-        mod=load(temp_file_name[:-4].split('/')[-1])
+        mod=load(temp_file_name[:-4])
 
     query_obj=mod.GeneratedSearch()
     sql_query,sql_args=query(query_obj.query_fields)
     
     dbs=glob.glob(args.database)
     dbs.sort()
-
-    #import pdb;pdb.set_trace()
 
     total_hits=0
     for d in dbs:
