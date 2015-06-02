@@ -142,7 +142,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
         if max_hits!=0 and counter>=max_hits:
             print >> sys.stderr, "--max ",max_hits
             print >> sys.stderr, counter, "hits in", db_name
-            sys.exit(0)
+            return counter#sys.exit(0)
+
     print >> sys.stderr, sql_counter,"rows from database",db_name
     print >> sys.stderr, counter, "hits in", db_name
     db.close_db()
@@ -192,7 +193,7 @@ def main(argv):
     total_hits=0
     for d in dbs:
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)
-        if total_hits > args.max:
+        if total_hits >= args.max:
             break
     print >> sys.stderr, "Total number of hits:",total_hits
 
