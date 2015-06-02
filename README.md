@@ -19,6 +19,7 @@ Installation
 ============
 
     git clone https://github.com/fginter/dep_search.git   
+    cd dep_search
     git submodule init   
     git submodule update   
     make   
@@ -91,3 +92,8 @@ Query Language
 ==============
 
 Query language is described in detail at: http://bionlp.utu.fi/searchexpressions-new.html
+
+Appendix: Installing on a fresh Ubuntu
+======================================
+
+Included file install_webui_into_clean_ubuntu.txt lists the required commands to install the software into a clean Ubuntu Linux.

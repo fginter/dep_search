@@ -1,0 +1,52 @@
+sudo apt-get install git
+sudo apt-get install make
+sudo apt-get install python-setuptools
+sudo apt-get update
+sudo apt-get install gcc
+sudo apt-get install g++
+sudo apt-get install python-dev
+sudo easy_install cython
+sudo apt-get install sqlite3
+sudo apt-get install libsqlite3-dev
+
+git clone https://github.com/fginter/dep_search.git   
+git submodule init   
+git submodule update   
+make   
+
+Index some data
+
+#WebUI
+cd ../webui/
+
+Prepare corpora.json
+Prepare available_corpora.json
+
+#Install nginx & install webui
+sudo apt-get install nginx
+sudo /etc/init.d/nginx start
+sudo apt-get install python-flask
+sudo apt-get install uwsgi-plugin-python
+
+#Start the the webservice
+
+Edit serve.py, add the host name
+sudo apt-get install uwsgi
+sudo apt-get install python-pip
+
+Create a socket:
+uwsgi --plugin python --module serve --callable app --socket search.sock --pythonpath /home/ubuntu/dep_search/webui --processes 5 --master --harakiri 5000 --chmod-socket=666
+
+Add these lines into an enabled nginx site config:
+
+location = /dep_search { rewrite ^ /dep_search/; }
+location /dep_search { try_files $uri @dep_search; }
+location @dep_search {
+  include uwsgi_params;
+  uwsgi_read_timeout 5000;
+  uwsgi_param SCRIPT_NAME /dep_search;
+  uwsgi_modifier1 30;
+  uwsgi_pass unix:/home/ubuntu/dep_search/webui/search.sock;
+}
+
+Restart nginx
