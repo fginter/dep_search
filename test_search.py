@@ -22,7 +22,6 @@ class SearchKoska(Query):
             return set()
 
         #so, now s_N are nouns not governing a cop
-        #shit - do I need a for loop here really?
         result=set()
         for k in s_koska:
             if t.govs[k]&s_N:

@@ -120,8 +120,6 @@ class SetNode_Dep(BaseNode):
         self.node_id = ''
         self.index_node = setnode1
         self.deprels = [(deprel, setnode2)]
-        #self.setnode2 = setnode2
-        #self.deprel = deprel
         self.proplabel = ''
 
     def get_kid_nodes(self):
@@ -228,10 +226,6 @@ tokens=('TEXT',    #/..../
         'ANYTOKEN')  #_
 
 #Here's regular expressions for the tokens defined above
-
-#t_TEXT=ur'[^"=\-\+<>\(\)\&\|\!\s]+'
-#t_TEXT=ur'[A-Za-zäöÄÖÅå=]'
-
 t_TEXT = ur'((?!(->|\+|&|\(|\)|\||==|<|>|"|\s)).)+'
 t_DEPOP = ur'(<|>)([^="<>_()&|\s]+)?'
 
@@ -287,14 +281,7 @@ def t_error(t):
 
 
 #Main 
-#precedence = (('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'), ('left','PLUS'),('left','EQ'))
-
-#precedence = (('right','EQ'),('left','PLUS'),('left','DEPOP'),('left','OR'),('left','NEG'),('left','AND'))
-
 precedence = (('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left','PLUS'),('left','EQ'),('left','SE'), ('left','TEXT'))
-
-
-#precedence = (('left','DEPOP'),)
 
 def p_error(t):
     if t==None:
@@ -325,11 +312,6 @@ def p_sn_depres_a(t):
     u'''depres : depnode tokendef'''
     t[0] = (t[1], t[2])
 
-#def p_sn_depres_a(t):
-#    u'''depres : depnode setnode
-#             | depnode tokendef'''
-#    t[0] = (t[1], t[2])
-
 def p_exprp(t):
     u'''tokendef : LPAR setnode RPAR'''
     #          | ANYTOKEN'''
@@ -347,28 +329,13 @@ def p_exprp_d(t):
     elif len(t)==2:
         t[0]=DeprelNode(t[1])
 
-# /token/
-# /token/
 def p_exprp2(t):
     u'''setnode : tokendef'''
     t[0]=t[1]  #if tokendef returns a Node(), this will also return a Node()
 
-
 def p_exprp5(t):
     u'''depnode : depdef'''
     t[0]=t[1]  #if tokendef returns a Node(), this will also return a Node()
-
-#def p_expr2(t):
-#    u'''setnode : setnode depres'''
-#    if isinstance(t[1], SetNode_Dep):
-#        t[1].deprels.append(t[2])
-#        t[0] = t[1]
-#    else:
-#        t[0] = SetNode_Dep(t[1], t[2][1], t[2][0])
-
-#def p_sn_depres_a(t):
-#    u'''depres : depnode setnode'''
-#    t[0] = (t[1], t[2])
 
 def p_exprp3(t):
     u'''tokendef : WORD
@@ -399,19 +366,9 @@ def p_sn_or(t):
     u'''tokendef : tokendef OR tokendef'''
     t[0] = SetNode_Or(t[1], t[3])
 
-
-
-
-
-
 def p_sn_plus(t):
     u'''setnode : setnode PLUS setnode'''
     t[0] = SetNode_Plus(t[1], t[3])
-
-
-#def p_sn_plus(t):
-#    u'''tokendef : tokendef PLUS tokendef'''
-#    t[0] = SetNode_Plus(t[1], t[3])
 
 def p_sn_eq(t):
     u'''setnode : setnode EQ setnode'''
@@ -421,7 +378,6 @@ def p_sn_seq(t):
     u'''setnode : setnode SE setnode'''
     t[0] = SetNode_SubEq(t[1], t[3])
 
- 
 def p_dn_or(t):
     u'''depnode : depnode OR depnode'''
     if not isinstance(t[1], DeprelNode_Not) and not isinstance(t[3], DeprelNode_Not):
@@ -429,19 +385,10 @@ def p_dn_or(t):
     else:
         raise ExpressionError(u"Negated depency restrictions are not allowed inside OR operators, maybe try to include negation outside the OR operator.")
  
-#def p_sn_or(t):
-#    u'''setnode : setnode OR setnode'''
-#    t[0] = SetNode_Or(t[1], t[3])
-
 def p_dn_not(t):
     u'''depdef : NEG depdef'''
     t[0] = DeprelNode_Not(t[2])
 
-#def p_sn_not(t):
-#    u'''setnode : NEG setnode'''
-#    t[0] = SetNode_Not(t[2])
-
-#???
 def p_sn_not(t):
     u'''tokendef : NEG tokendef'''
     t[0] = SetNode_Not(t[2])
