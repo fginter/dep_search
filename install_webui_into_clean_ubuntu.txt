@@ -32,7 +32,6 @@ sudo apt-get install uwsgi-plugin-python
 
 Edit serve.py, add the host name
 sudo apt-get install uwsgi
-sudo apt-get install python-pip
 
 Create a socket:
 uwsgi --plugin python --module serve --callable app --socket search.sock --pythonpath /home/ubuntu/dep_search/webui --processes 5 --master --harakiri 5000 --chmod-socket=666

@@ -50,8 +50,6 @@ class NodeInterpreter():
 
         return temp_sets
 
-
-
     def what_sets_do_you_need(self):
         db_orders = []
         if isinstance(self.node, SetNode_Token):
@@ -71,9 +69,10 @@ class NodeInterpreter():
         name_dict = {}
         for dbo in db_orders:
             self.array_count += 1
-            name_dict[dbo] = 'node_' + self.node.node_id + '_array_' + str(self.array_count)
-
-
+            if not dbo in name_dict:
+                name_dict[dbo] = ['node_' + self.node.node_id + '_array_' + str(self.array_count)]
+            else:
+                name_dict[dbo].append('node_' + self.node.node_id + '_array_' + str(self.array_count))
         return db_orders, name_dict
 
     def deprel_node_into_db_label(self):
@@ -81,7 +80,6 @@ class NodeInterpreter():
         prechar = '!'
         if self.node.negs_above:
             prechar = ''
-
         if self.node.dep_restriction.startswith('<!'):
             prechar = ''
             return_list.append(prechar + u'dep_a_anyrel')
@@ -97,11 +95,20 @@ class NodeInterpreter():
             return return_list
 
         if self.node.dep_restriction.startswith('>'):
-            return_list.append(prechar + u'gov_a_' + self.node.dep_restriction[1:].split('@')[0].lstrip('!'))
+
+            dtype = self.node.dep_restriction[1:].split('@')[0].lstrip('!')
+            
+            if len(dtype) < 1:
+                dtype = 'anyrel' 
+            return_list.append(prechar + u'gov_a_' + dtype)
             return return_list
 
         if self.node.dep_restriction.startswith('<'):
-            return_list.append(prechar + u'dep_a_' + self.node.dep_restriction[1:].split('@')[0].lstrip('!'))
+
+            dtype = self.node.dep_restriction[1:].split('@')[0].lstrip('!')
+            if len(dtype) < 1:
+                dtype = 'anyrel' 
+            return_list.append(prechar + u'dep_a_' + dtype)
             return return_list
 
 
@@ -151,9 +158,6 @@ class SetManager():
             node = node_dict[key]
             self.node_needs[key] = {}
             ni = NodeInterpreter(node, tag_list=self.tag_list, val_dict=self.val_dict)
-
-            #0. Are you compulsory
-            #1. What sets do you need from the db?
             self.node_needs[key]['db_sets'], self.node_needs[key]['db_sets_label'] = ni.what_sets_do_you_need()
             self.node_needs[key]['all_tokens'], self.node_needs[key]['all_tokens_label'] = ni.do_you_need_all_tokens()
             #2. What arrays do you need from the db?
@@ -167,10 +171,9 @@ class SetManager():
             set_and_array_labels.extend(self.node_needs[key]['db_sets_label'])
             set_and_array_labels.extend(self.node_needs[key]['db_arrays_label'])
 
-        #If nothing was found add a virtual node 'extra' just to add something into the db
+        #If nothing was found add a virtual node 'extra' just to add something into the db_query
         if len(set_and_array_labels) < 1:
-            self.node_needs['extra'] = {'temp_sets': [], 'all_tokens': False, 'all_tokens_label': [], 'db_arrays_label': {u'!dep_a_anyrel': 'extra_array'}, 'db_sets': [], 'db_arrays': [u'!dep_a_anyrel'], 'db_sets_label': {}, 'own_output_set': '', 'own_output_set_type': '', 'own_output': False}
-
+            self.node_needs['extra'] = {'temp_sets': [], 'all_tokens': False, 'all_tokens_label': [], 'db_arrays_label': {u'!dep_a_anyrel': ['extra_array']}, 'db_sets': [], 'db_arrays': [u'!dep_a_anyrel'], 'db_sets_label': {}, 'own_output_set': '', 'own_output_set_type': '', 'own_output': False}
 
 
 def generate_search_code(node, tag_list=[], val_dict={}):
@@ -195,22 +198,21 @@ def generate_search_code(node, tag_list=[], val_dict={}):
 
 def get_cinit_function(set_manager, max_len=2048):
 
-
-    #XXX
     temp_set_list = []
     temp_array_list = []
     output_set_list = []
-
     load_list_set = []
     load_list_array = []
-
 
     for key in set_manager.node_needs.keys():
 
         for ikey in set_manager.node_needs[key]['db_sets_label'].keys():
             load_list_set.append((ikey, set_manager.node_needs[key]['db_sets_label'][ikey]))
         for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
-            load_list_array.append((ikey, set_manager.node_needs[key]['db_arrays_label'][ikey]))
+
+            for v in set_manager.node_needs[key]['db_arrays_label'][ikey]:
+                load_list_array.append((ikey, v))
+
         for ikey in set_manager.node_needs[key]['all_tokens_label']:
             temp_set_list.append(ikey)
         for ikey in set_manager.node_needs[key]['temp_sets']:
@@ -273,14 +275,11 @@ def get_init_function(set_manager):
 
         for ikey in set_manager.node_needs[key]['temp_sets']:
             temp_set_list.append(ikey)
-        #if set_manager.node_needs[key]['own_output']:
-        #    temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
         if set_manager.node_needs[key]['own_output']:
             if set_manager.node_needs[key]['own_output_set_type'] == 'set':
                 temp_set_list.append(set_manager.node_needs[key]['own_output_set'])
             elif set_manager.node_needs[key]['own_output_set_type'] == 'array':
                 temp_array_list.append(set_manager.node_needs[key]['own_output_set'])
-
 
     sentence_count_str = get_sentence_count_str(set_manager)
     lines = []
@@ -296,7 +295,6 @@ def get_init_function(set_manager):
     for key in temp_set_list:
             lines.append(' '*8 + 'self.' + key + '.set_length(self.' + sentence_count_str + '.tree_length)')
             lines.append(' '*8 + 'self.' + key + '.copy(self.empty_set)')
-            #lines.append(' '*8 + 'self.' + key + '.complement()')
 
     for key in temp_array_list:
             lines.append(' '*8 + 'self.' + key + '.set_length(self.' + sentence_count_str + '.tree_length)')
@@ -316,11 +314,11 @@ def get_class_function(set_manager):
     load_list_array = []
 
     for key in set_manager.node_needs.keys():
-
         for ikey in set_manager.node_needs[key]['db_sets_label'].keys():
             load_list_set.append((ikey, set_manager.node_needs[key]['db_sets_label'][ikey]))
         for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
-            load_list_array.append((ikey, set_manager.node_needs[key]['db_arrays_label'][ikey]))
+            for label in set_manager.node_needs[key]['db_arrays_label'][ikey]:
+                load_list_array.append((ikey, label))
         for ikey in set_manager.node_needs[key]['all_tokens_label']:
             temp_set_list.append(ikey)
         for ikey in set_manager.node_needs[key]['temp_sets']:
@@ -417,43 +415,51 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
 
         #Get the setname
         if not negated:
-            db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]]
+            db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]][0]
             output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
             match_lines.append('self.' + output_set_name + '.copy(self.' + db_set + ')')
+
+            if node.dep_restriction[-2:] == '@L':
+                match_lines.append('self.' + output_set_name + '.filter_direction(True)')
+            elif node.dep_restriction[-2:] == '@R':
+                match_lines.append('self.' + output_set_name + '.filter_direction(False)')
+
             match_lines.append('#Reporting ' + output_set_name + ' as output array')
             node_output_dict[node.node_id] = output_set_name
         else:
 
-            db_set_labels = []
+            #This deprel is negated!
+            anyrel_for_negation = ''
+            db_array_for_use = ''
+
             desires = []
-            #So in this case I've got like
-            for desire in what_I_need_from_the_db:
-                db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][desire]
-                db_set_labels.append(db_set)
-                desires.append(desire)
+            db_set_labels = []
 
-            #Since this is negated we separate an anyrel
-            anyrel_set = None
-            the_db_set = None
-            for desire, label in zip(desires, db_set_labels):
-                if 'anyrel' in desire:
-                    anyrel_set = label
+            for desire in set(what_I_need_from_the_db):
+                db_sets = set_manager.node_needs[node.node_id]['db_arrays_label'][desire]
+                for dbs in db_sets:
+                    db_set_labels.append(dbs)
+                    desires.append(desire)
+
+            for d, l in zip(desires, db_set_labels):
+                if 'anyrel' in d and len(anyrel_for_negation) < 1:
+                    anyrel_for_negation = l
                 else:
-                    the_db_set = label
+                    db_array_for_use = l
 
+            db_set = db_array_for_use
+            output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
+            match_lines.append('self.' + output_set_name + '.copy(self.' + anyrel_for_negation + ')')
 
-            #minus update
-            match_lines.append('self.' + output_set_name + '.copy(self.' + anyrel_set + ')')
-            match_lines.append('self.' + output_set_name + '.minus_update(self.' + the_db_set + ')')
+            if node.dep_restriction[-2:] == '@L':
+                match_lines.append('self.' + db_set + '.filter_direction(True)')
+            elif node.dep_restriction[-2:] == '@R':
+                match_lines.append('self.' + db_set + '.filter_direction(False)')
+
+            match_lines.append('self.' + output_set_name + '.minus_update(self.' + db_set + ')')
+
             match_lines.append('#Reporting ' + output_set_name + ' as output array')
             node_output_dict[node.node_id] = output_set_name
-
-        #XXX format change!
-        #Left/Right update comes here and is done to the output_set
-        if node.dep_restriction[-2:] == '@L':
-            match_lines.append('self.' + output_set_name + '.filter_direction(True)')
-        elif node.dep_restriction[-2:] == '@R':
-            match_lines.append('self.' + output_set_name + '.filter_direction(False)')
 
         return match_lines, extra_functions
         
@@ -474,10 +480,6 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         #Get input nodes
         input_set_1 = node_output_dict[node.setnode1.node_id]
         input_set_2 = node_output_dict[node.setnode2.node_id]
-        #input_set_1 is the output
-
-        #match_lines.append('self.' + input_set_1 + '.print_set()')
-        #match_lines.append('self.' + input_set_2 + '.print_set()')
 
         sentence_count_str = get_sentence_count_str(set_manager)
         match_lines.append('for t in range(0, self.' + sentence_count_str + '.tree_length):')
@@ -488,8 +490,6 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         match_lines.append(' ' * 4 + 'if self.' + input_set_1 + '.has_item(t) and not self.' + input_set_2 + '.has_item(t):')
         match_lines.append(' '*8 + 'self.'+ input_set_1 + '.copy(self.empty_set)')
         match_lines.append(' '*8 + 'break')
-
-        #match_lines.append('self.' + input_set_1 + '.print_set()')
 
         if not node.negs_above:
             match_lines.append('if self.' + input_set_1 + '.is_empty(): return self.' + input_set_1)
@@ -533,11 +533,6 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         match_lines.append('else:')
         match_lines.append(' '*4 + 'self.' + input_set_1 + '.copy(self.empty_set)')
 
-
-        
-
-
-        #match_lines.append('self.' + input_set_1 + '.intersection_update(self.' + input_set_2 + ')')
         if not node.negs_above:
             match_lines.append('if self.' + input_set_1 + '.is_empty(): return self.' + input_set_1)
         match_lines.append('#Reporting ' + input_set_1 + ' as output set')
@@ -700,7 +695,7 @@ def get_sentence_count_str(set_manager):
             else:
                 non_compulsory.append(db_set)
         for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
-            db_set = set_manager.node_needs[key]['db_arrays_label'][ikey]
+            db_set = set_manager.node_needs[key]['db_arrays_label'][ikey][0]
             if ikey.startswith('!'):
                 compulsory.append(db_set)
                 break
@@ -918,7 +913,7 @@ def main():
     #cdd = code(nodes)
     #lines = cdd.get_search_code()
     filename = str(args.output_file)
-    write_cython_code(code_lines, filename + '.pyx')
+    write_cython_code(code_lines, open(filename + '.pyx', 'wt'))
 
 
 def generate_and_write_search_code_from_expression(expression, f, json_filename=''):
@@ -956,8 +951,6 @@ def generate_and_write_search_code_from_expression(expression, f, json_filename=
                 if vt[-1] > max_tuple[-1]:
                     max_tuple = vt
             val_dict[key] = max_tuple[1]
-
-
 
     e_parser=yacc.yacc()
 
