@@ -279,9 +279,8 @@ def t_error(t):
 #......and here's where starts the CFG describing the expressions
 # the grammar rules are the comment strings of the functions
 
-
 #Main 
-precedence = (('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left','PLUS'),('left','EQ'),('left','SE'), ('left','TEXT'))
+precedence = (('left','PLUS'),('left','EQ'),('left','SE'),('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left','TEXT'))
 
 def p_error(t):
     if t==None:
