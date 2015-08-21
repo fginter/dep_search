@@ -193,7 +193,7 @@ def main(argv):
     total_hits=0
     for d in dbs:
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)
-        if total_hits >= args.max:
+        if total_hits >= args.max and args.max > 0:
             break
     print >> sys.stderr, "Total number of hits:",total_hits
 
