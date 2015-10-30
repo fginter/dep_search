@@ -44,7 +44,8 @@
       <form class="query-form" action="{{ SERVER_URL }}" method="GET">
 	<div class="form-group">
 <!-- 	  <label for="queryInput">Query</label> -->
-          <select name="db"
+          <select id='db_sel'
+                  name="db"
 	          class="form-control btn btn-primary"
 		  style="display:inline; width:auto">
 	  {{ OPTIONS }}
@@ -55,7 +56,7 @@
 		 value="{{ QUERY }}">
 	  <button type="submit" class="btn btn-primary">Search!</button>
         <p>
-	<a class="type-link" href="{{ SERVER_URL }}/types/{{ DBNAME }}">Show types</a>
+	<a id='types_link' class="type-link" href="{{ SERVER_URL }}/types/{{ DBNAME }}">Show types</a>
         <a class="Query Language" href="http://bionlp.utu.fi/searchexpressions-new.html">Query Language</a>
         </p>
 
@@ -124,6 +125,10 @@
     });
 </script>
 <!-- end annotation visualization stuff -->
+<script>
+$("#types_link").attr("href", "{{ SERVER_URL }}/types/" + $("#db_sel option:selected").text())
+$("#db_sel").change(function() { $("#types_link").attr("href", "{{ SERVER_URL }}/types/" + $("#db_sel option:selected").text())/* do something here */ });
+</script>
 
     </body>
 </html>
