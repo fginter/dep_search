@@ -1,10 +1,10 @@
 Requirements
 ============
 
-The toolkit requires libsql3 development files, header files and static libraries for Python and Cython.
+The toolkit requires libsqlite3 development files, header files and static libraries for Python and Cython.
 
 For Ubuntu, these are available as following packages:  
-libsql3-dev  
+libsqlite3-dev  
 python-dev  
 cython  
 
