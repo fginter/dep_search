@@ -21,6 +21,8 @@ import glob
 import tempfile
 
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
+query_folder = './queries/'
+
 def query(query_fields):
     """
     query_fields: A list of strings describing the data to fetch
@@ -178,11 +180,32 @@ def main(argv):
         import hashlib
         m = hashlib.md5()
         m.update(args.search)
+
+        #1. Check if the queries folder has the search
+        #2. If not, generate it here and move to the new folder
         temp_file_name = 'qry_' + m.hexdigest() + '.pyx'
-        if not os.path.isfile(temp_file_name):
+        if not os.path.isfile(query_folder + temp_file_name):
             f = open('qry_' + m.hexdigest() + '.pyx', 'wt')
-            pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename)
-        mod=load(temp_file_name[:-4])
+            try:
+                pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename)
+            except Exception as e:
+                os.remove(temp_file_name)
+                raise e
+
+            mod=load(temp_file_name[:-4])
+            os.rename(temp_file_name, query_folder + temp_file_name)
+            os.rename(temp_file_name[:-4] + '.cpp', query_folder + temp_file_name[:-4] + '.cpp')
+            os.rename(temp_file_name[:-4] + '.so', query_folder + temp_file_name[:-4] + '.so')
+
+        else:
+
+            os.rename(query_folder + temp_file_name, temp_file_name)
+
+            mod=load(temp_file_name[:-4])            
+
+            os.rename(temp_file_name, query_folder + temp_file_name)
+            os.rename(temp_file_name[:-4] + '.cpp', query_folder + temp_file_name[:-4] + '.cpp')
+            os.rename(temp_file_name[:-4] + '.so', query_folder + temp_file_name[:-4] + '.so')
 
     query_obj=mod.GeneratedSearch()
     sql_query,sql_args=query(query_obj.query_fields)
@@ -204,6 +227,8 @@ def main(argv):
             os.remove(temp_file_name[:-4] + '.so')
         except:
             pass
+
+
 
 if __name__=="__main__":
     sys.exit(main(sys.argv))

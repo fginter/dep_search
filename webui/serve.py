@@ -116,7 +116,7 @@ def fill_template(template, content='', error='', dbname='', query=''):
     if len(error) < 1:
         filled = filled.replace(ERROR_PLACEHOLDER, '')
     else:
-        filled = filled.replace(ERROR_PLACEHOLDER, '<div style="background-color:black; color:white; padding:20px;"><p>' + str(error) + '</p></div>')
+        filled = filled.replace(ERROR_PLACEHOLDER, '<div style="background-color:black; color:white; padding:20px;"><p>' + error.decode('utf8') + '</p></div>')
     return filled
 
 app = flask.Flask(__name__, static_url_path=STATIC_PATH)
@@ -134,6 +134,7 @@ def query_and_fill_template(dbname, query):
     else:
         if 'ExpressionError:' in error:
             error = error.split('ExpressionError:')[-1]
+            #error.replace('\n', '<p>')
 
     visualizations = []
     for block in results.split('\n\n')[:-1]:
