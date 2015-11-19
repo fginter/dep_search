@@ -183,6 +183,8 @@ def main(argv):
 
         #1. Check if the queries folder has the search
         #2. If not, generate it here and move to the new folder
+        if not os.path.isfile(query_folder):
+            os.mkdir(query_folder)
         temp_file_name = 'qry_' + m.hexdigest() + '.pyx'
         if not os.path.isfile(query_folder + temp_file_name):
             f = open('qry_' + m.hexdigest() + '.pyx', 'wt')
