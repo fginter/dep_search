@@ -193,6 +193,7 @@ def fill_db(conn,src_data,stats):
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Train')
     parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
+    parser.add_argument('-p', '--prefix', required=True, default="trees", help='Prefix name of the database files. Default: %(default)s')
     parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
     args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
@@ -205,7 +206,7 @@ if __name__=="__main__":
     batch=500000
     counter=0
     while True:
-        db_name=args.dir+"/trees_%05d.db"%counter
+        db_name=args.dir+"/%s_%05d.db"%(args.prefix,counter)
         if os.path.exists(db_name):
             os.system("rm -f "+db_name)
         conn=sqlite3.connect(db_name)
