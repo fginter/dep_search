@@ -1,40 +1,80 @@
 # distutils: language = c++
 # distutils: libraries = lmdb
 # distutils: sources = tree_lmdb.cpp
+import struct
+import json
+import zlib
+import setlib.pytset as pytset
 
-def serialize_as_tset_array(tree_len,sets):
-    """
-    tree_len -> length of the tree to be serialized
-    sets: array of tree_len sets, each set holding the indices of the elements
-    """
-    indices=[]
-    for set_idx,s in enumerate(sets):
-        for item in s:
-            indices.append(struct.pack("@HH",set_idx,item))
-    #print "IDXs", len(indices)
-    res=struct.pack("@H",tree_len)+("".join(indices))
-    return res
+ID,FORM,LEMMA,UPOS,XPOS,FEAT,HEAD,DEPREL,DEPS,MISC=range(10)
 
+cdef class Py_Tree:
 
-cdef class Py_LMDB:
-    #cdef LMDB *thisptr ## defined in .pxd
+    def __init__(self):
+        pass
 
-    def __cinit__(self):
-        self.thisptr = new LMDB()
+    def serialize_from_conllu(self, lines, comments, set_dict):
+        #this we need to save
+        tree_data={"comments":comments,
+                   "tokens":list(l[FORM] for l in lines),
+                   "lemmas":list(l[LEMMA] for l in lines),
+                   "misc":list(l[MISC] for l in lines)}
+        tree_data_gz=zlib.compress(json.dumps(tree_data))
+        
+        #Sets for the UPOS and FEAT
+        token_sets={} #Key: set number, Value: Python set() of integers
+        arrays={} #Key: relation number, Value: Python set() of (from,to) integer pairs
+        for t_idx,line in enumerate(lines):
+            for tag in [u"p_"+line[UPOS],u"f_"+line[FORM],u"l_"+line[LEMMA]]+line[FEAT].split(u"|"):
+                if tag[2:]!=u"_":
+                    set_id=set_dict.setdefault(tag,len(set_dict))
+                    token_sets.setdefault(set_id,set()).add(t_idx)
+            if line[DEPREL]!=u"_":
+                for gov,dep,dtype in [(int(line[HEAD])-1,t_idx, line[DEPREL])]:
+                    if gov==-1:
+                        continue
+                    #TODO: DEPS field
+                    set_id_g=set_dict.setdefault(u"g_"+dtype,len(set_dict))
+                    arrays.setdefault(set_id_g,set()).add((gov,dep))
+                    set_id_g=set_dict.setdefault(u"g_anyrel",len(set_dict))
+                    arrays.setdefault(set_id_g,set()).add((gov,dep))
 
-    def open(self,name):
-        self.thisptr.open_db(name)
-
-    def start_transaction(self):
-        self.thisptr.start_transaction()
-
-    def finish_indexing(self):
-        self.thisptr.finish_indexing()
-    
-    def store_tree_flag(self, unsigned int tree_id, unsigned int flag_number):
-        self.thisptr.store_tree_flag(tree_id, flag_number);
-
-    def store_key_tree(self, unsigned int tree_id, unicode key):
-        key8=key.encode("utf-8")
-        self.thisptr.store_key_tree(tree_id, <void*> key8, len(key8));
-    
+                    set_id_d=set_dict.setdefault(u"d_"+dtype,len(set_dict))
+                    arrays.setdefault(set_id_d,set()).add((dep,gov))
+                    set_id_d=set_dict.setdefault(u"d_anyrel",len(set_dict))
+                    arrays.setdefault(set_id_d,set()).add((dep,gov))
+        #Produces the packed map data
+        map_lengths=[]
+        map_data=""
+        for map_num,pairs in sorted(arrays.iteritems()):
+            pairs_packed="".join(struct.pack("=HH",*pair) for pair in sorted(pairs))
+            map_lengths.append(len(pairs_packed))
+            map_data+=pairs_packed
+        #Produces the packed set data
+        set_data=""
+        for set_num, indices in sorted(token_sets.iteritems()):
+            s=pytset.PyTSet(len(lines),indices)
+            set_data+=s.tobytes()
+        #treelen  16
+        #set_count 16
+        #map_count 16
+        #set_indices 32
+        #map_indices  32
+        #map_lengths 16
+        #set_data  8
+        #map_data 8
+        #zip_len 16
+        #zip_data 8
+        blob="=HHH%(set_count)dI%(map_count)dI%(map_count)dH%(set_data_len)ds%(map_data_len)dsH%(zip_data_len)ds"%\
+            {"set_count":len(token_sets),
+             "map_count":len(arrays),
+             "set_data_len":len(set_data),
+             "map_data_len":len(map_data),
+             "zip_data_len":len(tree_data_gz)}
+        args=[len(lines),len(token_sets),len(arrays)]+\
+              sorted(token_sets)+\
+              sorted(arrays)+\
+              map_lengths+\
+              [set_data,map_data,len(tree_data_gz),tree_data_gz]
+        serialized=struct.pack(blob,*args)
+        return serialized #The binary blob of the sentence
