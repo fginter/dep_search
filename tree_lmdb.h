@@ -9,6 +9,9 @@ using namespace tset;
 //The data is serialized in this order
 class Tree {
 public:
+    Tree();
+    ~Tree();
+
     //This data is saved
     uint16_t tree_length; 
     uint16_t set_count; //Number of sets stored in set_indices and sets

@@ -11,6 +11,7 @@ import os
 import setlib.pytset as pytset
 import zlib
 import itertools
+import py_tree_lmdb
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -99,18 +100,29 @@ def fill_db(conn,src_data):
 
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
-    os.system("rm -f /mnt/ssd/sdata/all/*")
-    src_data=read_conll(sys.stdin,40000000)
-    batch=500000
+    #os.system("rm -f /mnt/ssd/sdata/all/*")
+    src_data=read_conll(sys.stdin,4000)
+    set_dict={}
+    lengths=0
     counter=0
-    while True:
-        conn=sqlite3.connect("/mnt/ssd/sdata/all/sdata_v7_1M_trees_%05d.db"%counter)
-        prepare_tables(conn)
-        it=itertools.islice(src_data,batch)
-        filled=fill_db(conn,it)
-        if filled==0:
-            break
-        build_indices(conn)
-        conn.close()
-        counter+=1
+    for sent,comments in src_data:
+        s=py_tree_lmdb.Py_Tree()
+        blob=s.serialize_from_conllu(sent,comments,set_dict)
+        s.deserialize(blob)
+        lengths+=len(blob)
+        counter+=len(blob)
+    print lengths/float(counter)
+    print len(set_dict)
+    # batch=500000
+    # counter=0
+    # while True:
+    #     conn=sqlite3.connect("/mnt/ssd/sdata/all/sdata_v7_1M_trees_%05d.db"%counter)
+    #     prepare_tables(conn)
+    #     it=itertools.islice(src_data,batch)
+    #     filled=fill_db(conn,it)
+    #     if filled==0:
+    #         break
+    #     build_indices(conn)
+    #     conn.close()
+    #     counter+=1
 

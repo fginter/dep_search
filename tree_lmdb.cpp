@@ -39,23 +39,44 @@ uint32_t *binary_search(uint32_t what, uint32_t *beg, uint32_t *end) {
     return NULL;
 }
 
-void Tree::deserialize(void *serialized_data) {
-    tree_length=((uint16_t *)serialized_data)[0]; //first 2B is tree length
-    array_length=(tree_length/sizeof(uint64_t)+1); //how many uint64_t's are needed to store the set?
-    set_count=*(&tree_length+1); //next 2B is set_count
-    map_count=*(&tree_length+2); //next 2B
-    set_indices=(uint32_t *)(void*)(&map_count+1); //after this we have an array of 32bit set indices (TODO: would 16bit do?)
+Tree::Tree() {
+    map_data_pointer_byte_offsets=NULL;
+}
+
+Tree::~Tree() {
+    if (map_data_pointer_byte_offsets) {
+	delete[] map_data_pointer_byte_offsets;
+    }
+}
+
+
+void Tree::deserialize(void *data) {
+    tree_length=((uint16_t *)data)[0]; //first 2B is tree length
+    array_length=(tree_length/(sizeof(uint64_t)*8)+1); //how many uint64_t's are needed to store the set?
+    set_count=((uint16_t *)data)[1]; //next 2B is set_count
+    map_count=((uint16_t *)data)[2]; //next 2B
+//    printf("Deserializer: %d %d %d ",tree_length,set_count,map_count);
+    data=(void *)((char *)data+3*sizeof(uint16_t));
+    set_indices=(uint32_t *)(data); //after this we have an array of 32bit set indices (TODO: would 16bit do?)
     map_indices=set_indices+set_count; //after which we have an array of 32bit map indices (TODO: would 16bit do?)
     map_lengths=(uint16_t *)(void*)(map_indices+map_count); //next we have the map lengths
     set_data=(uint64_t *)(void *)(map_lengths+map_count); //and set data
+//    printf(" >%d< ",array_length*set_count*8);
     serialized_map_data=(void*)(set_data+array_length*set_count); //and map data
-    map_data_pointer_byte_offsets[0]=0; //serialized maps are of varying lengths - accumulate here byte offset for their data
-    for (int i=1; i<map_count; i++) {
-	map_data_pointer_byte_offsets[i]=map_data_pointer_byte_offsets[i-1]+map_lengths[i-1];
+//    printf("[");
+    if (map_count>0) {
+	map_data_pointer_byte_offsets=new uint16_t[map_count];
+	map_data_pointer_byte_offsets[0]=0; //serialized maps are of varying lengths - accumulate here byte offset for their data
+//	printf(" %d/0",map_lengths[0]);
+	for (int i=1; i<map_count; i++) {
+	    map_data_pointer_byte_offsets[i]=map_data_pointer_byte_offsets[i-1]+map_lengths[i-1];
+//	    printf(" %d/%d",map_lengths[i],map_data_pointer_byte_offsets[i]);
+	}
     }
     //skip over the map data and you get the zipped block
     void *zipped_block=(void*) ((map_count==0) ? serialized_map_data : ((char *)serialized_map_data)+map_data_pointer_byte_offsets[map_count-1]+map_lengths[map_count-1]);
     zipped_tree_text_length=*((uint16_t *)(zipped_block)); //it starts with its length
+//    printf("] %d\n",zipped_tree_text_length);
     zipped_tree_text=(void*)((char*)zipped_block+sizeof(uint16_t)); //and here's the zipped data
 }
 
