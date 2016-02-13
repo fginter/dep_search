@@ -53,6 +53,7 @@ cdef class Py_Tree:
                     arrays.setdefault(set_id_d,set()).add((dep,gov))
                     set_id_d=set_dict.setdefault(u"d_anyrel",len(set_dict))
                     arrays.setdefault(set_id_d,set()).add((dep,gov))
+
         #Produces the packed map data
         map_lengths=[]
         map_data=""
@@ -60,6 +61,7 @@ cdef class Py_Tree:
             pairs_packed="".join(struct.pack("=HH",*pair) for pair in sorted(pairs))
             map_lengths.append(len(pairs_packed))
             map_data+=pairs_packed
+
         #Produces the packed set data
         set_data=""
         for set_num, indices in sorted(token_sets.iteritems()):

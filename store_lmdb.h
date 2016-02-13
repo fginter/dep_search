@@ -1,3 +1,8 @@
+#ifndef _lmdb_store_h_
+#define _lmdb_store_h_
+
+#include <lmdb.h>
+
 uint32_t *binary_search(uint32_t what, uint32_t *beg, uint32_t *end);
 
 class LMDB_Store {
@@ -18,4 +23,8 @@ public:
     int store_tree_flag(unsigned int tree_id, unsigned int flag_number);
     int store_tree_data(unsigned int tree_id, void *t_data, int size);
     int store_key_tree(unsigned int tree_id, void *key_data, int key_size);
+    int store_tree_flag_val(unsigned int tree_id, unsigned int key);
 };
+
+#endif
+

@@ -11,6 +11,13 @@ setup(ext_modules = cythonize(
           "py_tree_lmdb.pyx",                 # our Cython source
           language="c++",             # generate C++ code
           sources=["tree_lmdb.cpp"]
+
      ))
 
+setup(ext_modules = cythonize(
+          "py_store_lmdb.pyx",                 # our Cython source
+          language="c++",             # generate C++ code
+          sources=["store_lmdb.cpp"],
+          libraries = ["liblmdb"]
+     ))
 

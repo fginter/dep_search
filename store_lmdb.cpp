@@ -1,16 +1,39 @@
+#include "lmdb.h"
 #include "store_lmdb.h"
+#include "tree_lmdb.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <iostream>
+
 
 LMDB_Store::LMDB_Store() {
     op_count=0;
 }
 
+mode_t get_mode() {
+  mode_t current_mask=umask(0);
+  umask(current_mask);
+  return 0777 & ~current_mask;
+}
 
-int LMDB::open_db(const char *name) {
+void report(const char* msg, int err) {
+  if (err!=0) {
+    printf("%s: %s\n",msg,mdb_strerror(err));
+  }
+  else {
+    printf("%s: OK\n",msg);
+  }
+}
+
+int LMDB_Store::open_db(const char *name) {
     int err=mdb_env_create(&mdb_env);
     if (err) {
 	report("Failed to create an environment:",err);
 	return err;
     }
+    std::cout << mdb_env;
     err=mdb_env_set_mapsize(mdb_env,1024L*1024L*1024L*1024L); //1TB max DB size
     if (err) {
 	report("Failed to set env size:",err);
@@ -74,6 +97,24 @@ int LMDB_Store::finish_indexing() {
 	return err;
     }
     return 0;
+}
+
+
+int LMDB_Store::store_tree_flag_val(unsigned int tree_id, unsigned int fkey) {
+    MDB_val key;
+    MDB_val value;
+    key.mv_size=sizeof(uint32_t);
+    key.mv_data=&fkey;
+    value.mv_size=sizeof(uint32_t);
+    value.mv_data=&tree_id;
+    //std::cout << fkey << "." << tree_id << "\n";
+    int err=mdb_put(txn,db_k2t,&key,&value,0);
+    if (err) {
+        report("Failed to put(), that's bad!:",err);
+        return err;
+    }
+    op_count++;
+    return restart_transaction();
 }
 
 

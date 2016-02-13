@@ -1,3 +1,4 @@
+import gzip
 import sys
 import cPickle as pickle
 import sqlite3
@@ -12,6 +13,7 @@ import setlib.pytset as pytset
 import zlib
 import itertools
 import py_tree_lmdb
+import py_store_lmdb
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -101,18 +103,49 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     #os.system("rm -f /mnt/ssd/sdata/all/*")
-    src_data=read_conll(sys.stdin,4000)
+    src_data=read_conll(gzip.open('/usr/share/ParseBank/pbv4_ud.part-00.gz', 'rt'), 500000)
     set_dict={}
     lengths=0
     counter=0
+    db = py_store_lmdb.Py_LMDB()
+    db.open('./ebin')
+    db.start_transaction()
+    tree_id=0
+    from collections import Counter
+    setarr_count = Counter([])
+
     for sent,comments in src_data:
         s=py_tree_lmdb.Py_Tree()
-        blob=s.serialize_from_conllu(sent,comments,set_dict)
+        blob =s.serialize_from_conllu(sent,comments,set_dict)
         s.deserialize(blob)
         lengths+=len(blob)
         counter+=len(blob)
+        #inv_map = {v: k for k, v in set_dict.items()}
+        set_cnt = struct.unpack('=H', blob[2:4])
+        arr_cnt = struct.unpack('=H', blob[4:6])
+        set_indexes = struct.unpack('=' + str(set_cnt[0]) + 'I', blob[6:6+set_cnt[0]*4])
+        arr_indexes = struct.unpack('=' + str(arr_cnt[0]) + 'I', blob[6+set_cnt[0]*4:6+set_cnt[0]*4+arr_cnt[0]*4])
+        setarr_count.update(set_indexes + arr_indexes)
+
+        #storing
+        for flag_number in set_indexes:
+            db.store_tree_flag(tree_id, flag_number)
+            db.store_tree_flag_val(tree_id, flag_number)
+        for flag_number in arr_indexes:
+            db.store_tree_flag(tree_id, flag_number)
+            db.store_tree_flag_val(tree_id, flag_number)
+        db.store_tree_data(tree_id, blob, len(blob))
+
+        tree_id+=1
+
     print lengths/float(counter)
     print len(set_dict)
+    db.finish_indexing()
+    print setarr_count.most_common(10)
+    out = open('set_dict','wb')
+    pickle.dump([set_dict, setarr_count], out)
+    out.close()
+
     # batch=500000
     # counter=0
     # while True:
