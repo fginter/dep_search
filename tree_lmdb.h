@@ -35,6 +35,9 @@ public:
     //set_types: 1:tset  2:tsetarray
     //int fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_types, unsigned char *optional, unsigned int count);
 };
-    
+
+mode_t get_mode();
+void report(const char* msg, int err);
+uint32_t *binary_search(uint32_t what, uint32_t *beg, uint32_t *end); 
 
 #endif

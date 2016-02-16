@@ -91,5 +91,5 @@ cdef class Py_Tree:
               map_lengths+\
               [set_data,map_data,len(tree_data_gz),tree_data_gz]
         serialized=struct.pack(blob,*args)
-#        print "serializer:", len(lines),len(token_sets),len(arrays), len(set_data), len(map_data), len(tree_data_gz), map_lengths
+        print "serializer:", len(lines),len(token_sets),len(arrays), len(set_data), len(map_data), len(tree_data_gz), map_lengths, sorted(token_sets)
         return serialized #The binary blob of the sentence

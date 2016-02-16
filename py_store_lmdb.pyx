@@ -26,5 +26,5 @@ cdef class Py_LMDB:
     def store_tree_flag_val(self, unsigned int tree_id, unsigned int flag_number):
         self.thisptr.store_tree_flag_val(tree_id, flag_number);
 
-    def store_tree_data(self, unsigned int tree_id, str t_data, int size):
+    def store_tree_data(self, unsigned int tree_id, char* t_data, int size):
         self.thisptr.store_tree_data(tree_id, <void *> t_data, size)

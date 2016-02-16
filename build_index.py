@@ -14,6 +14,7 @@ import zlib
 import itertools
 import py_tree_lmdb
 import py_store_lmdb
+import binascii 
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -103,7 +104,7 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     #os.system("rm -f /mnt/ssd/sdata/all/*")
-    src_data=read_conll(gzip.open('/usr/share/ParseBank/pbv4_ud.part-00.gz', 'rt'), 500000)
+    src_data=read_conll(gzip.open('/usr/share/ParseBank/pbv4_ud.part-00.gz', 'rt'), 200)
     set_dict={}
     lengths=0
     counter=0
@@ -117,6 +118,7 @@ if __name__=="__main__":
     for sent,comments in src_data:
         s=py_tree_lmdb.Py_Tree()
         blob =s.serialize_from_conllu(sent,comments,set_dict)
+        print binascii.hexlify(blob)
         s.deserialize(blob)
         lengths+=len(blob)
         counter+=len(blob)
@@ -130,11 +132,11 @@ if __name__=="__main__":
         #storing
         for flag_number in set_indexes:
             db.store_tree_flag(tree_id, flag_number)
-            db.store_tree_flag_val(tree_id, flag_number)
+            db.store_tree_flag_val(flag_number, tree_id)
         for flag_number in arr_indexes:
             db.store_tree_flag(tree_id, flag_number)
-            db.store_tree_flag_val(tree_id, flag_number)
-        db.store_tree_data(tree_id, blob, len(blob))
+            db.store_tree_flag_val(flag_number, tree_id)
+        db.store_tree_data(tree_id, blob, len(blob))#sys.getsizeof(blob))
 
         tree_id+=1
 
