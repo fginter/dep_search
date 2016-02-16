@@ -283,7 +283,7 @@ int main(int argc, char* argv[]){
     //uint32_t arrays[1] = {9};
     //int len_sets = 2;
     //int len_arrays = 1;
-    uint32_t rarest = 4;
+    uint32_t rarest = *sets;
     Tree *t;
     t = new Tree();
 
