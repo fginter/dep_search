@@ -25,6 +25,11 @@ class LMDB_Fetch{
         MDB_val t_key, t_data;
         Tree *tree;
 
+        uint32_t* sets;
+        uint32_t* arrays;
+        int len_sets;
+        int len_arrays;
+        int rarest;
 
         LMDB_Fetch();
         int open_env(const char *name);
@@ -35,6 +40,9 @@ class LMDB_Fetch{
         int cursor_get_next_tree(unsigned int flag);
         int cursor_load_tree();
         bool check_current_tree(uint32_t *sets, int len_sets, uint32_t *arrays, int len_arrays);
+        uint32_t* get_first_fitting_tree();//uint32_t rarest);
+        uint32_t* get_next_fitting_tree();//uint32_t rarest);
+        void set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
 };
 
 bool prefix(const char *pre, const char *str){
@@ -61,6 +69,28 @@ LMDB_Fetch::LMDB_Fetch(){
 
     tree = new Tree();
 }
+
+
+void LMDB_Fetch::set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t *larrays, uint32_t rarest){
+
+
+        this->rarest = rarest;
+        this->sets = lsets;
+        this->arrays= larrays;
+        this->len_sets=ls;
+        this->len_arrays=la;
+
+        std::cout << *((uint32_t*)this->sets) << "\n";
+        //this->arrays= larrays[0];
+        std::cout << *((uint32_t*)this->arrays) << "\n";
+        this->len_sets=ls;
+        this->len_arrays=la;
+
+
+
+}
+
+
 
 //Thanks, Filip!
 int LMDB_Fetch::open_env(const char *name) {
@@ -229,6 +259,66 @@ bool LMDB_Fetch::check_current_tree(uint32_t *sets, int len_sets, uint32_t *arra
     return true;
 }
 
+//int get_first_fitting_tree(uint32_t rarest, uint32_t* compulsory_flags[], int size_flags){
+
+    //Set cursor
+    //Find next fitting
+    //   if not found return like -1
+
+//}
+uint32_t* LMDB_Fetch::get_next_fitting_tree(){//uint32_t rarest){
+
+   //Find next fitting
+   //   if not found return like -1
+   //int err = this->set_search_cursor_key(rarest);
+
+   int err;
+   while(true){
+    //int err = fetch->set_search_cursor_key(rarest);
+       err = this->cursor_get_next_tree(this->rarest);
+       if(err!=0){
+           return NULL;
+           break;
+       }
+
+    if (err == 0){
+       if(this->check_current_tree(&this->sets[0], this->len_sets, &this->arrays[0], this->len_arrays)){
+           return (uint32_t*)this->c_key.mv_data;
+           break;
+       }
+       //err = this->cursor_get_next_tree(rarest);
+       //if(err!=0){
+       //    return NULL;
+       //    break;
+       }
+    }
+
+}
+
+
+
+uint32_t* LMDB_Fetch::get_first_fitting_tree(){//uint32_t rarest){
+
+   //Find next fitting
+   //   if not found return like -1
+   int err = this->set_search_cursor_key(this->rarest);
+   while(true){
+    //int err = fetch->set_search_cursor_key(rarest);
+    if (err == 0){
+       if(this->check_current_tree(&this->sets[0], this->len_sets, &this->arrays[0], this->len_arrays)){
+           return (uint32_t*)this->c_key.mv_data;
+           break;
+       }
+       err = this->cursor_get_next_tree(this->rarest);
+       if(err!=0){
+           return NULL;
+           break;
+       }
+    }
+
+}
+}
+
 
 int main(int argc, char* argv[]){
 
@@ -255,11 +345,16 @@ int main(int argc, char* argv[]){
 
         //std::cout << argv[i] << "\n";
         if (prefix("-m", argv[i])){
-            *arr = atoi(argv[i]+2);
+            *arr = (uint32_t)atoi(argv[i]+2);
             arr++;
         }
         if (prefix("-s", argv[i])){
-            *sts = atoi(argv[i]+2);
+            *sts = (uint32_t)atoi(argv[i]+2);
+            /*
+            std::cout << "atoi-x" << (uint32_t)atoi(argv[i]+2) << "\n";
+            std::cout << "atoi-y" << (*(uint32_t*)sts) << "\n";
+            std::cout << "atoi-y" << ((uint32_t)(uint32_t*)sts) << "\n";
+            */
             sts++;
         }
         if (prefix("-e", argv[i])){
@@ -287,6 +382,39 @@ int main(int argc, char* argv[]){
     Tree *t;
     t = new Tree();
 
+    std::cout << "AR" << arrays[0] << "\n";
+    std::cout << "STS" << sets[0] << "\n";
+
+    uint32_t* st;
+    st = &sets[0];
+    std::cout << "ERC " << *(st+1) << "\n";
+
+
+
+
+    //put sets and arrays into place
+    uint32_t * target;
+    fetch->set_set_map_pointers(len_sets, len_arrays, &sets[0],&arrays[0], rarest);
+    target = fetch->get_first_fitting_tree();//rarest);
+     if (target != NULL){
+         std::cout <<"T"<< *target << "\n";
+     }
+     while(true){
+
+     target = fetch->get_next_fitting_tree();//rarest);
+     if (target != NULL){
+         std::cout <<"T"<< *target << "\n";
+         }
+     else{
+         break;
+
+     }
+
+     }
+
+
+
+    /*
     int err = fetch->set_search_cursor_key(rarest);
     if (err == 0){
        if(fetch->check_current_tree(&sets[0], len_sets, &arrays[0], len_arrays)){
@@ -310,7 +438,7 @@ int main(int argc, char* argv[]){
 
            }
        }
-    }
+    }*/
 }
 
 
