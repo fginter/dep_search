@@ -104,7 +104,7 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     #os.system("rm -f /mnt/ssd/sdata/all/*")
-    src_data=read_conll(gzip.open('/usr/share/ParseBank/pbv4_ud.part-00.gz', 'rt'), 200)
+    src_data=read_conll(gzip.open('/usr/share/ParseBank/pbv4_ud.part-00.gz', 'rt'), 1500000)
     set_dict={}
     lengths=0
     counter=0
@@ -116,9 +116,13 @@ if __name__=="__main__":
     setarr_count = Counter([])
 
     for sent,comments in src_data:
+        if tree_id%10000 == 0:
+            print tree_id
         s=py_tree_lmdb.Py_Tree()
-        blob =s.serialize_from_conllu(sent,comments,set_dict)
+        blob,stuff =s.serialize_from_conllu(sent,comments,set_dict)
         print binascii.hexlify(blob)
+        print stuff
+        import pdb;pdb.set_trace()
         s.deserialize(blob)
         lengths+=len(blob)
         counter+=len(blob)

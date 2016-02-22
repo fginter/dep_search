@@ -2,6 +2,7 @@ from libcpp cimport bool
 from db_util cimport DB
 from setlib.pytset cimport PyTSet, PyTSetArray
 from libc.stdlib cimport malloc
+from libc.stdint cimport uint32_t
 
 cdef extern from "tset.h" namespace "tset":
     cdef cppclass TSet:
@@ -42,6 +43,12 @@ cdef extern from "query_functions.h":
 cdef class Search:  # base class for all searches
     cdef void **sets  #Pointers to stuff coming from the DB: array 1 and set 2 (we don't need 0)
     cdef int *set_types
+    cdef set_size
+    cdef int ops
+
+    cdef uint32_t *set_ids
+    cdef unsigned char* types
+    cdef unsigned char *optional
 
     cdef TSet* exec_search(self):
         pass
@@ -49,12 +56,81 @@ cdef class Search:  # base class for all searches
     cdef void initialize(self):
         pass
 
+    def set_db_options(self, p_set_ids, p_types, p_optional):
+
+        cdef uint32_t *set_ids = <uint32_t *>malloc(len(p_set_ids) * sizeof(uint32_t))
+        for i, s in enumerate(p_set_ids):
+            set_ids[i] = s
+
+        self.set_ids = set_ids
+        cdef unsigned char *types = <unsigned char *>malloc(len(p_set_ids) * sizeof(unsigned char))
+        for i, s in enumerate(p_types):
+            if s:
+                types[i] = <char>2
+            else:
+                types[i] = <char>1
+
+        self.types = types
+
+        cdef unsigned char *optional = <unsigned char *>malloc(len(p_optional) * sizeof(unsigned char))
+        for i, s in enumerate(p_optional):
+            if s:
+                optional[i] = <char>1
+            else:
+                optional[i] = <char>0
+
+        self.optional = optional
+        self.set_size = len(p_set_ids)
+
+        #self.set_ids = set_ids
+        #self.set_types = types
+        #self.optional = optional
+
     def next_result(self, DB db):
+        self.ops += 1
         cdef int size=len(self.query_fields)
         cdef PyTSet py_result=PyTSet(0)
         cdef TSet *result
         cdef int graph_id
         cdef int rows=0
+        cdef uint32_t * tree_id
+        #cdef Tree * tree
+
+        #Okay, so this works now turn to the tree pointers and stuff!
+        if self.ops < 2:
+            res = db.get_first_tree() #(<int*>db.get_first_fitting_tree())[0] #tree = DB.get_first_fitting_tree()
+            started = True
+            #return res
+        else:
+            res = db.get_next_tree() #(<int*>db.get_next_fitting_tree())[0]
+            #return res
+
+        #That's it we're out!
+        if res == -1:
+            return -1
+
+        #But if we're here our little cursor has moved forward!
+
+        #print self.set_types,size
+        #Next up is the task of filling the sets up!
+        #Something like fill with current tree kind of method should do it!
+
+        #fill_sets(self, void **set_pointers, uint32_t *indices, unsigned char *types, unsigned char *optional, int size)
+        db.fill_sets(self.sets, self.set_ids, self.types, self.optional, self.set_size)
+
+        #db.fill_sets(self.sets,self.set_types,size)
+        result=self.exec_search()
+        result.print_set()
+        if not result.is_empty():
+            print "Hurrah!"
+            py_result.acquire_thisptr(result)
+            print '!'
+            print '?'
+        return graph_id,py_result,rows
+
+
+
+        '''
         while db.next()==0:
             rows+=1
             graph_id=db.get_integer(0)
@@ -64,4 +140,22 @@ cdef class Search:  # base class for all searches
             if not result.is_empty():
                 py_result.acquire_thisptr(result)
                 return graph_id,py_result,rows
+        '''
+
+    def x_next_result(self, DB db):
+        cdef int size=len(self.query_fields)
+        cdef PyTSet py_result=PyTSet(0)
+        cdef TSet *result
+        cdef int graph_id
+        cdef int rows=0
+        while db.next()==0:
+            rows+=1
+            graph_id=db.get_integer(0)
+            #db.fill_sets(self.sets,self.set_types,size)
+            self.initialize()
+            result=self.exec_search()
+            if not result.is_empty():
+                py_result.acquire_thisptr(result)
+                return graph_id,py_result,rows
+
         return None,None,rows

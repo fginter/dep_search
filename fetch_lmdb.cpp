@@ -40,8 +40,10 @@ class LMDB_Fetch{
         int cursor_get_next_tree(unsigned int flag);
         int cursor_load_tree();
         bool check_current_tree(uint32_t *sets, int len_sets, uint32_t *arrays, int len_arrays);
-        uint32_t* get_first_fitting_tree();//uint32_t rarest);
+        uint32_t*  get_first_fitting_tree();//uint32_t rarest);
         uint32_t* get_next_fitting_tree();//uint32_t rarest);
+        void* tree_get_first_fitting_tree();//uint32_t rarest);
+        void* tree_get_next_fitting_tree();//uint32_t rarest);
         void set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
 };
 
@@ -80,13 +82,11 @@ void LMDB_Fetch::set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t 
         this->len_sets=ls;
         this->len_arrays=la;
 
-        std::cout << *((uint32_t*)this->sets) << "\n";
+        std::cout << "sets" << *((uint32_t*)this->sets) << "\n";
         //this->arrays= larrays[0];
-        std::cout << *((uint32_t*)this->arrays) << "\n";
+        std::cout << "arrays" << *((uint32_t*)this->arrays) << "\n";
         this->len_sets=ls;
         this->len_arrays=la;
-
-
 
 }
 
@@ -267,11 +267,7 @@ bool LMDB_Fetch::check_current_tree(uint32_t *sets, int len_sets, uint32_t *arra
 
 //}
 uint32_t* LMDB_Fetch::get_next_fitting_tree(){//uint32_t rarest){
-
-   //Find next fitting
-   //   if not found return like -1
    //int err = this->set_search_cursor_key(rarest);
-
    int err;
    while(true){
     //int err = fetch->set_search_cursor_key(rarest);
@@ -280,7 +276,6 @@ uint32_t* LMDB_Fetch::get_next_fitting_tree(){//uint32_t rarest){
            return NULL;
            break;
        }
-
     if (err == 0){
        if(this->check_current_tree(&this->sets[0], this->len_sets, &this->arrays[0], this->len_arrays)){
            return (uint32_t*)this->c_key.mv_data;
@@ -294,11 +289,7 @@ uint32_t* LMDB_Fetch::get_next_fitting_tree(){//uint32_t rarest){
     }
 
 }
-
-
-
 uint32_t* LMDB_Fetch::get_first_fitting_tree(){//uint32_t rarest){
-
    //Find next fitting
    //   if not found return like -1
    int err = this->set_search_cursor_key(this->rarest);
@@ -318,6 +309,52 @@ uint32_t* LMDB_Fetch::get_first_fitting_tree(){//uint32_t rarest){
 
 }
 }
+
+
+void* LMDB_Fetch::tree_get_next_fitting_tree(){//uint32_t rarest){
+   //int err = this->set_search_cursor_key(rarest);
+   int err;
+   while(true){
+    //int err = fetch->set_search_cursor_key(rarest);
+       err = this->cursor_get_next_tree(this->rarest);
+       if(err!=0){
+           return NULL;
+           break;
+       }
+    if (err == 0){
+       if(this->check_current_tree(&this->sets[0], this->len_sets, &this->arrays[0], this->len_arrays)){
+           return (void*)this->tree;//t_data.mv_data;
+           break;
+       }
+       //err = this->cursor_get_next_tree(rarest);
+       //if(err!=0){
+       //    return NULL;
+       //    break;
+       }
+    }
+
+}
+void* LMDB_Fetch::tree_get_first_fitting_tree(){//uint32_t rarest){
+   //Find next fitting
+   //   if not found return like -1
+   int err = this->set_search_cursor_key(this->rarest);
+   while(true){
+    //int err = fetch->set_search_cursor_key(rarest);
+    if (err == 0){
+       if(this->check_current_tree(&this->sets[0], this->len_sets, &this->arrays[0], this->len_arrays)){
+           return (void*)this->tree;//this->t_data.mv_data;
+           break;
+       }
+       err = this->cursor_get_next_tree(this->rarest);
+       if(err!=0){
+           return NULL;
+           break;
+       }
+    }
+
+}
+}
+
 
 
 int main(int argc, char* argv[]){
@@ -393,6 +430,7 @@ int main(int argc, char* argv[]){
 
 
     //put sets and arrays into place
+    /*
     uint32_t * target;
     fetch->set_set_map_pointers(len_sets, len_arrays, &sets[0],&arrays[0], rarest);
     target = fetch->get_first_fitting_tree();//rarest);
@@ -413,7 +451,7 @@ int main(int argc, char* argv[]){
      }
 
 
-
+    */
     /*
     int err = fetch->set_search_cursor_key(rarest);
     if (err == 0){

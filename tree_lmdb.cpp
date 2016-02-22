@@ -80,7 +80,6 @@ void Tree::deserialize(void *data) {
     zipped_tree_text=(void*)((char*)zipped_block+sizeof(uint16_t)); //and here's the zipped data
 }
 
-/*
 int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_types, unsigned char *optional, unsigned int count) {
     //set_pos -> index into set_pointers etc, runs in range [0,count)
     for (int set_pos=0; set_pos<count; set_pos++) {
@@ -97,7 +96,7 @@ int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_t
 	    else {
 		//got a set!
 		int set_index=p-set_indices; //binary search returns a pointer, so p-set_indices is the index of the item found
-		tset->deserialize(tree_length,(const void*)&set_data[set_index*array_length]);
+		tset->deserialize((const void*)&set_data[set_index*array_length]);
 	    }
 	}
 	else if (set_types[set_pos]==2) { //we are looking for an array
@@ -113,7 +112,7 @@ int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_t
 	    else {
 		//got an array!
 		int set_index=p-map_indices; //binary search returns a pointer, so p-set_indices is the index of the item found
-		tsetarray->deserialize(tree_length,(void*)((char*)serialized_map_data+map_data_pointer_byte_offsets[set_index]),map_lengths[set_index]);
+		tsetarray->deserialize((void*)((char*)serialized_map_data+map_data_pointer_byte_offsets[set_index]),map_lengths[set_index]);//, tree_length);
 	    }
 	}
     }
@@ -122,4 +121,3 @@ int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_t
 		
 		    
 		
-*/

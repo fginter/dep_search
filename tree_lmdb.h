@@ -33,7 +33,7 @@ public:
 
     //Fill count many sets into set_pointers
     //set_types: 1:tset  2:tsetarray
-    //int fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_types, unsigned char *optional, unsigned int count);
+    int fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_types, unsigned char *optional, unsigned int count);
 };
 
 mode_t get_mode();
