@@ -114,9 +114,14 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
         if r==None:
             break
         print "# graph id:",idx
+        hit,hit_comment=get_data_from_db(res_db,idx)
+        hit_lines=hit.splitlines()
         for x in r:
             print "# visual-style\t%s\tbgColor:lightgreen"%(x+1)
-        hit,hit_comment=get_data_from_db(res_db,idx)
+            print "# hittoken:\t"+hit_lines[x]
+        
+        
+        
         if hit_comment:
             print hit_comment
         if context>0:
