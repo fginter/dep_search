@@ -162,29 +162,42 @@ def main(argv):
 
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
-    parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/pb-10M/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
+    parser.add_argument('-d', '--database', nargs=1, help='Single database or a wildcard of databases to query.')
+    parser.add_argument('--dblist', nargs='+', help='A list of databases to query. Note that this argument must be passed as the last to avoid the query term being interpreted as a database name.')
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
-    parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
+    parser.add_argument('search', nargs=1, help='The name of the search to run (without .pyx), or a query expression.')
 
     args = parser.parse_args(argv[1:])
 
     if args.output is not None:
         sys.stdout = open(args.output, 'w')
 
-    if os.path.exists(args.search+".pyx"):
-        print >> sys.stderr, "Loading "+args.search+".pyx"
-        mod=load(args.search)
+    query_term=args.search[0]
+
+    if args.database:
+        dbs=glob.glob(args.database[0])
+        dbs.sort()
+    elif args.dblist:
+        dbs=args.dblist
     else:
-        path = '/'.join(args.database.split('/')[:-1])
+        print >> sys.stderr, "No database given"
+        sys.exit() #no db to search
+        
+
+    if os.path.exists(query_term+".pyx"):
+        print >> sys.stderr, "Loading "+query_term+".pyx"
+        mod=load(query_term)
+    else:
+        path = '/'.join(dbs[0].split('/')[:-1])
         json_filename = path + '/symbols.json' 
         #This is a query, compile first
         import pseudocode_ob_3 as pseudocode_ob
 
         import hashlib
         m = hashlib.md5()
-        m.update(args.search)
+        m.update(query_term)
 
         #1. Check if the queries folder has the search
         #2. If not, generate it here and move to the new folder
@@ -197,7 +210,7 @@ def main(argv):
         if not os.path.isfile(query_folder + temp_file_name):
             f = open('qry_' + m.hexdigest() + '.pyx', 'wt')
             try:
-                pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename)
+                pseudocode_ob.generate_and_write_search_code_from_expression(query_term, f, json_filename=json_filename)
             except Exception as e:
                 os.remove(temp_file_name)
                 raise e
@@ -220,8 +233,6 @@ def main(argv):
     query_obj=mod.GeneratedSearch()
     sql_query,sql_args=query(query_obj.query_fields)
     
-    dbs=glob.glob(args.database)
-    dbs.sort()
 
     total_hits=0
     for d in dbs:
