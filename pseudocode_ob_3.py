@@ -349,11 +349,35 @@ def get_class_function(set_manager):
 
     return lines
 
+def handle_root_extra_comments(node, set_manager):
+
+    output_lines = []
+    #Parse the comments
+    for com in node.extra_comments:
+       if com.startswith('max_tree_len='):
+           tree_len = int(com.split('=')[-1])
+           sentence_count_str = get_sentence_count_str(set_manager)
+           output_lines.append('if ' + 'self.' + sentence_count_str + '.tree_length >= ' + str(tree_len) + ': return self.empty_set')
+
+       if com.startswith('min_tree_len='):
+           tree_len = int(com.split('=')[-1])
+           sentence_count_str = get_sentence_count_str(set_manager)
+           output_lines.append('if ' + 'self.' + sentence_count_str + '.tree_length <= ' + str(tree_len) + ': return self.empty_set')
+
+    return output_lines
+
+
 def generate_code(nodes, set_manager, node_dict, order_of_execution, tag_list=[], val_dict={}):
 
     extra_functions = []
     match_code_lines = []
     node_output_dict = {}
+
+    #The root node should have its extra comments inspected
+    if len(order_of_execution[-1].extra_comments) > 0:
+        #
+        for l in handle_root_extra_comments(order_of_execution[-1], set_manager):
+            match_code_lines.append(l)
 
     for node in order_of_execution:
         match_block, node_extra_functions = generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag_list=tag_list, val_dict=val_dict)
