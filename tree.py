@@ -6,11 +6,19 @@ ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 class SymbolStats(object):
 
     def __init__(self):
-        self.d={} #{(symbol,type):count}
+        self.d={} #{(symbol,type,full_form):count}
 
-    def symb(self,symb,s_type,full_form):
-        self.d[(symb,s_type,full_form)]=self.d.get((symb,s_type,full_form),0)+1
-        
+    def symb(self,symb,s_type,full_form,count=1):
+        self.d[(symb,s_type,full_form)]=self.d.get((symb,s_type,full_form),0)+count
+
+    def update_with_json(self,f_name):
+        """update own counts with those from the previously saved symbols.json --- needed for indexing in parallel"""
+        with open(f_name,"r") as otherf:
+            other_d=json.load(otherf)
+        for symbol,counts in other_d.iteritems():
+            for (s_type,full_f,cnt) in counts:
+                self.symb(symbol,s_type,full_f,cnt)
+
     def save_json(self,f_name):
         #Make a dictionary where a symbol can be loooked up right away
         new_d={}

@@ -12,6 +12,8 @@ import os
 import setlib.pytset as pytset
 import zlib
 import itertools
+import os.path
+import traceback
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -223,6 +225,11 @@ if __name__=="__main__":
         build_indices(conn)
         conn.close()
         counter+=1
+        try:
+            if os.path.exists(os.path.join(args.dir,"symbols.json")):
+                stats.update_with_json(os.path.join(args.dir,"symbols.json"))
+        except:
+            traceback.print_exc()
         stats.save_json(os.path.join(args.dir,"symbols.json"))
 
 
