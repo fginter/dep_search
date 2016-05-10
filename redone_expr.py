@@ -17,11 +17,16 @@ class BaseNode():
     neg = False
     deprel = False
     parent_node = None
+    #extra_comments = []
+    #def __init__(self):
+    #    self.extra_comments = []
+
 
 class SetNode_Token(BaseNode):
     #Makes a single operation, and returns a single set
     def __init__(self, token_restriction):
         self.node_id = ''
+        self.extra_comments = []
         self.token_restriction = token_restriction.rstrip('"/').lstrip('"/')
         if self.token_restriction.startswith('L=') and not token_restriction.startswith('"'):
             self.token_restriction = self.token_restriction[2:]
@@ -37,7 +42,7 @@ class SetNode_Token(BaseNode):
         return []
 
     def to_unicode(self):
-        return u'SetNode(Token:' + self.proplabel + self.token_restriction + u')' 
+        return u'SetNode(Token:' + self.proplabel + self.token_restriction + u')' + str(self.extra_comments) 
 
 
 class SetNode_Eq(BaseNode):
@@ -47,6 +52,7 @@ class SetNode_Eq(BaseNode):
         self.setnode1 = setnode1
         self.setnode2 = setnode2
         self.proplabel = ''
+        self.extra_comments = []
 
     def get_kid_nodes(self):
         return [self.setnode1, self.setnode2]
@@ -63,6 +69,7 @@ class SetNode_SubEq(BaseNode):
         self.setnode1 = setnode1
         self.setnode2 = setnode2
         self.proplabel = ''
+        self.extra_comments = []
 
     def get_kid_nodes(self):
         return [self.setnode1, self.setnode2]
@@ -78,6 +85,7 @@ class SetNode_And(BaseNode):
         self.setnode1 = setnode1
         self.setnode2 = setnode2
         self.proplabel = ''
+        self.extra_comments = []
 
     def get_kid_nodes(self):
         return [self.setnode1, self.setnode2]
@@ -92,6 +100,8 @@ class SetNode_Plus(BaseNode):
         self.setnode1 = setnode1
         self.setnode2 = setnode2
         self.proplabel = ''
+        self.extra_comments = []
+
 
     def get_kid_nodes(self):
         return [self.setnode1, self.setnode2]
@@ -107,6 +117,7 @@ class SetNode_Or(BaseNode):
         self.setnode1 = setnode1
         self.setnode2 = setnode2
         self.proplabel = ''
+        self.extra_comments = []
 
     def get_kid_nodes(self):
         return [self.setnode1, self.setnode2]
@@ -121,6 +132,7 @@ class SetNode_Dep(BaseNode):
         self.index_node = setnode1
         self.deprels = [(deprel, setnode2)]
         self.proplabel = ''
+        self.extra_comments = []
 
     def get_kid_nodes(self):
         to_return = [self.index_node,]
@@ -135,7 +147,7 @@ class SetNode_Dep(BaseNode):
         for drt in self.deprels:
             deprel_list.append(drt[0].to_unicode() + ':' + drt[1].to_unicode())        
 
-        return u'Node(index_node:' + self.index_node.to_unicode() + ' << ' + ','.join(deprel_list) +' >> )'
+        return u'Node(index_node:' + self.index_node.to_unicode() + ' << ' + ','.join(deprel_list) +' >> )' + str(self.extra_comments)
 
 class SetNode_Not(BaseNode):
 
@@ -143,6 +155,7 @@ class SetNode_Not(BaseNode):
         self.node_id = ''
         self.setnode1 = setnode1
         self.neg = True
+        self.extra_comments = []
 
     def get_kid_nodes(self):
         return [self.setnode1,]
@@ -223,11 +236,16 @@ tokens=('TEXT',    #/..../
         'PLUS',
         'EQ',
         'SE',
-        'ANYTOKEN')  #_
+        'ANYTOKEN',
+        'ECOM')  #_
 
 #Here's regular expressions for the tokens defined above
 t_TEXT = ur'((?!(->|\+|&|\(|\)|\||==|<|>|"|\s)).)+'
 t_DEPOP = ur'(<|>)([^="<>_()&|\s]+)?'
+
+def t_ECOM(t):
+    ur'{[^}]+}'
+    return t
 
 def t_WORD(t):
     ur'"[^"]+"'
@@ -280,7 +298,7 @@ def t_error(t):
 # the grammar rules are the comment strings of the functions
 
 #Main 
-precedence = (('left','PLUS'),('left','EQ'),('left','SE'),('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left','TEXT'))
+precedence = (('left','PLUS'),('left','EQ'),('left','SE'),('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left', 'ECOM'), ('left','TEXT'))
 
 def p_error(t):
     if t==None:
@@ -298,6 +316,10 @@ def p_top(t):
 #  ( expression )
 #  _
 
+def p_ecomxpr(t):
+    u'''setnode : setnode ECOM'''
+    t[1].extra_comments.append(t[2][1:-1])
+    t[0] = t[1]
 
 def p_expr2(t):
     u'''setnode : setnode depres'''

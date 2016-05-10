@@ -12,6 +12,8 @@ import os
 import setlib.pytset as pytset
 import zlib
 import itertools
+import os.path
+import traceback
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -195,10 +197,15 @@ if __name__=="__main__":
     parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
     parser.add_argument('-p', '--prefix', required=True, default="trees", help='Prefix name of the database files. Default: %(default)s')
     parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
+    parser.add_argument('--wipe', default=False, action="store_true", help='Wipe the target directory before building the index.')
     args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     os.system("mkdir -p "+args.dir)
-    #os.system("rm -f %s/*.db"%args.dir)
+    if args.wipe:
+        print >> sys.stderr, "Wiping target"
+        cmd="rm -f %s/*.db %s/symbols.json"%(args.dir,args.dir)
+        print >> sys.stderr, cmd
+        os.system(cmd)
 
     stats=SymbolStats()
     src_data=read_conll(sys.stdin,args.max)
@@ -218,6 +225,11 @@ if __name__=="__main__":
         build_indices(conn)
         conn.close()
         counter+=1
+        try:
+            if os.path.exists(os.path.join(args.dir,"symbols.json")):
+                stats.update_with_json(os.path.join(args.dir,"symbols.json"))
+        except:
+            traceback.print_exc()
         stats.save_json(os.path.join(args.dir,"symbols.json"))
 
 
