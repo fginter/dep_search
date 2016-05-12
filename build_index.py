@@ -229,6 +229,7 @@ if __name__=="__main__":
         it=itertools.islice(src_data,batch)
         filled=fill_db(conn,it,stats)
         if filled==0:
+            os.system("rm -f "+db_name)
             break
         build_indices(conn)
         conn.close()
