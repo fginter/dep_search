@@ -29,11 +29,13 @@ def prepare_tables(conn):
        conllu_comment_compressed BLOB
     );
     CREATE TABLE token_index (
+       norm INTEGER,
        token TEXT,
        graph_id INTEGER,
        token_set BLOB
     );
     CREATE TABLE lemma_index (
+       norm INTEGER,
        lemma TEXT,
        graph_id INTEGER,
        token_set BLOB
@@ -61,8 +63,8 @@ def prepare_tables(conn):
 def build_indices(conn):
     build=\
     """
-    CREATE UNIQUE INDEX tok_gid ON token_index(token,graph_id);
-    CREATE UNIQUE INDEX lemma_gid ON lemma_index(lemma,graph_id);
+    CREATE UNIQUE INDEX tok_gid ON token_index(token,norm,graph_id);
+    CREATE UNIQUE INDEX lemma_gid ON lemma_index(lemma,norm,graph_id);
     CREATE UNIQUE INDEX gid_tag ON tag_index(graph_id,tag);
     CREATE INDEX tag_gid ON tag_index(tag,graph_id);
     CREATE UNIQUE INDEX gid ON graph(graph_id);
@@ -157,7 +159,7 @@ def serialize_as_tset_array(tree_len,sets):
     res=struct.pack("@H",tree_len)+("".join(indices))
     return res
 
-
+rsub=re.compile(ur"[#-]",re.U)
 def fill_db(conn,src_data,stats):
     """
     `src_data` - iterator over sentences -result of read_conll()
@@ -173,9 +175,15 @@ def fill_db(conn,src_data,stats):
         
         conn.execute('INSERT INTO graph VALUES(?,?,?,?)', [sent_idx,len(sent),buffer(zlib.compress(t.conllu.encode("utf-8"))),buffer(zlib.compress(t.comments.encode("utf-8")))])
         for token, token_set in t.tokens.iteritems():
-            conn.execute('INSERT INTO token_index VALUES(?,?,?)', [token,sent_idx,buffer(token_set.tobytes())])
+            conn.execute('INSERT INTO token_index VALUES(?,?,?,?)', [0,token,sent_idx,buffer(token_set.tobytes())])
         for lemma, token_set in t.lemmas.iteritems():
-            conn.execute('INSERT INTO lemma_index VALUES(?,?,?)', [lemma,sent_idx,buffer(token_set.tobytes())])
+            conn.execute('INSERT INTO lemma_index VALUES(?,?,?,?)', [0,lemma,sent_idx,buffer(token_set.tobytes())])
+
+        for token, token_set in t.normtokens.iteritems():
+            conn.execute('INSERT INTO token_index VALUES(?,?,?,?)', [1,token,sent_idx,buffer(token_set.tobytes())])
+        for lemma, token_set in t.normlemmas.iteritems():
+            conn.execute('INSERT INTO lemma_index VALUES(?,?,?,?)', [1,lemma,sent_idx,buffer(token_set.tobytes())])
+
         for tag, token_set in t.tags.iteritems():
             conn.execute('INSERT INTO tag_index VALUES(?,?,?)', [sent_idx,tag,buffer(token_set.tobytes())])
         for dtype, (govs,deps) in t.rels.iteritems():

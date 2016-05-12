@@ -57,12 +57,29 @@ class Tree(object):
                 else:
                     deps=u"_"
                 lines.append([cols[ID],cols[FORM],cols[LEMMA],cols[POS],cols[POS],cols[FEAT],cols[HEAD],cols[DEPREL],deps,u"_"])
+
+            #Add tokens and lemmas
             if cols[FORM] not in t.tokens:
                 t.tokens[cols[FORM]]=pytset.PyTSet(len(conll))
             if cols[LEMMA] not in t.lemmas:
                 t.lemmas[cols[LEMMA]]=pytset.PyTSet(len(conll))
             t.tokens[cols[FORM]].add_item(idx)
             t.lemmas[cols[LEMMA]].add_item(idx)
+
+            #Add the normalized versions thereof, if needed
+            tnorm=cols[FORM].lower()
+            if tnorm!=cols[FORM]: #Normalized version is different!
+                if tnorm not in t.normtokens:
+                    t.normtokens[tnorm]=pytset.PyTSet(len(conll))
+                t.normtokens[tnorm].add_item(idx)
+
+            lnorm=cols[LEMMA].lower().replace(u"#",u"").replace(u"-",u"")
+            if lnorm!=cols[LEMMA]: #Normalized version is different!
+                if lnorm not in t.normlemmas:
+                    t.normlemmas[lnorm]=pytset.PyTSet(len(conll))
+                t.normlemmas[lnorm].add_item(idx)
+            #
+
             if cols[POS]!=u"_":
                 pos=cols[POS]
                 if pos not in t.tags:
@@ -110,7 +127,9 @@ class Tree(object):
         self.rels={}  #key: rel or "anyrel"  value: ([govs as a list of set(), deps as a list of set()]) e.g. ([set(2),_,_],[_,_,set(0)]) means token 0 governs token 2, and token 2 is governed by token 0
 
         self.tokens={} #key: token, value: PyTSet()
+        self.normtokens={} #key: normtoken, value: PyTSet()  
         self.lemmas={} #key: lemma: value PyTSet()
+        self.normlemmas={} #key: normlemma: value PyTSet()
         self.tags={} #key: tag value: PyTSet()
         self.conllu=None #string
         self.comments=u""

@@ -23,8 +23,9 @@ import tempfile
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 query_folder = './queries/'
 
-def query(query_fields):
+def query(query_fields,cli_args):
     """
+    cli_args: command line args
     query_fields: A list of strings describing the data to fetch
           Each string names a set to retrieve
 
@@ -65,7 +66,11 @@ def query(query_fields):
             elif stype==u"a":
                 selects.append(u"t_%d.token_%s_map"%(i,ftype))
         elif ftype in (u"token",u"lemma",u"tag"):
-            joins.append((u"%sJOIN %s_index AS t_%d ON graph.graph_id=t_%d.graph_id and t_%d.%s=?"%(j_type,ftype,i,i,i,ftype),[res]))
+            if not cli_args.insensitive:
+                case_ins_clause=u" and t_%d.norm=0"%i #force lookup purely in non-normalized fields
+            else:
+                case_ins_clause=u""
+            joins.append((u"%sJOIN %s_index AS t_%d ON graph.graph_id=t_%d.graph_id and t_%d.%s=?%s"%(j_type,ftype,i,i,i,ftype,case_ins_clause),[res]))
             selects.append(u"t_%d.token_set"%i)
     
     joins.sort() #This is a horrible hack, but it will sort FROM JOIN ... LEFT JOIN the right way and help the QueryPlan generator
@@ -100,7 +105,39 @@ def get_url(comments):
             return c.split(u":",1)[1].strip()
     return None
 
-def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
+def print_sent(r,idx,res_db,args):
+    print "# graph id:",idx
+    hit,hit_comment=get_data_from_db(res_db,idx)
+    hit_lines=hit.splitlines()
+    for x in sorted(r):
+        print "# visual-style\t%s\tbgColor:lightgreen"%(x+1)
+        print "# hittoken:\t"+hit_lines[x]
+    if hit_comment:
+        print hit_comment
+    if args.context>0:
+        hit_url=get_url(hit_comment.decode("utf-8"))
+        texts=[]
+        # get +/- context sentences from db
+        for i in range(idx-args.context,idx+args.context+1):
+            if i==idx:
+                data=hit
+            else:
+                data,data_comment=get_data_from_db(res_db,i)
+                if data is None or get_url(data_comment.decode("utf-8"))!=hit_url:
+                    continue
+            text=u" ".join(t.split(u"\t",2)[1] for t in data.decode(u"utf-8").split(u"\n"))
+            if i<idx:
+                texts.append(u"# context-before: "+text)
+            elif i==idx:
+                texts.append(u"# context-hit: "+text)
+            else:
+                texts.append(u"# context-after: "+text)
+        print (u"\n".join(text for text in texts)).encode(u"utf-8")
+    print hit
+    print
+
+
+def query_from_db(q_obj,db_name,sql_query,sql_args,args):
     db=db_util.DB()
     db.open_db(unicode(db_name))
     res_db=sqlite3.connect(unicode(db_name))
@@ -108,48 +145,27 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
     print >> sys.stderr, sql_query, sql_args
     counter=0
     sql_counter=0
+    current_idx=None
+    current_set=set()
     while True:
         idx,r,rows=query_obj.next_result(db)
         sql_counter+=rows
         if r==None:
+            if current_set:
+                print_sent(current_set,current_idx,res_db,args)
+                counter+=1
             break
-        print "# graph id:",idx
-        hit,hit_comment=get_data_from_db(res_db,idx)
-        hit_lines=hit.splitlines()
+        if idx!=current_idx and current_set: #We have a new sentence, finish the old one!
+            print_sent(current_set,current_idx,res_db,args)
+            current_set=set()
+            counter+=1
+            if args.max!=0 and counter>=args.max:
+                print >> sys.stderr, "--max ",args.max
+                print >> sys.stderr, counter, "hits in", db_name
+                return counter#sys.exit(0)
+        current_idx=idx
         for x in r:
-            print "# visual-style\t%s\tbgColor:lightgreen"%(x+1)
-            print "# hittoken:\t"+hit_lines[x]
-        
-        
-        
-        if hit_comment:
-            print hit_comment
-        if context>0:
-            hit_url=get_url(hit_comment.decode("utf-8"))
-            texts=[]
-            # get +/- 2 sentences from db
-            for i in range(idx-context,idx+context+1):
-                if i==idx:
-                    data=hit
-                else:
-                    data,data_comment=get_data_from_db(res_db,i)
-                    if data is None or get_url(data_comment.decode("utf-8"))!=hit_url:
-                        continue
-                text=u" ".join(t.split(u"\t",2)[1] for t in data.decode(u"utf-8").split(u"\n"))
-                if i<idx:
-                    texts.append(u"# context-before: "+text)
-                elif i==idx:
-                    texts.append(u"# context-hit: "+text)
-                else:
-                    texts.append(u"# context-after: "+text)
-            print (u"\n".join(text for text in texts)).encode(u"utf-8")
-        print hit
-        print
-        counter+=1
-        if max_hits!=0 and counter>=max_hits:
-            print >> sys.stderr, "--max ",max_hits
-            print >> sys.stderr, counter, "hits in", db_name
-            return counter#sys.exit(0)
+            current_set.add(x)
 
     print >> sys.stderr, sql_counter,"rows from database",db_name
     print >> sys.stderr, counter, "hits in", db_name
@@ -165,6 +181,7 @@ def main(argv):
     parser.add_argument('-d', '--database', nargs=1, help='Single database or a wildcard of databases to query.')
     parser.add_argument('--dblist', nargs='+', help='A list of databases to query. Note that this argument must be passed as the last to avoid the query term being interpreted as a database name.')
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
+    parser.add_argument('-i', '--insensitive', default=False, action="store_true", help='Lemmas and wordforms are searched case-insensitive and without lemma-separators for the lemmas.')
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
     parser.add_argument('search', nargs=1, help='The name of the search to run (without .pyx), or a query expression.')
@@ -231,12 +248,12 @@ def main(argv):
             os.rename(temp_file_name[:-4] + '.so', query_folder + temp_file_name[:-4] + '.so')
 
     query_obj=mod.GeneratedSearch()
-    sql_query,sql_args=query(query_obj.query_fields)
+    sql_query,sql_args=query(query_obj.query_fields,args)
     
 
     total_hits=0
     for d in dbs:
-        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)
+        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args)
         if total_hits >= args.max and args.max > 0:
             break
     print >> sys.stderr, "Total number of hits:",total_hits
