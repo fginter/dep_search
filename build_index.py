@@ -63,8 +63,8 @@ def prepare_tables(conn):
 def build_indices(conn):
     build=\
     """
-    CREATE UNIQUE INDEX tok_gid ON token_index(token,norm,graph_id);
-    CREATE UNIQUE INDEX lemma_gid ON lemma_index(lemma,norm,graph_id);
+    CREATE UNIQUE INDEX tok_gid ON token_index(token,graph_id,norm);
+    CREATE UNIQUE INDEX lemma_gid ON lemma_index(lemma,graph_id,norm);
     CREATE UNIQUE INDEX gid_tag ON tag_index(graph_id,tag);
     CREATE INDEX tag_gid ON tag_index(tag,graph_id);
     CREATE UNIQUE INDEX gid ON graph(graph_id);
