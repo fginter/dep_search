@@ -137,13 +137,13 @@ def print_sent(r,idx,res_db,args):
     print
 
 
-def query_from_db(q_obj,db_name,sql_query,sql_args,args):
+def query_from_db(q_obj,db_name,sql_query,sql_args,args,hit_counter):
+    old_hit_counter=hit_counter
     db=db_util.DB()
     db.open_db(unicode(db_name))
     res_db=sqlite3.connect(unicode(db_name))
     db.exec_query(sql_query,sql_args)
     print >> sys.stderr, sql_query, sql_args
-    counter=0
     sql_counter=0
     current_idx=None
     current_set=set()
@@ -153,25 +153,25 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,args):
         if r==None:
             if current_set:
                 print_sent(current_set,current_idx,res_db,args)
-                counter+=1
+                hit_counter+=1
             break
         if idx!=current_idx and current_set: #We have a new sentence, finish the old one!
             print_sent(current_set,current_idx,res_db,args)
             current_set=set()
-            counter+=1
-            if args.max!=0 and counter>=args.max:
+            hit_counter+=1
+            if args.max!=0 and hit_counter>=args.max:
                 print >> sys.stderr, "--max ",args.max
                 print >> sys.stderr, counter, "hits in", db_name
-                return counter#sys.exit(0)
+                return hit_counter#sys.exit(0)
         current_idx=idx
         for x in r:
             current_set.add(x)
 
     print >> sys.stderr, sql_counter,"rows from database",db_name
-    print >> sys.stderr, counter, "hits in", db_name
+    print >> sys.stderr, hit_counter-old_hit_counter, "hits in", db_name
     db.close_db()
     res_db.close()
-    return counter
+    return hit_counter
     
 def main(argv):
     global query_obj
@@ -253,7 +253,7 @@ def main(argv):
 
     total_hits=0
     for d in dbs:
-        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args)
+        total_hits=query_from_db(query_obj,d,sql_query,sql_args,args,total_hits)
         if total_hits >= args.max and args.max > 0:
             break
     print >> sys.stderr, "Total number of hits:",total_hits
