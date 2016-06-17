@@ -15,7 +15,9 @@ help_response="""\
    <li>db: corpus,corpus,corpus</li>
    <li>retmax: max number of results (will be capped at 100K by us)</li>
    <li>dl: set headers to offer file for download</li>
-   <li>i: case insensitive search</li>
+   <li>shuffle: randomly shuffle the tree index databases (note: trees still returned in their document order, though!)</li>
+   <li>i or case=False or case=false: case insensitive search</li>
+   <li>context: number of sentences of context to include in the result. Currently capped at 10.</li>
 </ul>
 <h1>/metadata</h1>
 Returns a json with the list of available corpora, etc...
@@ -26,6 +28,7 @@ Returns a json with the list of available corpora, etc...
 app = flask.Flask(__name__)
 
 ABSOLUTE_RETMAX=100000
+MAXCONTEXT=10
 
 @app.route("/metadata",methods=["GET"],strict_slashes=False)
 def get_metadata():
@@ -44,8 +47,17 @@ def run_query():
     retmax=min(retmax,ABSOLUTE_RETMAX)
 
     extra_args=[]
-    if "i" in flask.request.args:
+    if "i" in flask.request.args or flask.request.args.get("case","true").lower()=="false":
         extra_args.append("-i")
+    ctx=flask.request.args.get("context",0)
+    try:
+        ctx=int(ctx)
+    except ValueError:
+        return "<html><body>Incorrect context value</body></html>"
+    if ctx>0:
+        ctx=min(ctx,MAXCONTEXT)
+        extra_args.append("--context")
+        extra_args.append(str(ctx))
     
     dbs=[]
     for corpus in flask.request.args.get("db","").split(","):
@@ -53,7 +65,10 @@ def run_query():
         if path is None:
             continue
         dbs.extend(glob.glob(os.path.join(path,"*.db")))
-    dbs=sorted(dbs)
+    if "shuffle" in flask.request.args:
+        random.shuffle(dbs)
+    else:
+        dbs=sorted(dbs)
 
     def generate():
         args=["python","query.py"]+extra_args+["-m",str(retmax),flask.request.args["search"].encode("utf-8"),"--dblist"]+dbs
