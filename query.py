@@ -19,6 +19,7 @@ import argparse
 import db_util
 import glob
 import tempfile
+import redone_expr
 
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 query_folder = './queries/'
@@ -228,9 +229,15 @@ def main(argv):
             f = open('qry_' + m.hexdigest() + '.pyx', 'wt')
             try:
                 pseudocode_ob.generate_and_write_search_code_from_expression(query_term, f, json_filename=json_filename)
-            except Exception as e:
+            except redone_expr.ExpressionError as e:
+                print "# Error in query"
+                for line in unicode(e).splitlines():
+                    print (u"# "+line).encode("utf-8")
                 os.remove(temp_file_name)
-                raise e
+                return -1
+            except:
+                os.remove(temp_file_name)
+                raise
 
             mod=load(temp_file_name[:-4])
             os.rename(temp_file_name, query_folder + temp_file_name)
