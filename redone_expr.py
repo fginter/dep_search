@@ -500,6 +500,10 @@ def get_token_nodes(node):
 def check_or_subtree(node):
 
     proper_or_group = True
+
+    if node.negs_above:
+        proper_or_group = False
+
     kids = node.get_kid_nodes()
 
     if len(kids) == 0:
@@ -522,6 +526,9 @@ def get_or_nodes(node):
     kids = node.get_kid_nodes()
 
     #If this is an or_node, check it!
+    if node.neg:
+       return []
+
     if isinstance(node, SetNode_Or):
         if check_or_subtree(node):
             #
@@ -532,9 +539,27 @@ def get_or_nodes(node):
     if isinstance(node, SetNode_Not):
         return []
 
-    for kid in kids:
-        if go_on:
-            proper_or_nodes.extend(get_or_nodes(kid))
+    if not isinstance(node, SetNode_Dep):
+
+        for kid in kids:
+            if go_on:
+                proper_or_nodes.extend(get_or_nodes(kid))
+    else:
+       ban = False
+       for kid in kids:
+
+           if go_on and not isinstance(node, DeprelNode_Not) and not ban:
+               proper_or_nodes.extend(get_or_nodes(kid))
+
+           if ban:
+               ban = False
+
+           if isinstance(node, DeprelNode_Not):
+               ban = True
+           
+
+           #if ban: ban = False
+
 
     return proper_or_nodes
 
@@ -562,6 +587,30 @@ def get_or_groups(node):
 def check_or_group(group):
     #tag, lemma, token
     return True
+
+def fill_negs_above(node, negs_above=False):
+
+    #Am I negated?
+    node.negs_above = negs_above
+    if node.neg:
+        negs_above = True
+
+    kids = node.get_kid_nodes()
+
+    if not isinstance(node, SetNode_Dep):
+        for kid in kids:
+            fill_negs_above(kid, negs_above)
+
+    else:
+        #First go through the nodes with their deprels
+        fill_negs_above(node.index_node, negs_above)
+
+        for deprel in node.deprels:
+            fill_negs_above(deprel[0], negs_above)
+            if isinstance(deprel[0], DeprelNode_Not):
+                fill_negs_above(deprel[1], True)
+            else:
+                fill_negs_above(deprel[1], negs_above)
 
 def get_possible_subtrees(node):
 
@@ -631,6 +680,7 @@ if __name__=="__main__":
         print ebin.to_unicode()
 
         print 'ORGS'
+        fill_negs_above(ebin, negs_above=False)
         for g in get_or_groups(ebin):
             print [t.to_unicode() for t in g]
         print 'END!'
