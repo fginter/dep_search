@@ -989,10 +989,6 @@ def generate_and_write_search_code_from_expression(expression, f, json_filename=
     nodes = e_parser.parse(expression.decode('utf8'))
     fill_negs_above(nodes, negs_above=False)
     add_or_groups_to_nodes(nodes)
-    print '!!!'
-    for g in get_or_groups(nodes):
-        print [t.to_unicode() for t in g]
-    print '!!'
     #print nodes.to_unicode()
     code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
     write_cython_code(code_lines, f)
