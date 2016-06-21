@@ -5,6 +5,9 @@ import subprocess as sproc
 import glob
 import random
 import os.path
+import available_corpora
+
+THISDIR=os.path.abspath(os.path.dirname(__file__))
 
 help_response="""\
 <html>
@@ -32,15 +35,14 @@ MAXCONTEXT=10
 
 @app.route("/metadata",methods=["GET"],strict_slashes=False)
 def get_metadata():
-    with open("corpora.json","rt") as f:
-        corpora=json.load(f)
-    res={"corpus_list":sorted(corpora.keys())}
+    corpora=available_corpora.get_corpora(os.path.join(THISDIR,"corpora.yaml"))
+    corpus_groups=available_corpora.get_corpus_groups(os.path.join(THISDIR,"corpus_groups.yaml"),corpora)
+    res={"corpus_groups":corpus_groups}
     return json.dumps(res)
 
 @app.route("/",methods=["GET"])
 def run_query():
-    with open("corpora.json","rt") as f:
-        corpora=json.load(f)
+    corpora=available_corpora.get_corpora(os.path.join(THISDIR,"corpora.yaml"))
     if "search" not in flask.request.args:
         return flask.Response(help_response)
     retmax=int(flask.request.args.get("retmax",1000)) #default is 1000
@@ -61,10 +63,15 @@ def run_query():
     
     dbs=[]
     for corpus in flask.request.args.get("db","").split(","):
-        path=corpora.get(corpus)
-        if path is None:
+        c=corpora.get(corpus) #corpus should be the ID
+        if not c: #not found? maybe it's the name!
+            for some_c in corpora.itervalues():
+                if some_c["name"]==corpus:
+                    c=some_c
+                    break
+        if not c:
             continue
-        dbs.extend(glob.glob(os.path.join(path,"*.db")))
+        dbs.extend(c["dbs"])
     if "shuffle" in flask.request.args:
         random.shuffle(dbs)
     else:
@@ -84,6 +91,6 @@ def run_query():
 if __name__=="__main__":
     host='0.0.0.0'
     port=45678
-    app.run(host=host, port=port, debug=False, use_reloader=True)
+    app.run(host=host, port=port, debug=True, use_reloader=True)
 
 
