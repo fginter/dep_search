@@ -17,6 +17,7 @@ class BaseNode():
     neg = False
     deprel = False
     parent_node = None
+    or_group_id = None
     #extra_comments = []
     #def __init__(self):
     #    self.extra_comments = []
@@ -44,6 +45,9 @@ class SetNode_Token(BaseNode):
     def to_unicode(self):
         return u'SetNode(Token:' + self.proplabel + self.token_restriction + u')' + str(self.extra_comments) 
 
+    def set_kids(self, tpl):
+        pass
+
 
 class SetNode_Eq(BaseNode):
 
@@ -60,6 +64,9 @@ class SetNode_Eq(BaseNode):
     def to_unicode(self):
         return u'Node(' + self.setnode1.to_unicode() + ' == ' + self.setnode2.to_unicode() + ')'
 
+    def set_kids(self, tpl):
+        self.setnode1 = tpl[0]
+        self.setnode2 = tpl[1]
 
 
 class SetNode_SubEq(BaseNode):
@@ -77,6 +84,11 @@ class SetNode_SubEq(BaseNode):
     def to_unicode(self):
         return u'Node(' + self.setnode1.to_unicode() + ' -> ' + self.setnode2.to_unicode() + ')'
 
+    def set_kids(self, tpl):
+        self.setnode1 = tpl[0]
+        self.setnode2 = tpl[1]
+
+
 
 class SetNode_And(BaseNode):
 
@@ -92,6 +104,12 @@ class SetNode_And(BaseNode):
 
     def to_unicode(self):
         return u'Node(' + self.setnode1.to_unicode() + ' AND ' + self.setnode2.to_unicode() + ')'
+
+    def set_kids(self, tpl):
+        self.setnode1 = tpl[0]
+        self.setnode2 = tpl[1]
+
+
 
 class SetNode_Plus(BaseNode):
 
@@ -109,6 +127,10 @@ class SetNode_Plus(BaseNode):
     def to_unicode(self):
         return u'Node(' + self.setnode1.to_unicode() + ' PLUS ' + self.setnode2.to_unicode() + ')'
 
+    def set_kids(self, tpl):
+        self.setnode1 = tpl[0]
+        self.setnode2 = tpl[1]
+
 
 class SetNode_Or(BaseNode):
 
@@ -124,6 +146,11 @@ class SetNode_Or(BaseNode):
 
     def to_unicode(self):
         return u'Node(' + self.setnode1.to_unicode() + ' OR ' + self.setnode2.to_unicode() + ')'
+
+    def set_kids(self, tpl):
+        self.setnode1 = tpl[0]
+        self.setnode2 = tpl[1]
+
 
 class SetNode_Dep(BaseNode):
 
@@ -149,6 +176,18 @@ class SetNode_Dep(BaseNode):
 
         return u'Node(index_node:' + self.index_node.to_unicode() + ' << ' + ','.join(deprel_list) +' >> )' + str(self.extra_comments)
 
+    def set_kids(self, tpl):
+        self.index_node = tpl[0]
+
+        t_deprel = []
+
+        for i, n in enumerate(tpl[1:]):
+            t_deprel.append((self.deprels[i][0], n))
+
+        self.deprels = t_deprel
+        #for tk, sk in zip(tpl, sn_kids):
+        #    sk = tk
+
 class SetNode_Not(BaseNode):
 
     def __init__(self, setnode1):
@@ -159,6 +198,9 @@ class SetNode_Not(BaseNode):
 
     def get_kid_nodes(self):
         return [self.setnode1,]
+
+    def set_kids(self, tpl):
+       self.setnode1 = tpl[0]
 
     def to_unicode(self):
         return u'Node(NOT ' + self.setnode1.to_unicode() +')'
@@ -414,6 +456,159 @@ def p_sn_not(t):
     u'''tokendef : NEG tokendef'''
     t[0] = SetNode_Not(t[2])
 
+
+def get_or_groups(node):
+
+    #So how do these nodes work again?
+    or_nodes = []
+    subtrees = get_or_subtrees(node)
+    print 'Checking split queries!'
+    for sb in subtrees:
+        print sb.to_unicode()
+    print
+    print 'That was it!'
+
+
+def check_split(node):
+
+    #So how do these nodes work again?
+    or_nodes = []
+    subtrees = get_possible_subtrees(node)
+    print 'Checking split queries!'
+    for sb in subtrees:
+        print sb.to_unicode()
+    print
+    print 'That was it!'
+
+import itertools
+import copy
+
+
+def get_token_nodes(node):
+
+    token_nodes = []
+    kids = node.get_kid_nodes()
+    for kid in kids:
+        token_nodes.extend(get_token_nodes(kid))
+
+    if len(kids) == 0:
+        if isinstance(node, SetNode_Token):
+            return [node]
+
+    return token_nodes
+
+def check_or_subtree(node):
+
+    proper_or_group = True
+    kids = node.get_kid_nodes()
+
+    if len(kids) == 0:
+        proper_or_group = isinstance(node, SetNode_Token)
+
+    if not (isinstance(node, SetNode_Token) or isinstance(node, SetNode_Or)):
+        proper_or_group = False
+
+    for kid in kids:
+        if not check_or_subtree(kid):
+            proper_or_group = False
+
+    return proper_or_group
+
+def get_or_nodes(node):
+
+    proper_or_nodes = []
+    go_on = True
+
+    kids = node.get_kid_nodes()
+
+    #If this is an or_node, check it!
+    if isinstance(node, SetNode_Or):
+        if check_or_subtree(node):
+            #
+            return [node]
+        else:
+            go_on = False
+
+    if isinstance(node, SetNode_Not):
+        return []
+
+    for kid in kids:
+        if go_on:
+            proper_or_nodes.extend(get_or_nodes(kid))
+
+    return proper_or_nodes
+
+def add_or_groups_to_nodes(node):
+
+    or_groups = get_or_groups(node)
+    for i, org in enumerate(or_groups):
+        for n in org:
+            n.or_group_id = i
+
+def get_or_groups(node):
+
+    or_nodes = get_or_nodes(node)
+    or_groups = []
+    for org in or_nodes:
+        or_groups.append(get_token_nodes(org))
+
+    filtered_or_groups = []
+    for og in or_groups:
+        if check_or_group(og):
+            filtered_or_groups.append(og)
+    
+    return filtered_or_groups
+
+def check_or_group(group):
+    #tag, lemma, token
+    return True
+
+def get_possible_subtrees(node):
+
+    kids = node.get_kid_nodes()
+    if len(kids) == 0:
+        return [node,]
+
+    if not isinstance(node, SetNode_Or):
+        kid_trees = []
+        for k in kids:
+
+            #censor deprels out!
+            if not k.deprel:
+                kid_trees.append(get_possible_subtrees(k))
+
+        #Now all combinations of these
+        #I'm assuming there's only two children ouch! Fix later!
+        kid_products = itertools.product(*kid_trees)
+
+        nodes_to_return = []
+        for p in kid_products:
+            #Copy current node and add the kids
+            #print
+            #print n_node.to_unicode()
+            n_node = copy.copy(node)
+            #print [px.to_unicode() for px in p]
+            n_node.set_kids(p)
+
+            #print 'Set kids ', p
+            #print 'Kids set ', n_node.get_kid_nodes()
+
+            nodes_to_return.append(n_node)
+    else:
+           #OR node
+           #print 'ORN'
+           #print kids[0].to_unicode()
+           #print kids[1].to_unicode()
+           #print '!ORN'
+           st_1 = get_possible_subtrees(kids[0])
+           st_2 = get_possible_subtrees(kids[1])
+           st_1.extend(st_2)
+           return st_1
+
+    return nodes_to_return
+
+
+
 lex.lex(reflags=re.UNICODE)
 yacc.yacc(write_tables=0,debug=1,method='SLR')
 
@@ -430,4 +625,12 @@ if __name__=="__main__":
         logging.basicConfig(filename='myapp.log', level=logging.INFO)
         log = logging.getLogger()
         ebin = e_parser.parse(expression.decode('utf8'), debug=0)
+
+        print 'Original Query'
+        print 
         print ebin.to_unicode()
+
+        print 'ORGS'
+        for g in get_or_groups(ebin):
+            print [t.to_unicode() for t in g]
+        print 'END!'
