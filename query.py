@@ -164,7 +164,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,args,hit_counter):
             hit_counter+=1
             if args.max!=0 and hit_counter>=args.max:
                 print >> sys.stderr, "--max ",args.max
-                print >> sys.stderr, counter, "hits in", db_name
+                print >> sys.stderr, hit_counter-old_hit_counter, "hits in", db_name
                 return hit_counter#sys.exit(0)
         current_idx=idx
         for x in r:
@@ -186,7 +186,7 @@ def main(argv):
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
     parser.add_argument('-i', '--insensitive', default=False, action="store_true", help='Lemmas and wordforms are searched case-insensitive and without lemma-separators for the lemmas.')
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
-    parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
+    parser.add_argument('--keep-query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
     parser.add_argument('search', nargs=1, help='The name of the search to run (without .pyx), or a query expression.')
 
     args = parser.parse_args(argv[1:])
@@ -218,6 +218,8 @@ def main(argv):
         import hashlib
         m = hashlib.md5()
         m.update(query_term)
+        m.update(json_filename) #the json filename is part of the hash
+        m.update(str(args.insensitive)) #the case-sensitivity is also a part of the hash
 
         #1. Check if the queries folder has the search
         #2. If not, generate it here and move to the new folder
@@ -247,8 +249,9 @@ def main(argv):
             os.rename(temp_file_name[:-4] + '.so', query_folder + temp_file_name[:-4] + '.so')
 
         else:
-
             os.rename(query_folder + temp_file_name, temp_file_name)
+            os.rename(query_folder + temp_file_name[:-4] + '.cpp', temp_file_name[:-4] + '.cpp')
+            os.rename(query_folder + temp_file_name[:-4] + '.so', temp_file_name[:-4] + '.so')
 
             mod=load(temp_file_name[:-4])            
 
