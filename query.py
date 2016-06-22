@@ -21,7 +21,7 @@ import glob
 import tempfile
 import redone_expr
 
-field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
+field_re=re.compile(ur"^(!|org_[0-9]+_)?(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 query_folder = './queries/'
 
 def query(query_fields,cli_args):
@@ -52,11 +52,13 @@ def query(query_fields,cli_args):
     selects=[u"graph.graph_id",u"graph.token_count"]
     for i,f in enumerate(query_fields):
         match=field_re.match(f)
-        assert match
+        assert match, f
         req,ftype,stype,res=match.groups() #required? field-type?  set-type?  restriction
         if req==u"!":
             j_type=u""
         elif not req:
+            j_type=u"LEFT "
+        elif req.startswith(u"org_"):
             j_type=u"LEFT "
         else:
             assert False #should never happen
