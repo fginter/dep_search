@@ -27,7 +27,7 @@ class SetNode_Token(BaseNode):
     def __init__(self, token_restriction):
         self.node_id = ''
         self.extra_comments = []
-        self.token_restriction = token_restriction.rstrip('"/').lstrip('"/')
+        self.token_restriction = token_restriction.rstrip('"').lstrip('"')
         if self.token_restriction.startswith('L=') and not token_restriction.startswith('"'):
             self.token_restriction = self.token_restriction[2:]
             self.proplabel = '@CGBASE'
@@ -368,7 +368,7 @@ def p_exprp3(t):
        elif t[1]=='_':
            t[0]=SetNode_Token(t[1])
        else:
-           t[0] = SetNode_Token('/' + t[1] + '/')
+           t[0] = SetNode_Token(t[1])
            t[0].set_proplabel('@CGTAG')
 
 
