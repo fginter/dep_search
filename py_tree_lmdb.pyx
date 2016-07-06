@@ -1,12 +1,44 @@
 # distutils: language = c++
 # distutils: libraries = lmdb
-# distutils: sources = tree_lmdb.cpp
+# distutils: sources = tree_lmdb.cpp setlib/tset.cpp
+#clib  setlib/setlib
 import struct
 import json
 import zlib
-import setlib.pytset as pytset
+#import setlib.pytset as pytset
+from setlib.pytset cimport PyTSet, PyTSetArray
+from libcpp cimport bool
 
 ID,FORM,LEMMA,UPOS,XPOS,FEAT,HEAD,DEPREL,DEPS,MISC=range(10)
+
+cdef extern from "tset.h" namespace "tset":
+    cdef cppclass TSet:
+        int tree_length
+        TSet(int) except +
+        void intersection_update(TSet *)
+        void minus_update(TSet *)
+        void union_update(TSet *)
+        void add_item(int)
+        bool has_item(int)
+        void start_iteration()
+        bool next_item(TSet *)
+        char * get_data_as_char(int *)
+        void deserialize(const void *)
+        void erase()
+        void set_length(int tree_length)
+        void print_set()
+        void copy(TSet *other)
+    cdef cppclass TSetArray:
+        void deserialize(const void *data, int size)
+        void erase()
+        void set_length(int tree_length)
+        void print_array()
+        void union_update(TSetArray *other)
+        void intersection_update(TSetArray *other)
+        void copy(TSetArray *other)
+
+
+
 
 cdef class Py_Tree:
 
@@ -29,7 +61,7 @@ cdef class Py_Tree:
                    "tokens":list(l[FORM] for l in lines),
                    "lemmas":list(l[LEMMA] for l in lines),
                    "misc":list(l[MISC] for l in lines)}
-        tree_data_gz=json.dumps(tree_data)#zlib.compress(json.dumps(tree_data))
+        tree_data_gz=json.dumps(tree_data)#json.dumps(tree_data)#zlib.compress(json.dumps(tree_data))
         
         #Sets for the UPOS and FEAT
         token_sets={} #Key: set number, Value: Python set() of integers
@@ -65,7 +97,11 @@ cdef class Py_Tree:
         #Produces the packed set data
         set_data=""
         for set_num, indices in sorted(token_sets.iteritems()):
-            s=pytset.PyTSet(len(lines),indices)
+
+            #s=pytset.PyTSet(len(lines),indices)
+            s=PyTSet(len(lines),indices)
+
+
             bs=s.tobytes(include_size=False)
 #            assert len(bs)/8==len(lines)/8+1, (len(bs)/8,len(lines)/8+1)
             set_data+=bs
@@ -79,6 +115,16 @@ cdef class Py_Tree:
         #map_data 8
         #zip_len 16
         #zip_data 8
+
+        print "set_count",len(token_sets)
+        print "map_count",len(arrays)
+        print "set_data_len",len(set_data)
+        print "map_data_len",len(map_data)
+        print "zip_data_len",len(tree_data_gz)
+
+
+        #=HHH106I38I38H1060s656sH267s
+
         blob="=HHH%(set_count)dI%(map_count)dI%(map_count)dH%(set_data_len)ds%(map_data_len)dsH%(zip_data_len)ds"%\
             {"set_count":len(token_sets),
              "map_count":len(arrays),
@@ -90,6 +136,11 @@ cdef class Py_Tree:
               sorted(arrays)+\
               map_lengths+\
               [set_data,map_data,len(tree_data_gz),tree_data_gz]
+
+        print '<ARGS>'
+        print args
+        print '</ARGS>'
+
         serialized=struct.pack(blob,*args)
         #print "serializer:", len(lines),len(token_sets),len(arrays), len(set_data), len(map_data), len(tree_data_gz), map_lengths, sorted(token_sets)
         return serialized, blob #The binary blob of the sentence

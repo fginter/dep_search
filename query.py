@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import time
 import sys
 import os
 
@@ -37,6 +38,7 @@ def map_set_id(args, set_dict, set_count):
 
     for arg in args:
 
+        print arg
         compulsory = False
         it_is_set = True
 
@@ -45,10 +47,9 @@ def map_set_id(args, set_dict, set_count):
             narg = arg[1:]
         else:
             narg = arg
-
+        print narg
         optional.append(not compulsory)
-        types.append(not it_is_set)
- 
+
         oarg = 0
 
         if narg.startswith('dep_a'):
@@ -69,7 +70,10 @@ def map_set_id(args, set_dict, set_count):
                 oarg = narg[:6]
             else:
                 oarg = set_dict['p_' + narg[6:]]
+        types.append(not it_is_set)
 
+        #print compulsory
+        #print it_is_set
         just_all_set_ids.append(oarg)
         if compulsory:
             if it_is_set:
@@ -88,6 +92,8 @@ def map_set_id(args, set_dict, set_count):
     counts = [set_count[x] for x in together]
     min_c = min(counts)
     rarest = together[counts.index(min_c)]
+    print 'optional', optional
+    print 'types', types
 
     return rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional 
 
@@ -172,12 +178,16 @@ def get_url(comments):
     return None
 
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, set_count):
+ 
+    start = time.time()
+
     db=db_util.DB()
     db.open_db(unicode(db_name))
     #res_db=sqlite3.connect(unicode(db_name))
     print 'sql_args', sql_args, 'sql_query', sql_query 
     print query_obj.query_fields
     #db.exec_query()
+    '''
     prefix_set = set()
     from collections import defaultdict
     prefix_dict = defaultdict(list)
@@ -190,6 +200,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
             if len(prefix_dict) < 100:
                 prefix_dict[k[:2]].append(k)
     print prefix_set
+    '''
     rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional = map_set_id(query_obj.query_fields, set_dict, set_count)
     db.set_set_map_pointers(c_args_s, c_args_m, rarest)
     q_obj.set_db_options(just_all_set_ids, types, optional)
@@ -203,11 +214,16 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
     sql_counter=0
     while True:
         res = query_obj.next_result(db)
+        #import pdb;pdb.set_trace()
         if res != -1:
             print res
             print res[1].is_empty()
         else:
             break
+
+    #end = time.time()
+    #print end- start
+       
         #sql_counter+=rows
         #if r==None:
         #    break
@@ -255,6 +271,12 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
     db.close_db()
     res_db.close()
     '''
+    end = time.time()
+    print end- start
+
+        #sql_counter+=rows
+
+
 
     return counter
     
@@ -332,6 +354,8 @@ def main(argv):
     inf = open('set_dict','rb')
     set_dict, set_count = pickle.load(inf)
     inf.close()
+    #print set_dict, set_count
+    #import pdb;pdb.set_trace()
 
     total_hits=0
     for d in dbs:
@@ -342,9 +366,10 @@ def main(argv):
 
     if not args.keep_query:
         try:
-            os.remove(temp_file_name)
-            os.remove(temp_file_name[:-4] + '.cpp')
-            os.remove(temp_file_name[:-4] + '.so')
+            pass
+            #os.remove(temp_file_name)
+            #os.remove(temp_file_name[:-4] + '.cpp')
+            #os.remove(temp_file_name[:-4] + '.so')
         except:
             pass
 

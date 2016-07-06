@@ -56,6 +56,23 @@ cdef class Search:  # base class for all searches
     cdef void initialize(self):
         pass
 
+    #cdef print_all_sets(self):
+    #    pass
+
+    cdef print_all_sets(self):
+        pass
+        #print 'print_all_set'
+        #for i in range(len(self.query_fields)):
+        #    set_type = self.set_types[i]
+        #    set = self.sets[i]
+        #    if set_type == 1:
+        #        print <int*>set#((TSet*)set).print_set()
+        #    else:
+        #        print <int*>set#((TSetArray*)set).print_array()
+
+        #for i in self.sets:
+        #    print <TsetArray*>s.print_array()
+
     def set_db_options(self, p_set_ids, p_types, p_optional):
 
         cdef uint32_t *set_ids = <uint32_t *>malloc(len(p_set_ids) * sizeof(uint32_t))
@@ -64,12 +81,15 @@ cdef class Search:  # base class for all searches
 
         self.set_ids = set_ids
         cdef unsigned char *types = <unsigned char *>malloc(len(p_set_ids) * sizeof(unsigned char))
+        print "<types>"
         for i, s in enumerate(p_types):
             if s:
                 types[i] = <char>2
+                print i, s, 2
             else:
                 types[i] = <char>1
-
+                print i, s, 1
+        print "</types>"
         self.types = types
 
         cdef unsigned char *optional = <unsigned char *>malloc(len(p_optional) * sizeof(unsigned char))
@@ -116,19 +136,29 @@ cdef class Search:  # base class for all searches
         #Something like fill with current tree kind of method should do it!
 
         #fill_sets(self, void **set_pointers, uint32_t *indices, unsigned char *types, unsigned char *optional, int size)
-        db.fill_sets(self.sets, self.set_ids, self.types, self.optional, self.set_size)
 
-        #db.fill_sets(self.sets,self.set_types,size)
+        
+        #print "Filling sets..."
+        #print "    set data before being set:"
+        #for i in range(size):
+        #    print <int>self.sets[i]
+        #print 'pre'
+        #db.print_sets(self.sets,<unsigned char *>self.types, self.set_size)
+        self.initialize()
+        db.fill_sets(self.sets, self.set_ids, <unsigned char *>self.types, self.optional, self.set_size)
+        #print 'post'
+        #db.print_sets(self.sets,<unsigned char *>self.types, self.set_size)
+
         result=self.exec_search()
+        print 'Result set:'
+        #
         result.print_set()
         if not result.is_empty():
             print "Hurrah!"
             py_result.acquire_thisptr(result)
-            print '!'
-            print '?'
+            #print '!'
+            #print '?'
         return graph_id,py_result,rows
-
-
 
         '''
         while db.next()==0:

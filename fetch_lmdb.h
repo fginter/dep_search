@@ -38,13 +38,14 @@ class LMDB_Fetch{
         int set_search_cursor_key(unsigned int flag);
         int cursor_get_next_tree_id(unsigned int flag);
         int cursor_get_next_tree(unsigned int flag);
+        uint32_t* get_current_tree_id();
         int cursor_load_tree();
         bool check_current_tree(uint32_t *sets, int len_sets, uint32_t *arrays, int len_arrays);
 
         uint32_t* get_first_fitting_tree();//uint32_t rarest);
         uint32_t* get_next_fitting_tree();//uint32_t rarest);
         void set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
-
+        void get_a_treehex(uint32_t tree_id);
 
 };
 

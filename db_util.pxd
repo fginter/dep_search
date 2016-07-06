@@ -32,8 +32,10 @@ cdef extern from "tset.h" namespace "tset":
 cdef extern from "tree_lmdb.h":
     cdef cppclass Tree:
         uint16_t zipped_tree_text_length
+        char *zipped_tree_text
         void deserialize(void *serialized_data)
         int fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_types, unsigned char *optional, unsigned int count)
+        int print_sets(void **set_pointers, unsigned char *set_types, unsigned int count)
 
 cdef extern from "fetch_lmdb.h":
     cdef cppclass LMDB_Fetch:
@@ -44,12 +46,14 @@ cdef extern from "fetch_lmdb.h":
         int set_search_cursor_key(unsigned int)
         int cursor_get_next_tree_id(unsigned int)
         int cursor_get_next_tree(unsigned int)
+        #uint32_t* get_current_tree_id()
         int cursor_load_tree()
         bool check_current_tree(uint32_t *, int , uint32_t *, int)
         int get_next_fitting_tree(uint32_t, uint32_t[], int , uint32_t[], int)
         uint32_t* get_first_fitting_tree()
         uint32_t* get_next_fitting_tree()
         void set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest)
+        void get_a_treehex(uint32_t tree_id)
 
 cdef class DB:
     cdef LMDB_Fetch *thisptr
@@ -58,9 +62,12 @@ cdef class DB:
     cpdef int next(self)
     #cdef void fill_sets(self, void **set_pointers, int *types, int size)
     cdef int fill_sets(self, void **set_pointers, uint32_t *indices, unsigned char *types, unsigned char *optional, int size)
+    cdef int print_sets(self, void **set_pointers, unsigned char *types, int size)
     cdef int get_integer(self, int column_index)
     cpdef int get_first_tree(self)
     cpdef int get_next_tree(self)
+    cpdef int hextree_from_db(self, tree_id)
+    #cpdef int get_current_tree_id(self)
 
     
 cdef int TSET=1

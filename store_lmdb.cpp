@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iostream>
-
+#include <iomanip>
 
 LMDB_Store::LMDB_Store() {
     op_count=0;
@@ -39,7 +39,7 @@ int LMDB_Store::open_db(const char *name) {
 	report("Failed to set env size:",err);
 	return err;
     }
-    err=mdb_env_set_maxdbs(mdb_env,3); //to account for the three open databases
+    err=mdb_env_set_maxdbs(mdb_env,4); //to account for the three open databases
     if (err) {
 	report("Failed to set maxdbs:",err);
 	return err;
@@ -150,6 +150,11 @@ int LMDB_Store::store_tree_data(unsigned int tree_id, void *t_data, int size) {
     key.mv_data=&tree_id;
     value.mv_size=size;
     value.mv_data=t_data;//+36;
+
+    //value.mv_size=0;
+    //value.mv_data=NULL;
+    std::cout << "C++ Side:\n" <<hexStr((unsigned char*)value.mv_data, size) << "C++End\n";
+
     int err=mdb_put(txn,db_tdata,&key,&value,0);
     if (err) {
 	report("Failed to put(), that's bad!:",err);
@@ -174,6 +179,17 @@ int LMDB_Store::store_key_tree(unsigned int tree_id, void *key_data, int key_siz
     op_count++;
     return restart_transaction();
 }
+
+
+std::string hexStr(unsigned char* data, int len)
+{
+    std::stringstream ss;
+    ss << std::hex;
+    for(int i=0;i<len;++i)
+        ss << std::setw(2) << std::setfill('0') << (int)data[i];
+    return ss.str();
+}
+
 
 //binary search
 //Returns pointer to the occurrence of what in the array [beg,...,end] if found, or NULL otherwise

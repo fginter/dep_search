@@ -4,6 +4,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "tree_lmdb.h"
+#include <iostream>
+
+
 
 mode_t get_mode() {
   mode_t current_mask=umask(0);
@@ -77,15 +80,44 @@ void Tree::deserialize(void *data) {
     void *zipped_block=(void*) ((map_count==0) ? serialized_map_data : ((char *)serialized_map_data)+map_data_pointer_byte_offsets[map_count-1]+map_lengths[map_count-1]);
     zipped_tree_text_length=*((uint16_t *)(zipped_block)); //it starts with its length
 //    printf("] %d\n",zipped_tree_text_length);
-    zipped_tree_text=(void*)((char*)zipped_block+sizeof(uint16_t)); //and here's the zipped data
+    //zipped_tree_text=(void*)((char*)zipped_block+sizeof(uint16_t)); //and here's the zipped data
+    zipped_tree_text=((char*)zipped_block+sizeof(uint16_t)); //and here's the zipped data
+}
+
+//This method prints what is in a query_object
+//I know this is a weird place for the method but it'll have to do at this hour :D
+
+int Tree::print_sets(void **set_pointers, unsigned char *set_types, unsigned int count){
+
+    for (int set_pos=0; set_pos<count; set_pos++) {
+	if (set_types[set_pos]==1) { //we are looking at a tset
+
+            TSet *tset=(TSet *) set_pointers[set_pos];
+            std::cout << " Set @" << set_pos << "\n";
+            tset->print_set();
+            std::cout << "\n";
+        } else {
+            TSetArray *tset=(TSetArray *) set_pointers[set_pos];
+            std::cout << " Array @" << set_pos << "\n";
+            tset->print_array();
+            std::cout << "\n";            
+        }
+
+    }
+
 }
 
 int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_types, unsigned char *optional, unsigned int count) {
     //set_pos -> index into set_pointers etc, runs in range [0,count)
+    std::cout << "Inside the fill_sets method!\n";
     for (int set_pos=0; set_pos<count; set_pos++) {
+        std::cout << "    main loop: " << set_pos << " set_type: " << set_types[set_pos] << "\n";
 	if (set_types[set_pos]==1) { //we are looking for a tset
+            std::cout << "We want a set!\n";
 	    TSet *tset=(TSet *) set_pointers[set_pos]; //current set
 	    uint32_t* p=binary_search(indices[set_pos],set_indices,set_indices+set_count-1); //return NULL, or a pointer to indices
+            std::cout << "p " << p << "\n";
+
 	    if (p==NULL && !optional[set_pos]) { //didn't find it and it was compulsory...
 		return 1;
 	    }
@@ -94,12 +126,14 @@ int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_t
 		tset->erase();
 	    }
 	    else {
-		//got a set!
 		int set_index=p-set_indices; //binary search returns a pointer, so p-set_indices is the index of the item found
-		tset->deserialize((const void*)&set_data[set_index*array_length]);
+		tset->deserialize(tree_length, (const void*)&set_data[set_index*array_length]);
+                std::cout << "Set retrieval: ";
+                tset->print_set();                
 	    }
 	}
 	else if (set_types[set_pos]==2) { //we are looking for an array
+            std::cout << "We want an array!\n";
 	    TSetArray *tsetarray=(TSetArray *) set_pointers[set_pos]; //current set
 	    uint32_t* p=binary_search(indices[set_pos],map_indices,map_indices+map_count-1); //return NULL, or a pointer to indices
 	    if (p==NULL && !optional[set_pos]) { //didn't find it and it was compulsory...
@@ -112,12 +146,13 @@ int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_t
 	    else {
 		//got an array!
 		int set_index=p-map_indices; //binary search returns a pointer, so p-set_indices is the index of the item found
-		tsetarray->deserialize((void*)((char*)serialized_map_data+map_data_pointer_byte_offsets[set_index]),map_lengths[set_index]);//, tree_length);
+		tsetarray->deserialize(tree_length, (void*)((char*)serialized_map_data+map_data_pointer_byte_offsets[set_index]),map_lengths[set_index]);//, tree_length);
+                std::cout << "Array retrieval: ";
+                tsetarray->print_array();
 	    }
 	}
     }
+     std::cout << "Successful Eject!\n";
     return 0;
 }
-		
-		    
-		
+			

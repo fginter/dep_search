@@ -2,8 +2,9 @@
 #define _lmdb_store_h_
 
 #include <lmdb.h>
-
+#include <sstream>
 uint32_t *binary_search(uint32_t what, uint32_t *beg, uint32_t *end);
+std::string hexStr(unsigned char* data, int len);
 
 class LMDB_Store {
 public:

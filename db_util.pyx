@@ -19,10 +19,10 @@ cdef class DB:
 
     def open_db(self,unicode db_name):
 
-        print 'opening', db_name
-        print '1', self.thisptr.open_env(db_name)
-        print '2', self.thisptr.open_dbs()
-        print '3', self.thisptr.start_transaction()
+        #print 'opening', db_name
+        self.thisptr.open_env(db_name)
+        self.thisptr.open_dbs()
+        self.thisptr.start_transaction()
 
         '''
         db_name_u8=db_name.encode("utf-8") #Need to make a variable for this one, because .encode() produces only a temporary object
@@ -70,12 +70,21 @@ cdef class DB:
         else:
             return 1#ptr
     '''
+
+    cpdef int hextree_from_db(self, tree_id):
+        self.thisptr.get_a_treehex(tree_id)
+        return 1
+
     cpdef int get_next_tree(self):
         ptr = self.thisptr.get_next_fitting_tree()
         if ptr != NULL:
             return (<int*>ptr)[0]
         else:
             return -1
+
+    #cpdef uint32_t* get_current_tree_id(self):
+    #    tree_id = self.thisptr.get_current_tree_id()
+    #    return tree_id
 
     def exec_query(self, int rarest):
         self.thisptr.set_search_cursor_key(rarest)
@@ -155,6 +164,19 @@ cdef class DB:
         tree  = self.thisptr.tree
         return tree.fill_sets(set_pointers, indices, types, optional, size)
 
+    def get_tree_text(self):
+
+        tree  = self.thisptr.tree
+        tree_text = ''
+        for i in range(tree.zipped_tree_text_length):
+            tree_text += <char*>self.thisptr.tree.zipped_tree_text[i]
+        return tree_text
+
+
+    #Yeah, a weird place for this!
+    cdef int print_sets(self, void **set_pointers, unsigned char *types, int size):
+        tree  = self.thisptr.tree
+        return tree.print_sets(set_pointers, types, size)
 
         """
         cdef int i

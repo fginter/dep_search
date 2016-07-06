@@ -22,7 +22,7 @@ public:
     uint64_t *set_data; //Set data arrays for the sets in set_indices
     void *serialized_map_data; //Serialized array for the maps in map_indices
     uint16_t zipped_tree_text_length; //length of the zipped tree data
-    void *zipped_tree_text;  //zipped tree data
+    char *zipped_tree_text;  //zipped tree data
     
     //This data is not saved
     int array_length;
@@ -34,6 +34,7 @@ public:
     //Fill count many sets into set_pointers
     //set_types: 1:tset  2:tsetarray
     int fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_types, unsigned char *optional, unsigned int count);
+    int print_sets(void **set_pointers, unsigned char *set_types, unsigned int count);
 };
 
 mode_t get_mode();

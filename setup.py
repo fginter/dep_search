@@ -10,8 +10,8 @@ setup(ext_modules = cythonize(
 setup(ext_modules = cythonize(
           "py_tree_lmdb.pyx",                 # our Cython source
           language="c++",             # generate C++ code
-          sources=["tree_lmdb.cpp"]
-
+          sources=["tree_lmdb.cpp"],
+          libraries=["setlib"],
      ))
 
 setup(ext_modules = cythonize(
