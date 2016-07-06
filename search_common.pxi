@@ -156,7 +156,7 @@ cdef class Search:  # base class for all searches
         if not result.is_empty():
             print "Hurrah!"
             py_result.acquire_thisptr(result)
-            print db.get_tree_text()
+            #print db.get_tree_text()
             #print '!'
             #print '?'
         return graph_id,py_result,rows
