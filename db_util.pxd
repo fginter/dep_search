@@ -41,12 +41,13 @@ cdef extern from "fetch_lmdb.h":
     cdef cppclass LMDB_Fetch:
         Tree *tree
         int open_env(const char *)
+        int close_env()
         int open_dbs()
         int start_transaction()
         int set_search_cursor_key(unsigned int)
         int cursor_get_next_tree_id(unsigned int)
         int cursor_get_next_tree(unsigned int)
-        #uint32_t* get_current_tree_id()
+        uint32_t* get_current_tree_id()
         int cursor_load_tree()
         bool check_current_tree(uint32_t *, int , uint32_t *, int)
         int get_next_fitting_tree(uint32_t, uint32_t[], int , uint32_t[], int)

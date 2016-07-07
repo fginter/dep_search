@@ -180,9 +180,10 @@ def get_url(comments):
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, set_count):
  
     start = time.time()
-
+    
     db=db_util.DB()
-    db.open_db(unicode(db_name))
+    print db_name[0]
+    db.open_db(unicode(db_name[0]))
     #res_db=sqlite3.connect(unicode(db_name))
     print 'sql_args', sql_args, 'sql_query', sql_query 
     print query_obj.query_fields
@@ -212,71 +213,29 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
     print >> sys.stderr, sql_query, sql_args
     counter=0
     sql_counter=0
+
+    #print 'MAIN LOOP'
     while True:
         res = query_obj.next_result(db)
-        #import pdb;pdb.set_trace()
-        if res != -1:
-            print res
-            print res[1].is_empty()
-        else:
+        #print ':/'
+        if res == -1:
             break
+        if len(res) > 0:
+            #Oh! We found something!
 
-    #end = time.time()
-    #print end- start
-       
-        #sql_counter+=rows
-        #if r==None:
-        #    break
-
-        '''
-        print "# graph id:",idx
-        for x in r:
-            print "# visual-style\t%s\tbgColor:lightgreen"%(x+1)
-        hit,hit_comment=get_data_from_db(res_db,idx)
-        if hit_comment:
-            print hit_comment
-        if context>0:
-            hit_url=get_url(hit_comment.decode("utf-8"))
-            texts=[]
-            # get +/- 2 sentences from db
-            for i in range(idx-context,idx+context+1):
-                if i==idx:
-                    data=hit
-                else:
-                    data,data_comment=get_data_from_db(res_db,i)
-                    if data is None or get_url(data_comment.decode("utf-8"))!=hit_url:
-                        continue
-                text=u" ".join(t.split(u"\t",2)[1] for t in data.decode(u"utf-8").split(u"\n"))
-                if i<idx:
-                    texts.append(u"# context-before: "+text)
-                elif i==idx:
-                    texts.append(u"# context-hit: "+text)
-                else:
-                    texts.append(u"# context-after: "+text)
-            print (u"\n".join(text for text in texts)).encode(u"utf-8")
-        print hit
-        print
-        counter+=1
-        if max_hits!=0 and counter>=max_hits:
-            print >> sys.stderr, "--max ",max_hits
-            print >> sys.stderr, counter, "hits in", db_name
-            return counter#sys.exit(0)
-    sql_counter = 0
-    counter = 0
-    '''
-
-    '''
-    print >> sys.stderr, sql_counter,"rows from database",db_name
-    print >> sys.stderr, counter, "hits in", db_name
-    db.close_db()
-    res_db.close()
-    '''
+            #The result set we've got already
+            #Okay get the tree text, that's pretty important!
+            tree_dict = db.get_tree_text()
+            #Get the tree_id
+            for r in res:
+                print "# visual-style	" + str(r + 1) + "	bgColor:lightgreen"
+                #hittoken once the tree is really here!
+            #print db.get_current_tree_id()
+            print tree_dict
+            print 
+            
     end = time.time()
     print end- start
-
-        #sql_counter+=rows
-
-
 
     return counter
     
@@ -348,8 +307,7 @@ def main(argv):
 
     #hacking and cracking
     print 'dbs',dbs
-    dbs = ['./ebin/']
-
+    dbs = [dbs]
 
     inf = open('set_dict','rb')
     set_dict, set_count = pickle.load(inf)
@@ -360,8 +318,8 @@ def main(argv):
     total_hits=0
     for d in dbs:
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context, set_dict, set_count)
-        if total_hits >= args.max and args.max > 0:
-            break
+        #if total_hits >= args.max and args.max > 0:
+        #    break
     print >> sys.stderr, "Total number of hits:",total_hits
 
     if not args.keep_query:

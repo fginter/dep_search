@@ -61,7 +61,12 @@ cdef class Py_Tree:
                    "tokens":list(l[FORM] for l in lines),
                    "lemmas":list(l[LEMMA] for l in lines),
                    "misc":list(l[MISC] for l in lines)}
-        tree_data_gz=json.dumps(tree_data)#json.dumps(tree_data)#zlib.compress(json.dumps(tree_data))
+
+        #print lines
+        #I know, will fix
+        tree_text = u'\n'.join([u'\t'.join(l) for l in lines])
+        #print tree_text
+        tree_data_gz=zlib.compress(tree_text.encode('utf8'))  #json.dumps(tree_data)#json.dumps(tree_data)#zlib.compress(json.dumps(tree_data))
         
         #Sets for the UPOS and FEAT
         token_sets={} #Key: set number, Value: Python set() of integers
@@ -116,11 +121,11 @@ cdef class Py_Tree:
         #zip_len 16
         #zip_data 8
 
-        print "set_count",len(token_sets)
-        print "map_count",len(arrays)
-        print "set_data_len",len(set_data)
-        print "map_data_len",len(map_data)
-        print "zip_data_len",len(tree_data_gz)
+        #print "set_count",len(token_sets)
+        #print "map_count",len(arrays)
+        #print "set_data_len",len(set_data)
+        #print "map_data_len",len(map_data)
+        #print "zip_data_len",len(tree_data_gz)
 
 
         #=HHH106I38I38H1060s656sH267s
@@ -137,9 +142,9 @@ cdef class Py_Tree:
               map_lengths+\
               [set_data,map_data,len(tree_data_gz),tree_data_gz]
 
-        print '<ARGS>'
-        print args
-        print '</ARGS>'
+        #print '<ARGS>'
+        #print args
+        #print '</ARGS>'
 
         serialized=struct.pack(blob,*args)
         #print "serializer:", len(lines),len(token_sets),len(arrays), len(set_data), len(map_data), len(tree_data_gz), map_lengths, sorted(token_sets)

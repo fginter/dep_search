@@ -35,6 +35,8 @@ class LMDB_Fetch{
         LMDB_Fetch();
         int open_env(const char *name);
         int open_dbs();
+        int close_env();
+
         int start_transaction();
         int set_search_cursor_key(unsigned int flag);
         int cursor_get_next_tree_id(unsigned int flag);
@@ -93,6 +95,46 @@ void LMDB_Fetch::set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t 
         std::cout << "arrays" << *((uint32_t*)this->arrays) << "\n";
         this->len_sets=ls;
         this->len_arrays=la;
+
+}
+
+
+//The END
+
+int LMDB_Fetch::close_env() {
+
+    //Something here fails, and it fucking sucks!
+
+    /*
+    std::cout << "close_env\n";
+    std::cout << "0\n";
+
+    mdb_cursor_close(cursor);
+    std::cout << "1\n";
+
+    std::cout << "2\n";
+    mdb_txn_abort(k2t_txn);
+    mdb_txn_abort(tdata_txn);
+    //mdb_txn_abort(txn);
+    std::cout << "2.5\n";
+    //mdb_dbi_close(mdb_env, db_k2t);
+    //mdb_dbi_close(mdb_env, db_f2s);
+    //mdb_dbi_close(mdb_env, db_tdata);
+    std::cout << "3\n";
+    //Fuck you: *** Error in `python': double free or corruption (!prev): 0x00000000017ecc90 ***
+    */
+    mdb_env_close(mdb_env);
+
+    /*
+        MDB_env *mdb_env;
+        MDB_txn *tdata_txn;
+        MDB_txn *k2t_txn;
+        MDB_txn *txn;
+        MDB_dbi db_f2s; //Database mapping arbitrary keys to tree number (which is an integer). Allows duplication, sorts the tree numbers.
+        MDB_dbi db_k2t; //Database mapping arbitrary keys to tree number (which is an integer). Allows duplication, sorts the tree numbers.
+        MDB_dbi db_tdata; //Database storing the full tree data indexed by tree number (32-bit)
+        MDB_cursor *cursor; //The cursor to be used
+        */
 
 }
 
@@ -171,6 +213,9 @@ int LMDB_Fetch::start_transaction() {
     }
     return 0;
 }
+
+
+
 
 
 int LMDB_Fetch::cursor_load_tree(){
@@ -444,7 +489,7 @@ uint32_t* LMDB_Fetch::get_next_fitting_tree(){//uint32_t rarest){
        }
     if (err == 0){
 
-       std::cout << "check_tree" << this->check_current_tree(&this->sets[0], this->len_sets, &this->arrays[0], this->len_arrays) << "\n";
+       //std::cout << "check_tree" << this->check_current_tree(&this->sets[0], this->len_sets, &this->arrays[0], this->len_arrays) << "\n";
 
        if(this->check_current_tree(&this->sets[0], this->len_sets, &this->arrays[0], this->len_arrays)){
            return (uint32_t*)this->c_key.mv_data;

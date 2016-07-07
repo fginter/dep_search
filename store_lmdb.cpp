@@ -153,7 +153,7 @@ int LMDB_Store::store_tree_data(unsigned int tree_id, void *t_data, int size) {
 
     //value.mv_size=0;
     //value.mv_data=NULL;
-    std::cout << "C++ Side:\n" <<hexStr((unsigned char*)value.mv_data, size) << "C++End\n";
+    //std::cout << "C++ Side:\n" <<hexStr((unsigned char*)value.mv_data, size) << "C++End\n";
 
     int err=mdb_put(txn,db_tdata,&key,&value,0);
     if (err) {

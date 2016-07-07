@@ -33,6 +33,7 @@ class LMDB_Fetch{
 
         LMDB_Fetch();
         int open_env(const char *name);
+        int close_env();
         int open_dbs();
         int start_transaction();
         int set_search_cursor_key(unsigned int flag);

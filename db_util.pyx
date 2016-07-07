@@ -11,6 +11,9 @@ from libc.stdlib cimport malloc, free
 from setlib.pytset cimport PyTSet, PyTSetArray 
 import ctypes
 from libc.stdint cimport uint32_t
+import struct
+import json
+import zlib
 
 cdef class DB:
 
@@ -31,8 +34,8 @@ cdef class DB:
         pass
 
     def close_db(self):
-        pass#print >> sys.stderr,  "DB CLOSE:", sqlite3_close_v2(self.db)
-
+        print 'closing!'
+        self.thisptr.close_env()
 
     def set_set_map_pointers(self, sets, arrays, int rarest):
 
@@ -164,13 +167,26 @@ cdef class DB:
         tree  = self.thisptr.tree
         return tree.fill_sets(set_pointers, indices, types, optional, size)
 
-    def get_tree_text(self):
+    '''
+    cdef int get_current_tree_id(self):
 
+        #Fuck! How to do this really simple thing?
+
+        #ptr =  self.thisptr
+        #x = ptr.get_current_tree_id()
+        #print struct.pack('=I',x)
+        return 1
+    '''
+
+    #Oh dear, is this the way?
+    def get_tree_text(self):
         tree  = self.thisptr.tree
-        tree_text = ''
+        tree_text = []
         for i in range(tree.zipped_tree_text_length):
-            tree_text += <char*>self.thisptr.tree.zipped_tree_text[i]
-        return tree_text
+            tree_text.append(struct.pack('=b',self.thisptr.tree.zipped_tree_text[i]))
+        #res = bytes(tree_text)
+        #print ''.join(tree_text)
+        return zlib.decompress(''.join(tree_text))#json.loads(''.join(tree_text))
 
 
     #Yeah, a weird place for this!

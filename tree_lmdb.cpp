@@ -109,14 +109,14 @@ int Tree::print_sets(void **set_pointers, unsigned char *set_types, unsigned int
 
 int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_types, unsigned char *optional, unsigned int count) {
     //set_pos -> index into set_pointers etc, runs in range [0,count)
-    std::cout << "Inside the fill_sets method!\n";
+    ///std::cout << "Inside the fill_sets method!\n";
     for (int set_pos=0; set_pos<count; set_pos++) {
-        std::cout << "    main loop: " << set_pos << " set_type: " << set_types[set_pos] << "\n";
+       // std::cout << "    main loop: " << set_pos << " set_type: " << set_types[set_pos] << "\n";
 	if (set_types[set_pos]==1) { //we are looking for a tset
-            std::cout << "We want a set!\n";
+            //std::cout << "We want a set!\n";
 	    TSet *tset=(TSet *) set_pointers[set_pos]; //current set
 	    uint32_t* p=binary_search(indices[set_pos],set_indices,set_indices+set_count-1); //return NULL, or a pointer to indices
-            std::cout << "p " << p << "\n";
+            //std::cout << "p " << p << "\n";
 
 	    if (p==NULL && !optional[set_pos]) { //didn't find it and it was compulsory...
 		return 1;
@@ -128,12 +128,12 @@ int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_t
 	    else {
 		int set_index=p-set_indices; //binary search returns a pointer, so p-set_indices is the index of the item found
 		tset->deserialize(tree_length, (const void*)&set_data[set_index*array_length]);
-                std::cout << "Set retrieval: ";
-                tset->print_set();                
+                //std::cout << "Set retrieval: ";
+                //tset->print_set();                
 	    }
 	}
 	else if (set_types[set_pos]==2) { //we are looking for an array
-            std::cout << "We want an array!\n";
+            //std::cout << "We want an array!\n";
 	    TSetArray *tsetarray=(TSetArray *) set_pointers[set_pos]; //current set
 	    uint32_t* p=binary_search(indices[set_pos],map_indices,map_indices+map_count-1); //return NULL, or a pointer to indices
 	    if (p==NULL && !optional[set_pos]) { //didn't find it and it was compulsory...
@@ -147,12 +147,12 @@ int Tree::fill_sets(void **set_pointers, uint32_t *indices, unsigned char *set_t
 		//got an array!
 		int set_index=p-map_indices; //binary search returns a pointer, so p-set_indices is the index of the item found
 		tsetarray->deserialize(tree_length, (void*)((char*)serialized_map_data+map_data_pointer_byte_offsets[set_index]),map_lengths[set_index]);//, tree_length);
-                std::cout << "Array retrieval: ";
-                tsetarray->print_array();
+                //std::cout << "Array retrieval: ";
+                //tsetarray->print_array();
 	    }
 	}
     }
-     std::cout << "Successful Eject!\n";
+     //std::cout << "Successful Eject!\n";
     return 0;
 }
 			

@@ -129,37 +129,29 @@ cdef class Search:  # base class for all searches
         if res == -1:
             return -1
 
-        #But if we're here our little cursor has moved forward!
-
-        #print self.set_types,size
-        #Next up is the task of filling the sets up!
-        #Something like fill with current tree kind of method should do it!
-
-        #fill_sets(self, void **set_pointers, uint32_t *indices, unsigned char *types, unsigned char *optional, int size)
-
-        
-        #print "Filling sets..."
-        #print "    set data before being set:"
-        #for i in range(size):
-        #    print <int>self.sets[i]
-        #print 'pre'
-        #db.print_sets(self.sets,<unsigned char *>self.types, self.set_size)
         self.initialize()
         db.fill_sets(self.sets, self.set_ids, <unsigned char *>self.types, self.optional, self.set_size)
-        #print 'post'
-        #db.print_sets(self.sets,<unsigned char *>self.types, self.set_size)
-
         result=self.exec_search()
+
+        result_set = set()
+        #Really + 1 ?
+        for x in range(result.tree_length + 1):
+            if result.has_item(x):
+                result_set.add(x)
+
+        return result_set
+        '''
         print 'Result set:'
         #
         result.print_set()
         if not result.is_empty():
             print "Hurrah!"
             py_result.acquire_thisptr(result)
-            #print db.get_tree_text()
+            lel = db.get_tree_text()
             #print '!'
             #print '?'
         return graph_id,py_result,rows
+        '''
 
         '''
         while db.next()==0:
