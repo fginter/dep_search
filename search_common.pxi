@@ -45,6 +45,7 @@ cdef class Search:  # base class for all searches
     cdef int *set_types
     cdef set_size
     cdef int ops
+    cdef bool started
 
     cdef uint32_t *set_ids
     cdef unsigned char* types
@@ -101,6 +102,7 @@ cdef class Search:  # base class for all searches
 
         self.optional = optional
         self.set_size = len(p_set_ids)
+        self.started = False
 
         #self.set_ids = set_ids
         #self.set_types = types
@@ -117,9 +119,9 @@ cdef class Search:  # base class for all searches
         #cdef Tree * tree
 
         #Okay, so this works now turn to the tree pointers and stuff!
-        if self.ops < 2:
+        if self.ops < 2 or not self.started:
             res = db.get_first_tree() #(<int*>db.get_first_fitting_tree())[0] #tree = DB.get_first_fitting_tree()
-            started = True
+            self.started = True
             #return res
         else:
             res = db.get_next_tree() #(<int*>db.get_next_fitting_tree())[0]
