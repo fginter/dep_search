@@ -129,6 +129,13 @@ if __name__=="__main__":
     from collections import Counter
     setarr_count = Counter([])
 
+    try:
+        inf = open('set_dict','rb')
+        set_dict, setarr_count = pickle.load(inf)
+        inf.close()
+    except:
+        pass
+
     for sent,comments in src_data:
         if tree_id%10000 == 0:
             print tree_id
