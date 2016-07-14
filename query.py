@@ -182,8 +182,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
     start = time.time()
     
     db=db_util.DB()
-    print db_name[0]
-    db.open_db(unicode(db_name[0]))
+    print db_name
+    db.open_db(unicode(db_name))
     #res_db=sqlite3.connect(unicode(db_name))
     print 'sql_args', sql_args, 'sql_query', sql_query 
     print query_obj.query_fields
@@ -306,8 +306,9 @@ def main(argv):
     dbs.sort()
 
     #hacking and cracking
+    
     print 'dbs',dbs
-    dbs = [dbs]
+    #dbs = eval(dbs)
 
     inf = open('set_dict','rb')
     set_dict, set_count = pickle.load(inf)
@@ -317,6 +318,8 @@ def main(argv):
 
     total_hits=0
     for d in dbs:
+        print >> sys.stderr, 'querying' ,d
+
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context, set_dict, set_count)
         #if total_hits >= args.max and args.max > 0:
         #    break
