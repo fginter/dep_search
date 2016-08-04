@@ -67,7 +67,7 @@ def query(query_fields,cli_args):
             elif stype==u"a":
                 selects.append(u"t_%d.token_%s_map"%(i,ftype))
         elif ftype in (u"token",u"lemma",u"tag"):
-            if not cli_args.insensitive:
+            if not cli_args.insensitive and ftype!=u"tag":
                 case_ins_clause=u" and t_%d.norm=0"%i #force lookup purely in non-normalized fields
             else:
                 case_ins_clause=u""
