@@ -12,6 +12,8 @@ import os
 import setlib.pytset as pytset
 import zlib
 import itertools
+import os.path
+import traceback
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -27,11 +29,13 @@ def prepare_tables(conn):
        conllu_comment_compressed BLOB
     );
     CREATE TABLE token_index (
+       norm INTEGER,
        token TEXT,
        graph_id INTEGER,
        token_set BLOB
     );
     CREATE TABLE lemma_index (
+       norm INTEGER,
        lemma TEXT,
        graph_id INTEGER,
        token_set BLOB
@@ -59,8 +63,8 @@ def prepare_tables(conn):
 def build_indices(conn):
     build=\
     """
-    CREATE UNIQUE INDEX tok_gid ON token_index(token,graph_id);
-    CREATE UNIQUE INDEX lemma_gid ON lemma_index(lemma,graph_id);
+    CREATE UNIQUE INDEX tok_gid ON token_index(token,graph_id,norm);
+    CREATE UNIQUE INDEX lemma_gid ON lemma_index(lemma,graph_id,norm);
     CREATE UNIQUE INDEX gid_tag ON tag_index(graph_id,tag);
     CREATE INDEX tag_gid ON tag_index(tag,graph_id);
     CREATE UNIQUE INDEX gid ON graph(graph_id);
@@ -155,7 +159,7 @@ def serialize_as_tset_array(tree_len,sets):
     res=struct.pack("@H",tree_len)+("".join(indices))
     return res
 
-
+rsub=re.compile(ur"[#-]",re.U)
 def fill_db(conn,src_data,stats):
     """
     `src_data` - iterator over sentences -result of read_conll()
@@ -171,9 +175,15 @@ def fill_db(conn,src_data,stats):
         
         conn.execute('INSERT INTO graph VALUES(?,?,?,?)', [sent_idx,len(sent),buffer(zlib.compress(t.conllu.encode("utf-8"))),buffer(zlib.compress(t.comments.encode("utf-8")))])
         for token, token_set in t.tokens.iteritems():
-            conn.execute('INSERT INTO token_index VALUES(?,?,?)', [token,sent_idx,buffer(token_set.tobytes())])
+            conn.execute('INSERT INTO token_index VALUES(?,?,?,?)', [0,token,sent_idx,buffer(token_set.tobytes())])
         for lemma, token_set in t.lemmas.iteritems():
-            conn.execute('INSERT INTO lemma_index VALUES(?,?,?)', [lemma,sent_idx,buffer(token_set.tobytes())])
+            conn.execute('INSERT INTO lemma_index VALUES(?,?,?,?)', [0,lemma,sent_idx,buffer(token_set.tobytes())])
+
+        for token, token_set in t.normtokens.iteritems():
+            conn.execute('INSERT INTO token_index VALUES(?,?,?,?)', [1,token,sent_idx,buffer(token_set.tobytes())])
+        for lemma, token_set in t.normlemmas.iteritems():
+            conn.execute('INSERT INTO lemma_index VALUES(?,?,?,?)', [1,lemma,sent_idx,buffer(token_set.tobytes())])
+
         for tag, token_set in t.tags.iteritems():
             conn.execute('INSERT INTO tag_index VALUES(?,?,?)', [sent_idx,tag,buffer(token_set.tobytes())])
         for dtype, (govs,deps) in t.rels.iteritems():
@@ -195,10 +205,15 @@ if __name__=="__main__":
     parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
     parser.add_argument('-p', '--prefix', required=True, default="trees", help='Prefix name of the database files. Default: %(default)s')
     parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
+    parser.add_argument('--wipe', default=False, action="store_true", help='Wipe the target directory before building the index.')
     args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     os.system("mkdir -p "+args.dir)
-    #os.system("rm -f %s/*.db"%args.dir)
+    if args.wipe:
+        print >> sys.stderr, "Wiping target"
+        cmd="rm -f %s/*.db %s/symbols.json"%(args.dir,args.dir)
+        print >> sys.stderr, cmd
+        os.system(cmd)
 
     stats=SymbolStats()
     src_data=read_conll(sys.stdin,args.max)
@@ -214,10 +229,16 @@ if __name__=="__main__":
         it=itertools.islice(src_data,batch)
         filled=fill_db(conn,it,stats)
         if filled==0:
+            os.system("rm -f "+db_name)
             break
         build_indices(conn)
         conn.close()
         counter+=1
+        try:
+            if os.path.exists(os.path.join(args.dir,"symbols.json")):
+                stats.update_with_json(os.path.join(args.dir,"symbols.json"))
+        except:
+            traceback.print_exc()
         stats.save_json(os.path.join(args.dir,"symbols.json"))
 
 
