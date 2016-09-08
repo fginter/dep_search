@@ -6,7 +6,12 @@ S24:
   paths: /media/external3TB/S24_INDEX
   name: Suomi24
 
-"wildcard_UD_v13_\\1":
+"wildcard_UD_\\1-v13":
   pathglob: /media/external3TB/UDv13_INDEX/UD_*
   pathre: /media/external3TB/UDv13_INDEX/UD_(.*)
   name: "\\1 (UDv1.3)"
+
+"wildcard_UD_\\1-dev":
+  pathglob: /home/ginter/UD_PROJHOOK/UD-dev-branches-indexed/UD_*
+  pathre: /home/ginter/UD_PROJHOOK/UD-dev-branches-indexed/UD_(.*)
+  name: "\\1 (development)"

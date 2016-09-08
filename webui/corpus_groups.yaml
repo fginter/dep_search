@@ -4,4 +4,8 @@
 
 -
   name: UD ver 1.3
-  corpora: UD_v13_.*
+  corpora: UD_.*-v13
+
+-
+  name: UD dev branch
+  corpora: UD_.*-dev
