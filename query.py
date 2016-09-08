@@ -113,6 +113,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):
         sql_counter+=rows
         if r==None:
             break
+        print "# db-name:",db_name
         print "# graph id:",idx
         for x in r:
             print "# visual-style\t%s\tbgColor:lightgreen"%(x+1)
