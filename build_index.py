@@ -234,11 +234,9 @@ if __name__=="__main__":
         build_indices(conn)
         conn.close()
         counter+=1
-        try:
-            if os.path.exists(os.path.join(args.dir,"symbols.json")):
-                stats.update_with_json(os.path.join(args.dir,"symbols.json"))
-        except:
-            traceback.print_exc()
-        stats.save_json(os.path.join(args.dir,"symbols.json"))
-
-
+    try:
+        if os.path.exists(os.path.join(args.dir,"symbols.json")):
+            stats.update_with_json(os.path.join(args.dir,"symbols.json"))
+    except:
+        traceback.print_exc()
+    stats.save_json(os.path.join(args.dir,"symbols.json"))
