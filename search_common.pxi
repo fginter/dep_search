@@ -35,6 +35,8 @@ cdef extern from "tset.h" namespace "tset":
         void set_length(int tree_length)
         void copy(TSetArray *other)
         void filter_direction(bool direction)
+        void make_lin(int window)
+
 
 cdef extern from "query_functions.h":
     void pairing(TSet *index_set, TSet *other_set, TSetArray *mapping, bool negated)

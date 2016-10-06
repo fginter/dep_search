@@ -195,6 +195,7 @@ def fill_db(conn,src_data,stats):
             conn.execute('INSERT INTO rel VALUES(?,?,?,?)', [sent_idx,dtype,buffer(serialize_as_tset_array(len(sent),govs)),buffer(serialize_as_tset_array(len(sent),deps))])
         if sent_idx%10000==0:
             print str(datetime.now()), sent_idx
+            sys.stdout.flush()
         if sent_idx%10000==0:
             conn.commit()
     conn.commit()

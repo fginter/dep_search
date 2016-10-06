@@ -55,7 +55,7 @@ class NodeInterpreter():
         if isinstance(self.node, SetNode_Token):
             #Tag, Lemma or Word
             db_orders = self.set_node_token_into_db_label()
-            if db_orders == None: import pdb;pdb.set_trace()
+            #if db_orders == None: import pdb;pdb.set_trace()
         name_dict = {}
         for dbo in db_orders:
             self.set_count += 1
@@ -99,16 +99,26 @@ class NodeInterpreter():
             dtype = self.node.dep_restriction[1:].split('@')[0].lstrip('!')
             
             if len(dtype) < 1:
-                dtype = 'anyrel' 
-            return_list.append(prechar + u'gov_a_' + dtype)
+                dtype = 'anyrel'
+
+            if dtype == 'lin':
+                return_list.append(prechar + u'no_db_' + dtype)
+            else:
+                return_list.append(prechar + u'gov_a_' + dtype)
+
             return return_list
 
         if self.node.dep_restriction.startswith('<'):
 
             dtype = self.node.dep_restriction[1:].split('@')[0].lstrip('!')
             if len(dtype) < 1:
-                dtype = 'anyrel' 
-            return_list.append(prechar + u'dep_a_' + dtype)
+                dtype = 'anyrel'
+
+            if dtype == 'lin':
+                return_list.append(prechar + u'no_db_' + dtype)
+            else:
+                return_list.append(prechar + u'dep_a_' + dtype)
+
             return return_list
 
 
@@ -211,7 +221,10 @@ def get_cinit_function(set_manager, max_len=2048):
         for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
 
             for v in set_manager.node_needs[key]['db_arrays_label'][ikey]:
-                load_list_array.append((ikey, v))
+                if not ikey.strip('!').startswith('no_db_'):
+                    load_list_array.append((ikey, v))
+                else:
+                    temp_array_list.append(v)
 
         for ikey in set_manager.node_needs[key]['all_tokens_label']:
             temp_set_list.append(ikey)
@@ -440,8 +453,13 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         #Get the setname
         if not negated:
             db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]][0]
+            #o_name_db_set = db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]][0]
             output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
             match_lines.append('self.' + output_set_name + '.copy(self.' + db_set + ')')
+
+            #We need linear order set
+            if what_I_need_from_the_db[0].strip('!').startswith('no_db_lin'):
+                match_lines.append('self.' + output_set_name + '.make_lin(1)')
 
             if node.dep_restriction[-2:] == '@L':
                 match_lines.append('self.' + output_set_name + '.filter_direction(True)')
@@ -713,14 +731,14 @@ def get_sentence_count_str(set_manager):
     for key in set_manager.node_needs.keys():
         for ikey in set_manager.node_needs[key]['db_sets_label'].keys():
             db_set = set_manager.node_needs[key]['db_sets_label'][ikey]
-            if ikey.startswith('!'):
+            if ikey.startswith('!') and 'no_db' not in ikey:
                 compulsory.append(db_set)
                 break
             else:
                 non_compulsory.append(db_set)
         for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
             db_set = set_manager.node_needs[key]['db_arrays_label'][ikey][0]
-            if ikey.startswith('!'):
+            if ikey.startswith('!') and 'no_db' not in ikey:
                 compulsory.append(db_set)
                 break
             else:
