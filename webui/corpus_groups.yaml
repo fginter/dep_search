@@ -9,3 +9,8 @@
 -
   name: UD dev branch
   corpora: UD_.*-dev
+
+-
+  name: Latin Texts DigiHum
+  corpora: CICERO NCICERO
+

@@ -15,3 +15,11 @@ S24:
   pathglob: /home/ginter/UD_PROJHOOK/UD-dev-branches-indexed/UD_*
   pathre: /home/ginter/UD_PROJHOOK/UD-dev-branches-indexed/UD_(.*)
   name: "\\1 (development)"
+
+CICERO:
+  paths: /home/avjves/cicero.db
+  name: "Cicero texts DigiHum"
+
+NCICERO:
+  paths: /home/avjves/ncicero.db
+  name: "Non-Cicero texts DigiHum"
