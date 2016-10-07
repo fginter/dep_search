@@ -65,11 +65,11 @@ int LMDB_Store::start_transaction() {
 	return err;
     }
     //I'm here!
-    err=mdb_dbi_open(txn,"i2f",MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //Arbitrary key, but integer tree numbers as values
-    if (err) {
-        report("Failed to open k2t DBI:",err);
-        return err;
-    }
+    // err=mdb_dbi_open(txn,"i2f",MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //Arbitrary key, but integer tree numbers as values
+    // if (err) {
+    //     report("Failed to open k2t DBI:",err);
+    //     return err;
+    // }
 
     err=mdb_dbi_open(txn,"f2s",MDB_INTEGERKEY|MDB_CREATE,&db_f2s); //Zero-length value, feature_sentenceid fused as the key
     if (err) {

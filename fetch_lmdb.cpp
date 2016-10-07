@@ -23,7 +23,9 @@ class LMDB_Fetch{
         MDB_cursor *cursor; //The cursor to be used
 
         MDB_val c_key, c_data;
-        MDB_val t_key, t_data;
+  uint32_t c_key_mvdata; //I need a fixed space for this one
+  uint32_t t_key_mvdata; //I need a fixed space for this one
+  MDB_val t_key, t_data;
         Tree *tree;
 
         uint32_t* sets;
@@ -224,7 +226,8 @@ int LMDB_Fetch::cursor_load_tree(){
 
     //std::cout << *((uint32_t*)c_key.mv_data) << "\n";
 
-    t_key.mv_data = (uint32_t*)c_key.mv_data;
+    t_key.mv_data=&t_key_mvdata;
+    t_key_mvdata = *((uint32_t*)c_key.mv_data);
     int err = mdb_get(txn, db_tdata, &t_key, &t_data);
     return err;
 }
@@ -348,7 +351,6 @@ void LMDB_Fetch::get_a_treehex(uint32_t tree_id){
 
 
 int LMDB_Fetch::cursor_get_next_tree(unsigned int flag){
-
     int err = cursor_get_next_tree_id(flag);
     if (err == 0){
         //report("cursor_get_next_tree.cursor_get_next_tree_id:",err);
@@ -369,6 +371,8 @@ int LMDB_Fetch::cursor_get_next_tree_id(unsigned int flag){
   //int err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_GET_CURRENT);
     int err=mdb_cursor_get(cursor,&c_key,&c_data,MDB_NEXT_DUP);
     if (err){
+      std::cout << "my key " << *((uint32_t *)c_key.mv_data) << std::endl;
+      report("getnexttreeid:",err);
       return -1;
     }
     
@@ -386,21 +390,24 @@ int LMDB_Fetch::set_search_cursor_key(unsigned int flag){
     //c_key.mv_data=&flag;
     //c_data.mv_size=sizeof(uint32_t);
     //c_data.mv_data=&flag;
-    uint32_t k=(uint32_t)flag;
     c_key.mv_size = sizeof(uint32_t);
-    c_key.mv_data = &k;//(((uint64_t)flag)<<32);
+    c_key.mv_data = &c_key_mvdata;//(((uint64_t)flag)<<32);
+    c_key_mvdata=(uint32_t)flag;
     int err = mdb_cursor_open(txn, db_k2t, &cursor);
     if (err){
         report("Problems opening cursor!", err);
     }
-    std::cout << *((uint32_t *)c_key.mv_data) << std::endl;
-    err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_FIRST);//MDB_SET_KEY);
+    //std::cout << *((uint32_t *)c_key.mv_data) << std::endl;
+    std::cout << "my key 1 " << *((uint32_t *)c_key.mv_data) << std::endl;
+    err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_FIRST_DUP);//MDB_SET_KEY);
+    std::cout << "my key 2 " << *((uint32_t *)c_key.mv_data) << std::endl;
     //err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_GET_CURRENT);
     if (err==MDB_NOTFOUND){
       report("Whoa no nsubj?",err);
       return -1;
     }
     cursor_load_tree();
+    std::cout << "my key 3 " << *((uint32_t *)c_key.mv_data) << std::endl;
     return err;
 }
 
@@ -501,11 +508,13 @@ uint32_t* LMDB_Fetch::get_next_fitting_tree(){//uint32_t rarest){
 }
 uint32_t* LMDB_Fetch::get_first_fitting_tree(){//uint32_t rarest){
    int err = this->set_search_cursor_key(rarest);
+
    //int err;
    while(true){
     //int err = fetch->set_search_cursor_key(rarest);
-       err = this->cursor_get_next_tree(this->rarest);
-       //std::cout << "get_next_ft.get_next_tree " << err << "\n"; 
+     err = this->cursor_get_next_tree(this->rarest);
+
+     //std::cout << "get_next_ft.get_next_tree " << err << "\n"; 
 
        if(err!=0){
            return NULL;
