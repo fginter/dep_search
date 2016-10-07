@@ -158,13 +158,11 @@ if __name__=="__main__":
 
         #storing
         for flag_number in set_indexes:
-            db.store_tree_flag(tree_id, flag_number)
+            db.store_tree_flag_val(tree_id, flag_number)
             #print (tree_id, flag_number)#import pdb;pdb.set_trace()
-            #db.store_tree_flag_val(flag_number, tree_id)
         for flag_number in arr_indexes:
-            db.store_tree_flag(tree_id, flag_number)
+            db.store_tree_flag_val(tree_id, flag_number)
             #print (tree_id, flag_number)
-            #db.store_tree_flag_val(flag_number, tree_id)
         db.store_tree_data(tree_id, blob, len(blob))#sys.getsizeof(blob))
         #print (tree_id, blob, len(blob))
         tree_id+=1

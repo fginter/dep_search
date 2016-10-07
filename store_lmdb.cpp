@@ -59,7 +59,7 @@ int LMDB_Store::start_transaction() {
 	report("Failed to begin a transaction:",err);
 	return err;
     }
-    err=mdb_dbi_open(txn,"k2t",MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //Arbitrary key, but integer tree numbers as values
+    err=mdb_dbi_open(txn,"k2t",MDB_INTEGERKEY|MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //integer key, integer tree numbers as values
     if (err) {
 	report("Failed to open k2t DBI:",err);
 	return err;

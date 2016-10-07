@@ -174,7 +174,7 @@ int LMDB_Fetch::open_dbs(){
         report("Failed to begin a transaction:",err);
         return err;
     }
-    err=mdb_dbi_open(k2t_txn,"k2t",MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //Arbitrary key, but integer tree numbers as values
+    err=mdb_dbi_open(k2t_txn,"k2t",MDB_INTEGERKEY|MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //Arbitrary key, but integer tree numbers as values
     if (err) {
         report("Failed to open k2t DBI:",err);
         return err;
@@ -196,7 +196,7 @@ int LMDB_Fetch::start_transaction() {
         report("Failed to begin a transaction:",err);
         return err;
     }
-    err=mdb_dbi_open(txn,"k2t",MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //Arbitrary key, but integer tree numbers as values
+    err=mdb_dbi_open(txn,"k2t",MDB_INTEGERKEY|MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //Arbitrary key, but integer tree numbers as values
     if (err) {
         report("Failed to open k2t DBI:",err);
         return err;
@@ -366,15 +366,12 @@ int LMDB_Fetch::cursor_get_next_tree(unsigned int flag){
 
 int LMDB_Fetch::cursor_get_next_tree_id(unsigned int flag){
 
-    int err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_NEXT);
+  //int err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_GET_CURRENT);
+    int err=mdb_cursor_get(cursor,&c_key,&c_data,MDB_NEXT_DUP);
     if (err){
-    report("Problems getting next tree_id", err);
+      return -1;
     }
-
-    if (*((uint32_t*)c_key.mv_data + 1) > flag){
-        return -1;
-    }
-
+    
     return err;
 }
 
@@ -389,20 +386,17 @@ int LMDB_Fetch::set_search_cursor_key(unsigned int flag){
     //c_key.mv_data=&flag;
     //c_data.mv_size=sizeof(uint32_t);
     //c_data.mv_data=&flag;
-    uint64_t k=(((uint64_t)flag)<<32);
-    c_key.mv_size = sizeof(uint64_t);
+    uint32_t k=(uint32_t)flag;
+    c_key.mv_size = sizeof(uint32_t);
     c_key.mv_data = &k;//(((uint64_t)flag)<<32);
-    int err = mdb_cursor_open(txn, db_f2s, &cursor);
+    int err = mdb_cursor_open(txn, db_k2t, &cursor);
     if (err){
         report("Problems opening cursor!", err);
     }
-    err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_SET_RANGE);//MDB_SET_KEY);
+    err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_FIRST);//MDB_SET_KEY);
     //err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_GET_CURRENT);
-    if (err){
-        report("Problems pointing cursor!", err);
-    }
-    if (*((uint32_t*)c_key.mv_data + 1) > flag){
-        return -1;
+    if (err==MDB_NOTFOUND){
+      return -1;
     }
     cursor_load_tree();
     return err;
