@@ -104,7 +104,7 @@ def fill_db(conn,src_data):
 if __name__=="__main__":
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     #os.system("rm -f /mnt/ssd/sdata/all/*")
-    src_data=read_conll(gzip.open('/usr/share/ParseBank/pbv4_ud.part-00.gz', 'rt'), 1500000)
+    src_data=read_conll(gzip.open('../pbv4_ud.part-00.gz', 'rt'), 1500000)
     set_dict={}
     lengths=0
     counter=0

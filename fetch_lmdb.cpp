@@ -393,9 +393,11 @@ int LMDB_Fetch::set_search_cursor_key(unsigned int flag){
     if (err){
         report("Problems opening cursor!", err);
     }
+    std::cout << *((uint32_t *)c_key.mv_data) << std::endl;
     err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_FIRST);//MDB_SET_KEY);
     //err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_GET_CURRENT);
     if (err==MDB_NOTFOUND){
+      report("Whoa no nsubj?",err);
       return -1;
     }
     cursor_load_tree();
