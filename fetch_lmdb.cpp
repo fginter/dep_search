@@ -12,47 +12,40 @@
 //Let us build this fetching class thing
 class LMDB_Fetch{
 
-    public:
-        MDB_env *mdb_env;
-        MDB_txn *tdata_txn;
-        MDB_txn *k2t_txn;
-        MDB_txn *txn;
-        MDB_dbi db_f2s; //Database mapping arbitrary keys to tree number (which is an integer). Allows duplication, sorts the tree numbers.
-        MDB_dbi db_k2t; //Database mapping arbitrary keys to tree number (which is an integer). Allows duplication, sorts the tree numbers.
-        MDB_dbi db_tdata; //Database storing the full tree data indexed by tree number (32-bit)
-        MDB_cursor *cursor; //The cursor to be used
+public:
+    MDB_env *mdb_env;
+    MDB_txn *tdata_txn;
+    MDB_txn *k2t_txn;
+    MDB_dbi db_k2t; //Database mapping uint32 keys to tree number (which is uint32). Allows duplication, sorts the tree numbers.
+    MDB_dbi db_tdata; //Database storing the full tree data indexed by tree number (32-bit)
+    MDB_cursor *k2t_cursor; //The cursor to be used
 
-        MDB_val c_key, c_data;
-  uint32_t c_key_mvdata; //I need a fixed space for this one
-  uint32_t t_key_mvdata; //I need a fixed space for this one
-  MDB_val t_key, t_data;
-        Tree *tree;
+    Tree *tree;
+    uint32_t* sets;
+    uint32_t* arrays;
+    int len_sets;
+    int len_arrays;
+    int rarest;
 
-        uint32_t* sets;
-        uint32_t* arrays;
-        int len_sets;
-        int len_arrays;
-        int rarest;
+    LMDB_Fetch();
+    int open_env(const char *name);
+    int open_dbs();
+    int close_env();
 
-        LMDB_Fetch();
-        int open_env(const char *name);
-        int open_dbs();
-        int close_env();
-
-        int start_transaction();
-        int set_search_cursor_key(unsigned int flag);
-        int cursor_get_next_tree_id(unsigned int flag);
-        int cursor_get_next_tree(unsigned int flag);
-        int cursor_load_tree();
-        uint32_t* get_current_tree_id();
-        bool check_current_tree(uint32_t *sets, int len_sets, uint32_t *arrays, int len_arrays);
-        uint32_t*  get_first_fitting_tree();//uint32_t rarest);
-        uint32_t* get_next_fitting_tree();//uint32_t rarest);
-        void* tree_get_first_fitting_tree();//uint32_t rarest);
-        void* tree_get_next_fitting_tree();//uint32_t rarest);
-        void set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
-        std::string hexStr(unsigned char* data, int len);
-        void get_a_treehex(uint32_t tree_id);
+    int start_transaction();
+    int set_search_cursor_key(unsigned int flag);
+    int cursor_get_next_tree_id(unsigned int flag);
+    int cursor_get_next_tree(unsigned int flag);
+    int cursor_load_tree();
+    uint32_t* get_current_tree_id();
+    bool check_current_tree(uint32_t *sets, int len_sets, uint32_t *arrays, int len_arrays);
+    uint32_t*  get_first_fitting_tree();//uint32_t rarest);
+    uint32_t* get_next_fitting_tree();//uint32_t rarest);
+    void* tree_get_first_fitting_tree();//uint32_t rarest);
+    void* tree_get_next_fitting_tree();//uint32_t rarest);
+    void set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
+    std::string hexStr(unsigned char* data, int len);
+    void get_a_treehex(uint32_t tree_id);
 };
 
 bool prefix(const char *pre, const char *str){
@@ -217,9 +210,6 @@ int LMDB_Fetch::start_transaction() {
 }
 
 
-
-
-
 int LMDB_Fetch::cursor_load_tree(){
 
     t_key.mv_size = sizeof(uint32_t);
@@ -229,6 +219,12 @@ int LMDB_Fetch::cursor_load_tree(){
     t_key.mv_data=&t_key_mvdata;
     t_key_mvdata = *((uint32_t*)c_key.mv_data);
     int err = mdb_get(txn, db_tdata, &t_key, &t_data);
+    if (err) {
+	report("Failed to load tree. Whoa!",err);
+    }
+    else {
+//	std::cout << "Got me tree" << std::endl;
+    }
     return err;
 }
 
@@ -350,7 +346,7 @@ void LMDB_Fetch::get_a_treehex(uint32_t tree_id){
 
 
 
-int LMDB_Fetch::cursor_get_next_tree(unsigned int flag){
+int LMDB_Fetch::cursor_get_next_tree(unsigned int flag) {
     int err = cursor_get_next_tree_id(flag);
     if (err == 0){
         //report("cursor_get_next_tree.cursor_get_next_tree_id:",err);
@@ -359,19 +355,19 @@ int LMDB_Fetch::cursor_get_next_tree(unsigned int flag){
         //err = mdb_get(txn, db_tdata, &t_key, &t_data);
         err = cursor_load_tree();
         if (err!=0){
-            //report("cursor_get_next_tree.Cursor Load Tree:",err);
+            report("cursor_get_next_tree.Cursor Load Tree:",err);
             return err;
-            }
-        }
-    return err;
+	}
     }
+    return err;
+}
 
 int LMDB_Fetch::cursor_get_next_tree_id(unsigned int flag){
 
   //int err = mdb_cursor_get(cursor, &c_key, &c_data, MDB_GET_CURRENT);
     int err=mdb_cursor_get(cursor,&c_key,&c_data,MDB_NEXT_DUP);
     if (err){
-      std::cout << "my key " << *((uint32_t *)c_key.mv_data) << std::endl;
+      std::cout << "my key cgnti" << *((uint32_t *)c_key.mv_data) << std::endl;
       report("getnexttreeid:",err);
       return -1;
     }
@@ -511,8 +507,8 @@ uint32_t* LMDB_Fetch::get_first_fitting_tree(){//uint32_t rarest){
 
    //int err;
    while(true){
-    //int err = fetch->set_search_cursor_key(rarest);
-     err = this->cursor_get_next_tree(this->rarest);
+       //int err = fetch->set_search_cursor_key(rarest);
+       err = this->cursor_get_next_tree(this->rarest);
 
      //std::cout << "get_next_ft.get_next_tree " << err << "\n"; 
 
