@@ -504,8 +504,8 @@ uint32_t* LMDB_Fetch::get_next_fitting_tree(){//uint32_t rarest){
        //    break;
        }
     }
-
 }
+
 uint32_t* LMDB_Fetch::get_first_fitting_tree(){//uint32_t rarest){
    int err = this->set_search_cursor_key(rarest);
 
@@ -561,6 +561,7 @@ void* LMDB_Fetch::tree_get_next_fitting_tree(){//uint32_t rarest){
     }
 
 }
+
 void* LMDB_Fetch::tree_get_first_fitting_tree(){//uint32_t rarest){
    //Find next fitting
    //   if not found return like -1

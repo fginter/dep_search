@@ -58,21 +58,6 @@ cdef class DB:
             return (<int*>ptr)[0]
         else:
             return -1
-    '''
-    cpdef int get_next_tree(self):
-        ptr = self.thisptr.get_next_fitting_tree()
-        if ptr != NULL:
-            return (<int*>ptr)[0]
-        else:
-            return -1
-     
-    cdef int get_first_tree(self):
-        ptr = self.thisptr.get_first_fitting_tree()
-        if ptr != NULL:
-            return 0#(<Tree*>ptr)
-        else:
-            return 1#ptr
-    '''
 
     cpdef int hextree_from_db(self, tree_id):
         self.thisptr.get_a_treehex(tree_id)
