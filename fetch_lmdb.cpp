@@ -14,24 +14,27 @@ class LMDB_Fetch{
 
 public:
     MDB_env *mdb_env;
-    MDB_txn *tdata_txn;
-    MDB_txn *k2t_txn;
+    MDB_txn *txn;
     MDB_dbi db_k2t; //Database mapping uint32 keys to tree number (which is uint32). Allows duplication, sorts the tree numbers.
     MDB_dbi db_tdata; //Database storing the full tree data indexed by tree number (32-bit)
     MDB_cursor *k2t_cursor; //The cursor to be used
+    MDB_cursor *tdata_cursor; //The cursor to be used
 
     Tree *tree;
     uint32_t* sets;
     uint32_t* arrays;
     int len_sets;
     int len_arrays;
-    int rarest;
+    uint32_t rarest; //this is the key we iterate over
+    bool finished; //No more data to be expected
 
     LMDB_Fetch();
-    int open_env(const char *name);
-    int open_dbs();
-    int close_env();
+    int open(const char *name);
+    void close();
+    //starts the search (positions k2t_cursor), sets .finished=true if nothing found
+    int set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
 
+    
     int start_transaction();
     int set_search_cursor_key(unsigned int flag);
     int cursor_get_next_tree_id(unsigned int flag);
@@ -43,7 +46,6 @@ public:
     uint32_t* get_next_fitting_tree();//uint32_t rarest);
     void* tree_get_first_fitting_tree();//uint32_t rarest);
     void* tree_get_next_fitting_tree();//uint32_t rarest);
-    void set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
     std::string hexStr(unsigned char* data, int len);
     void get_a_treehex(uint32_t tree_id);
 };
@@ -76,79 +78,71 @@ LMDB_Fetch::LMDB_Fetch(){
 }
 
 
-void LMDB_Fetch::set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t *larrays, uint32_t rarest){
+/* Initializes the search */
+int LMDB_Fetch::set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t *larrays, uint32_t rarest) {
 
+    MDB_val key,val;
+    uint32_t k=rarest;
+    int err;
+    
+    key.mv_size=sizeof(k);
+    key.mv_data=&k;
+    val.mv_size=0;
+    val.mv_data=NULL;
 
-        this->rarest = rarest;
-        this->sets = lsets;
-        this->arrays= larrays;
-        this->len_sets=ls;
-        this->len_arrays=la;
+    finished=false;
+    this->rarest = rarest;
+    this->sets = lsets;
+    this->arrays= larrays;
+    this->len_sets=ls;
+    this->len_arrays=la;
 
-        std::cout << "sets" << *((uint32_t*)this->sets) << "\n";
-        //this->arrays= larrays[0];
-        std::cout << "arrays" << *((uint32_t*)this->arrays) << "\n";
-        this->len_sets=ls;
-        this->len_arrays=la;
-
+    err=mdb_cursor_get(k2t_cursor,key,val,MDB_FIRST);
+    if (!err) {
+	return err; //0
+    }
+    else if (err==MDB_NOTFOUND) {
+	// Not a single instance in the db!
+	finished=true;
+	return 0;
+    }
+    else {
+	report("Cursor_get failed",err);
+	return err;
+    }
 }
 
+int LMDB_Fetch::get_next_tree() {
+    MDB_val key,val;
+    if (finished) {
+	return 1;
+    }
+    //We have a tree
 
-//The END
-
-int LMDB_Fetch::close_env() {
-
-    //Something here fails, and it fucking sucks!
-
-    /*
-    std::cout << "close_env\n";
-    std::cout << "0\n";
-
-    mdb_cursor_close(cursor);
-    std::cout << "1\n";
-
-    std::cout << "2\n";
-    mdb_txn_abort(k2t_txn);
-    mdb_txn_abort(tdata_txn);
-    //mdb_txn_abort(txn);
-    std::cout << "2.5\n";
-    //mdb_dbi_close(mdb_env, db_k2t);
-    //mdb_dbi_close(mdb_env, db_f2s);
-    //mdb_dbi_close(mdb_env, db_tdata);
-    std::cout << "3\n";
-    //Fuck you: *** Error in `python': double free or corruption (!prev): 0x00000000017ecc90 ***
-    */
+/* Closes everything */
+void LMDB_Fetch::close() {
+    mdb_cursor_close(k2t_cursor);
+    mdb_cursor_close(tdata_cursor);
+    mdb_txn_abort(txn);
     mdb_env_close(mdb_env);
-
-    /*
-        MDB_env *mdb_env;
-        MDB_txn *tdata_txn;
-        MDB_txn *k2t_txn;
-        MDB_txn *txn;
-        MDB_dbi db_f2s; //Database mapping arbitrary keys to tree number (which is an integer). Allows duplication, sorts the tree numbers.
-        MDB_dbi db_k2t; //Database mapping arbitrary keys to tree number (which is an integer). Allows duplication, sorts the tree numbers.
-        MDB_dbi db_tdata; //Database storing the full tree data indexed by tree number (32-bit)
-        MDB_cursor *cursor; //The cursor to be used
-        */
-
 }
 
 
 
-//Thanks, Filip!
-int LMDB_Fetch::open_env(const char *name) {
-    int err=mdb_env_create(&mdb_env);
+/* Opens everything needed */
+int LMDB_Fetch::open(const char *name) {
+    int err;
+    err=mdb_env_create(&mdb_env);
     if (err) {
         report("Failed to create an environment:",err);
         return err;
     }
-    //std::cout << mdb_env;
     err=mdb_env_set_mapsize(mdb_env,1024L*1024L*1024L*1024L); //1TB max DB size
     if (err) {
         report("Failed to set env size:",err);
         return err;
     }
-    err=mdb_env_set_maxdbs(mdb_env,3); //to account for the three open databases
+    err=mdb_env_set_maxdbs(mdb_env,2); //to account for the two open databases
     if (err) {
         report("Failed to set maxdbs:",err);
         return err;
@@ -158,53 +152,28 @@ int LMDB_Fetch::open_env(const char *name) {
         report("Failed to open the environment:",err);
         return err;
     }
-    return 0;
-}
-
-//Thanks again, Filip!
-int LMDB_Fetch::open_dbs(){
-
-    int err=mdb_txn_begin(mdb_env,NULL,0,&k2t_txn);
+    err=mdb_txn_begin(mdb_env,NULL,0,&txn);
     if (err) {
         report("Failed to begin a transaction:",err);
         return err;
     }
-    err=mdb_dbi_open(k2t_txn,"k2t",MDB_INTEGERKEY|MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //Arbitrary key, but integer tree numbers as values
+    err=mdb_dbi_open(txn,"k2t",MDB_INTEGERKEY|MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP,&db_k2t); //integer key, integer tree numbers as values
     if (err) {
         report("Failed to open k2t DBI:",err);
         return err;
     }
-
-    err=mdb_txn_begin(mdb_env,NULL,0,&tdata_txn);
-    err=mdb_dbi_open(tdata_txn,"tdata",MDB_INTEGERKEY|MDB_CREATE,&db_tdata);
-    if (err) {
-        report("Failed to open tdata DBI:",err);
-        return err;
-    }
-    return 0;
-}
-
-
-int LMDB_Fetch::start_transaction() {
-    int err=mdb_txn_begin(mdb_env,NULL,0,&txn);
-    if (err) {
-        report("Failed to begin a transaction:",err);
-        return err;
-    }
-    err=mdb_dbi_open(txn,"k2t",MDB_INTEGERKEY|MDB_DUPSORT|MDB_DUPFIXED|MDB_INTEGERDUP|MDB_CREATE,&db_k2t); //Arbitrary key, but integer tree numbers as values
+    err=mdb_dbi_open(txn,"tdata",MDB_INTEGERKEY,&db_tdata); //integer key, integer tree numbers as values
     if (err) {
         report("Failed to open k2t DBI:",err);
         return err;
     }
-    err=mdb_dbi_open(txn,"f2s",MDB_INTEGERKEY|MDB_CREATE,&db_f2s); //Zero-length value, feature_sentenceid fused as the key
-    if (err) {
-        report("Failed to open f2s DBI:",err);
-        return err;
+    err = mdb_cursor_open(txn, db_k2t, &k2t_cursor);
+    if (err){
+        report("Failed to open k2t cursor", err);
     }
-    err=mdb_dbi_open(txn,"tdata",MDB_INTEGERKEY|MDB_CREATE,&db_tdata);
-    if (err) {
-        report("Failed to open tdata DBI:",err);
-        return err;
+    err = mdb_cursor_open(txn, db_tdata, &tdata_cursor);
+    if (err){
+        report("Failed to open tdata cursor", err);
     }
     return 0;
 }
