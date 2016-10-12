@@ -1,3 +1,6 @@
+#ifndef _fetch_lmdb_h_
+#define _fetch_lmdb_h_
+
 #include "lmdb.h"
 #include <iostream>
 #include <stdint.h>
@@ -11,44 +14,43 @@
 //Let us build this fetching class thing
 class LMDB_Fetch{
 
-    public:
-        MDB_env *mdb_env;
-        MDB_txn *tdata_txn;
-        MDB_txn *k2t_txn;
-        MDB_txn *txn;
-        MDB_dbi db_f2s; //Database mapping arbitrary keys to tree number (which is an integer). Allows duplication, sorts the tree numbers.
-        MDB_dbi db_k2t; //Database mapping arbitrary keys to tree number (which is an integer). Allows duplication, sorts the tree numbers.
-        MDB_dbi db_tdata; //Database storing the full tree data indexed by tree number (32-bit)
-        MDB_cursor *cursor; //The cursor to be used
+public:
+    MDB_env *mdb_env;
+    MDB_txn *txn;
+    MDB_dbi db_k2t; //Database mapping uint32 keys to tree number (which is uint32). Allows duplication, sorts the tree numbers.
+    MDB_dbi db_tdata; //Database storing the full tree data indexed by tree number (32-bit)
+    MDB_cursor *k2t_cursor; //The cursor to be used
+    MDB_cursor *tdata_cursor; //The cursor to be used
 
-        MDB_val c_key, c_data;
-        MDB_val t_key, t_data;
-        Tree *tree;
+    bool finished; //We are done, tree and tree_id do not contain anything reasonable
+    Tree *tree;
+    uint32_t tree_id;
 
-        uint32_t* sets;
-        uint32_t* arrays;
-        int len_sets;
-        int len_arrays;
-        int rarest;
+    uint32_t* sets;
+    uint32_t* arrays;
+    int len_sets;
+    int len_arrays;
+    uint32_t rarest; //this is the key we iterate over
 
-        LMDB_Fetch();
-        int open_env(const char *name);
-        int close_env();
-        int open_dbs();
-        int start_transaction();
-        int set_search_cursor_key(unsigned int flag);
-        int cursor_get_next_tree_id(unsigned int flag);
-        int cursor_get_next_tree(unsigned int flag);
-        uint32_t* get_current_tree_id();
-        int cursor_load_tree();
-        bool check_current_tree(uint32_t *sets, int len_sets, uint32_t *arrays, int len_arrays);
+    LMDB_Fetch();
+    
+    int open(const char *name);
+    void close();
 
-        uint32_t* get_first_fitting_tree();//uint32_t rarest);
-        uint32_t* get_next_fitting_tree();//uint32_t rarest);
-        void set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
-        void get_a_treehex(uint32_t tree_id);
+    // begin_search() and move_to_next_tree() iterate the cursor of k2t
+    //starts the search (positions k2t_cursor), sets .finished=true if nothing found
+    int begin_search(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
+    //positions k2t_cursor on next tree, sets .finished=true if nothing found
+    //this is not something you want to call directly, it's called from get_next_fitting_tree()
+    int move_to_next_tree();
+    //sets tree and tree_id to the next fitting tree, returns 0 and .finished=false
+    //returns 0 and sets .finished=true if nothing found
+    //returns nonzero on error
+    int get_next_fitting_tree();
+
+    bool check_tree(void *tdata);
 
 };
 
-bool prefix(const char *pre, const char *str);
-int print_sets_and_arrays(Tree *t);
+#endif
+

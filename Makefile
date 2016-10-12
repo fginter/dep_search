@@ -1,8 +1,12 @@
-TARGETS=py_tree_lmdb.so
+TARGETS=test_fetch_lmdb
+#py_tree_lmdb.so
 
 .PHONY: setlib
 
 all: setlib $(TARGETS)
+
+test_fetch_lmdb: test_fetch_lmdb.cpp fetch_lmdb.h setlib/tset.h tree_lmdb.cpp fetch_lmdb.cpp
+	g++ test_fetch_lmdb.cpp fetch_lmdb.cpp setlib/tset.cpp tree_lmdb.cpp -llmdb -o test_fetch_lmdb
 
 setlib:
 	$(MAKE) -C setlib
