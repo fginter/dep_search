@@ -178,39 +178,16 @@ def get_url(comments):
     return None
 
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, set_count):
- 
     start = time.time()
-    
     db=db_util.DB()
-    print db_name
     db.open_db(unicode(db_name))
-    #res_db=sqlite3.connect(unicode(db_name))
-    print 'sql_args', sql_args, 'sql_query', sql_query 
-    print query_obj.query_fields
-    #db.exec_query()
-    '''
-    prefix_set = set()
-    from collections import defaultdict
-    prefix_dict = defaultdict(list)
-    for k in set_dict.keys():
-        if '_' not in k[:2]:
-            #prefix_set.add(k)
-            prefix_dict['X'].append(k)
-        else:
-            prefix_set.add(k[:2])
-            if len(prefix_dict) < 100:
-                prefix_dict[k[:2]].append(k)
-    print prefix_set
-    '''
+    
     rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional = map_set_id(query_obj.query_fields, set_dict, set_count)
-    db.set_set_map_pointers(c_args_s, c_args_m, rarest)
+    db.begin_search(c_args_s, c_args_m, rarest)
+    #Filip - not sure what this does
     q_obj.set_db_options(just_all_set_ids, types, optional)
-    #Set cursor to filter for the rarest compulsory set
-    #db.exec_query(rarest)
-    #def set_set_map_pointers(self, sets, arrays, int rarest):
-    #import pdb;pdb.set_trace()
-    #db.exec_query(sql_query,sql_args)
-    print >> sys.stderr, sql_query, sql_args
+
+
     counter=0
     sql_counter=0
 

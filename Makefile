@@ -1,5 +1,4 @@
-TARGETS=test_fetch_lmdb
-#py_tree_lmdb.so
+TARGETS=py_tree_lmdb.so
 
 .PHONY: setlib
 

@@ -33,21 +33,25 @@ public:
     uint32_t rarest; //this is the key we iterate over
 
     LMDB_Fetch();
-    
+
+    // open and close the DB environment
     int open(const char *name);
     void close();
 
     // begin_search() and move_to_next_tree() iterate the cursor of k2t
     //starts the search (positions k2t_cursor), sets .finished=true if nothing found
     int begin_search(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest);
+    
     //positions k2t_cursor on next tree, sets .finished=true if nothing found
     //this is not something you want to call directly, it's called from get_next_fitting_tree()
     int move_to_next_tree();
+
     //sets tree and tree_id to the next fitting tree, returns 0 and .finished=false
     //returns 0 and sets .finished=true if nothing found
     //returns nonzero on error
     int get_next_fitting_tree();
 
+    //Checks the tree binary data at tdata w.r.t. to the sets and arrays given by begin_search() initially
     bool check_tree(void *tdata);
 
 };

@@ -40,6 +40,7 @@ cdef extern from "query_functions.h":
     void pairing(TSet *index_set, TSet *other_set, TSetArray *mapping, bool negated)
 
 
+# This is query object in query.py
 cdef class Search:  # base class for all searches
     cdef void **sets  #Pointers to stuff coming from the DB: array 1 and set 2 (we don't need 0)
     cdef int *set_types
@@ -51,37 +52,19 @@ cdef class Search:  # base class for all searches
     cdef unsigned char* types
     cdef unsigned char *optional
 
-    cdef TSet* exec_search(self):
+    #Declared here, overridden in the generated query code
+    cdef TSet *exec_search(self):
         pass
-
-    cdef void initialize(self):
-        pass
-
-    #cdef print_all_sets(self):
-    #    pass
-
-    cdef print_all_sets(self):
-        pass
-        #print 'print_all_set'
-        #for i in range(len(self.query_fields)):
-        #    set_type = self.set_types[i]
-        #    set = self.sets[i]
-        #    if set_type == 1:
-        #        print <int*>set#((TSet*)set).print_set()
-        #    else:
-        #        print <int*>set#((TSetArray*)set).print_array()
-
-        #for i in self.sets:
-        #    print <TsetArray*>s.print_array()
-
+    
     def set_db_options(self, p_set_ids, p_types, p_optional):
 
         cdef uint32_t *set_ids = <uint32_t *>malloc(len(p_set_ids) * sizeof(uint32_t))
         for i, s in enumerate(p_set_ids):
             set_ids[i] = s
-
         self.set_ids = set_ids
+
         cdef unsigned char *types = <unsigned char *>malloc(len(p_set_ids) * sizeof(unsigned char))
+        self.types = types
         print "<types>"
         for i, s in enumerate(p_types):
             if s:
@@ -91,7 +74,6 @@ cdef class Search:  # base class for all searches
                 types[i] = <char>1
                 print i, s, 1
         print "</types>"
-        self.types = types
 
         cdef unsigned char *optional = <unsigned char *>malloc(len(p_optional) * sizeof(unsigned char))
         for i, s in enumerate(p_optional):
@@ -99,14 +81,11 @@ cdef class Search:  # base class for all searches
                 optional[i] = <char>1
             else:
                 optional[i] = <char>0
-
         self.optional = optional
+
         self.set_size = len(p_set_ids)
         self.started = False
 
-        #self.set_ids = set_ids
-        #self.set_types = types
-        #self.optional = optional
 
     def next_result(self, DB db):
         self.ops += 1
@@ -116,19 +95,9 @@ cdef class Search:  # base class for all searches
         cdef int graph_id
         cdef int rows=0
         cdef uint32_t * tree_id
-        #cdef Tree * tree
 
-        #Okay, so this works now turn to the tree pointers and stuff!
-        if self.ops < 2 or not self.started:
-            res = db.get_first_tree() #(<int*>db.get_first_fitting_tree())[0] #tree = DB.get_first_fitting_tree()
-            self.started = True
-            #return res
-        else:
-            res = db.get_next_tree() #(<int*>db.get_next_fitting_tree())[0]
-            #return res
-
-        #That's it we're out!
-        if res == -1:
+        err=db.get_next_fitting_tree()
+        if err or db.finished:
             return -1
 
         self.initialize()
@@ -142,45 +111,22 @@ cdef class Search:  # base class for all searches
                 result_set.add(x)
 
         return result_set
-        '''
-        print 'Result set:'
-        #
-        result.print_set()
-        if not result.is_empty():
-            print "Hurrah!"
-            py_result.acquire_thisptr(result)
-            lel = db.get_tree_text()
-            #print '!'
-            #print '?'
-        return graph_id,py_result,rows
-        '''
 
-        '''
-        while db.next()==0:
-            rows+=1
-            graph_id=db.get_integer(0)
-            db.fill_sets(self.sets,self.set_types,size)
-            self.initialize()
-            result=self.exec_search()
-            if not result.is_empty():
-                py_result.acquire_thisptr(result)
-                return graph_id,py_result,rows
-        '''
 
-    def x_next_result(self, DB db):
-        cdef int size=len(self.query_fields)
-        cdef PyTSet py_result=PyTSet(0)
-        cdef TSet *result
-        cdef int graph_id
-        cdef int rows=0
-        while db.next()==0:
-            rows+=1
-            graph_id=db.get_integer(0)
-            #db.fill_sets(self.sets,self.set_types,size)
-            self.initialize()
-            result=self.exec_search()
-            if not result.is_empty():
-                py_result.acquire_thisptr(result)
-                return graph_id,py_result,rows
+    # def x_next_result(self, DB db):
+    #     cdef int size=len(self.query_fields)
+    #     cdef PyTSet py_result=PyTSet(0)
+    #     cdef TSet *result
+    #     cdef int graph_id
+    #     cdef int rows=0
+    #     while db.next()==0:
+    #         rows+=1
+    #         graph_id=db.get_integer(0)
+    #         #db.fill_sets(self.sets,self.set_types,size)
+    #         self.initialize()
+    #         result=self.exec_search()
+    #         if not result.is_empty():
+    #             py_result.acquire_thisptr(result)
+    #             return graph_id,py_result,rows
 
-        return None,None,rows
+    #     return None,None,rows

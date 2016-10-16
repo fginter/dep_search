@@ -40,35 +40,24 @@ cdef extern from "tree_lmdb.h":
 cdef extern from "fetch_lmdb.h":
     cdef cppclass LMDB_Fetch:
         Tree *tree
-        int open_env(const char *)
-        int close_env()
-        int open_dbs()
-        int start_transaction()
-        int set_search_cursor_key(unsigned int)
-        int cursor_get_next_tree_id(unsigned int)
-        int cursor_get_next_tree(unsigned int)
-        uint32_t* get_current_tree_id()
-        int cursor_load_tree()
-        bool check_current_tree(uint32_t *, int , uint32_t *, int)
-        int get_next_fitting_tree(uint32_t, uint32_t[], int , uint32_t[], int)
-        uint32_t* get_first_fitting_tree()
-        uint32_t* get_next_fitting_tree()
-        void set_set_map_pointers(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest)
-        void get_a_treehex(uint32_t tree_id)
+
+        int open(const char *)
+        void close()
+        int begin_search(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest)
+        int get_next_fitting_tree()
+        
 
 cdef class DB:
     cdef LMDB_Fetch *thisptr
-    #cdef void fill_tset(self, TSet *out, int column_index, int tree_length)
-    #cdef void fill_tsetarray(self, TSetArray *out, int column_index, int tree_length)
-    cpdef int next(self)
-    #cdef void fill_sets(self, void **set_pointers, int *types, int size)
+    cpdef open(self,unicode db_name)
+    cpdef close(self)
+
+    cpdef begin_search(self, sets, arrays, int rarest)
+    cpdef int get_next_fitting_tree(self)
+    
     cdef int fill_sets(self, void **set_pointers, uint32_t *indices, unsigned char *types, unsigned char *optional, int size)
-    cdef int print_sets(self, void **set_pointers, unsigned char *types, int size)
-    cdef int get_integer(self, int column_index)
-    cpdef int get_first_tree(self)
-    cpdef int get_next_tree(self)
-    cpdef int hextree_from_db(self, tree_id)
-    #cpdef int get_current_tree_id(self)
+
+    #def get_tree_text(self)
 
     
 cdef int TSET=1
