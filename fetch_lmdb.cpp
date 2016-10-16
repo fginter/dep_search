@@ -128,7 +128,6 @@ int LMDB_Fetch::get_next_fitting_tree() {
 	if (check_tree(t_val.mv_data)) { //YES!
 	    tree_id=*((uint32_t*)tree_id_val.mv_data);
 	    //the tree itself is now deserialized in tree, so that should be okay
-	    std::cerr << "next fitting" << std::endl;
 	    return 0;
 	}
 	move_to_next_tree();

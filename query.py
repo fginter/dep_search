@@ -185,18 +185,15 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
     
     rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional = map_set_id(query_obj.query_fields, set_dict, set_count)
     db.begin_search(c_args_s, c_args_m, rarest)
-    #Filip - not sure what this does
     q_obj.set_db_options(just_all_set_ids, types, optional)
 
-    print >> sys.stderr, "Now entering the main loop"
     counter=0
-    sql_counter=0
-
     while True:
         res = query_obj.next_result(db)
         if res == -1:
             break
         if len(res) > 0:
+            counter+=1
             #The result set we've got already
             #Get the tree text:
             tree_text = db.get_tree_text()
@@ -208,8 +205,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
             print tree_text
             print 
             
-    end = time.time()
-    print >> sys.stderr, end- start
+    print >> sys.stderr, "Found %d trees in %.3fs time"%(counter,time.time()-start)
     return counter
     
 def main(argv):
