@@ -34,17 +34,17 @@ int LMDB_Fetch::begin_search(int len_sets, int len_arrays, uint32_t *lsets, uint
 
     finished=false;
     this->rarest = rarest;
-    this->sets = new uint32_t[len_sets];
-    this->arrays= new uint32_t[len_arrays];
+    this->sets = lsets; //new uint32_t[len_sets];
+    this->arrays= larrays; //new uint32_t[len_arrays];
     this->len_sets=len_sets;
     this->len_arrays=len_arrays;
 
-    for (int i=0; i<len_sets; i++) {
-	sets[i]=lsets[i];
-    }
-    for (int i=0; i<len_arrays; i++) {
-	arrays[i]=larrays[i];
-    }
+    // for (int i=0; i<len_sets; i++) {
+    // 	sets[i]=lsets[i];
+    // }
+    // for (int i=0; i<len_arrays; i++) {
+    // 	arrays[i]=larrays[i];
+    // }
 
     std::cerr << "Begin search" << std::endl;
     for (int i=0; i<this->len_sets; i++) {
