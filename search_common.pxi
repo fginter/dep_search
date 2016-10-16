@@ -3,6 +3,7 @@ from db_util cimport DB
 from setlib.pytset cimport PyTSet, PyTSetArray
 from libc.stdlib cimport malloc
 from libc.stdint cimport uint32_t
+import sys
 
 cdef extern from "tset.h" namespace "tset":
     cdef cppclass TSet:
@@ -69,15 +70,15 @@ cdef class Search:  # base class for all searches
 
         cdef unsigned char *types = <unsigned char *>malloc(len(p_set_ids) * sizeof(unsigned char))
         self.types = types
-        print "<types>"
+        print >> sys.stderr, "<types>"
         for i, s in enumerate(p_types):
             if s:
                 types[i] = <char>2
-                print i, s, 2
+                print >> sys.stderr, i, s, 2
             else:
                 types[i] = <char>1
-                print i, s, 1
-        print "</types>"
+                print >> sys.stderr, i, s, 1
+        print >> sys.stderr, "</types>"
 
         cdef unsigned char *optional = <unsigned char *>malloc(len(p_optional) * sizeof(unsigned char))
         for i, s in enumerate(p_optional):

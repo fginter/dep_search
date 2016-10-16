@@ -20,6 +20,7 @@ import argparse
 import db_util
 import glob
 import tempfile
+import sys
 
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 query_folder = './queries/'
@@ -38,7 +39,7 @@ def map_set_id(args, set_dict, set_count):
 
     for arg in args:
 
-        print arg
+        print >> sys.stderr, "arg:",arg
         compulsory = False
         it_is_set = True
 
@@ -47,7 +48,7 @@ def map_set_id(args, set_dict, set_count):
             narg = arg[1:]
         else:
             narg = arg
-        print narg
+        print >> sys.stderr, "narg:", narg
         optional.append(not compulsory)
 
         oarg = 0
@@ -92,15 +93,15 @@ def map_set_id(args, set_dict, set_count):
     counts = [set_count[x] for x in together]
     min_c = min(counts)
     rarest = together[counts.index(min_c)]
-    print 'optional', optional
-    print 'types', types
+    print >> sys.stderr, 'optional:', optional
+    print >> sys.stderr, 'types:', types
 
     return rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional 
 
 
 def query(query_fields):
 
-    print 'qf', query_fields
+    print >> sys.stderr, 'query fields:', query_fields
     """
     query_fields: A list of strings describing the data to fetch
           Each string names a set to retrieve
@@ -180,10 +181,10 @@ def get_url(comments):
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, set_count):
     start = time.time()
     db=db_util.DB()
-    print >> sys.stderr, "Open db", db.open(unicode(db_name))
+    db.open(unicode(db_name))
     
     rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional = map_set_id(query_obj.query_fields, set_dict, set_count)
-    print >> sys.stderr, "Begin search:", db.begin_search(c_args_s, c_args_m, rarest)
+    db.begin_search(c_args_s, c_args_m, rarest)
     #Filip - not sure what this does
     q_obj.set_db_options(just_all_set_ids, types, optional)
 
@@ -208,8 +209,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
             print 
             
     end = time.time()
-    print end- start
-
+    print >> sys.stderr, end- start
     return counter
     
 def main(argv):
@@ -280,7 +280,7 @@ def main(argv):
 
     #hacking and cracking
     
-    print 'dbs',dbs
+    print >> sys.stderr, 'dbs:',dbs
     #dbs = eval(dbs)
 
     inf = open('set_dict','rb')
