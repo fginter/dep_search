@@ -34,18 +34,35 @@ int LMDB_Fetch::begin_search(int len_sets, int len_arrays, uint32_t *lsets, uint
 
     finished=false;
     this->rarest = rarest;
-    this->sets = lsets;
-    this->arrays= larrays;
+    this->sets = new uint32_t[len_sets];
+    this->arrays= new uint32_t[len_arrays];
     this->len_sets=len_sets;
     this->len_arrays=len_arrays;
 
+    for (int i=0; i<len_sets; i++) {
+	sets[i]=lsets[i];
+    }
+    for (int i=0; i<len_arrays; i++) {
+	arrays[i]=larrays[i];
+    }
+
+    std::cerr << "Begin search" << std::endl;
+    for (int i=0; i<this->len_sets; i++) {
+	std::cerr << "  set " << this->sets[i] << std::endl;
+    }
+    for (int i=0; i<this->len_arrays; i++) {
+	std::cerr << "  array " << this->arrays[i] << std::endl;
+    }
+    std::cerr << "Rarest " << this->rarest << std::endl;
+    
+    
     err=mdb_cursor_get(k2t_cursor,&key,&val,MDB_SET);
     if (!err) {
 	return err; //0
     }
     else if (err==MDB_NOTFOUND) {
 	// Not a single instance in the db!
-	std::cout << "Initial get failed" << std::endl;
+	std::cerr << "Initial get failed" << std::endl;
 	finished=true;
 	return 0;
     }
@@ -73,7 +90,7 @@ int LMDB_Fetch::move_to_next_tree() {
 	return 0;
     }
     else if (err==MDB_NOTFOUND) {
-	std::cout << "Next not found, done" << err << std::endl;
+	std::cerr << "Next not found, done" << err << std::endl;
 	finished=true;
 	return 0;
     }
@@ -111,6 +128,7 @@ int LMDB_Fetch::get_next_fitting_tree() {
 	if (check_tree(t_val.mv_data)) { //YES!
 	    tree_id=*((uint32_t*)tree_id_val.mv_data);
 	    //the tree itself is now deserialized in tree, so that should be okay
+	    std::cerr << "next fitting" << std::endl;
 	    return 0;
 	}
 	move_to_next_tree();
@@ -183,14 +201,17 @@ int LMDB_Fetch::open(const char *name) {
 //Given a pointer to tree data, check that it has all the required sets
 bool LMDB_Fetch::check_tree(void *tree_data) {
     tree->deserialize(tree_data);
+    // std::cerr << "Checking...";
     for(int i=0; i<len_sets;i++){
+	// std::cerr << "checking set " << sets[i] << std::endl;
         if (binary_search(sets[i], tree->set_indices, tree->set_indices+tree->set_count) == 0){
+	    // std::cerr << "... failed on set " << sets[i] << std::endl;
             return false;
         }
-        sets++;
     }
     for(int i=0; i<len_arrays;i++){
         if (binary_search(arrays[i], tree->map_indices, tree->map_indices+tree->map_count) == 0){
+	    // std::cerr << "... failed on array " << arrays[i] << std::endl;
             return false;
         }
     }

@@ -29,6 +29,7 @@ cdef extern from "tset.h" namespace "tset":
         TSetArray(int length) except +
         void intersection_update(TSetArray *other)
         void union_update(TSetArray *other)
+        void minus_update(TSetArray *other)
         void erase()
         void get_set(int index, TSet *result)
         void deserialize(const void *data, int size)
@@ -102,6 +103,7 @@ cdef class Search:  # base class for all searches
 
         err=db.get_next_fitting_tree()
         if err or db.finished():
+            print >> sys.stderr, "No next result err=",err," db finished=", db.finished()
             return -1
 
         self.initialize()
