@@ -102,27 +102,50 @@ def fill_db(conn,src_data):
     return counter
 
 if __name__=="__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Train')
+    parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
+    parser.add_argument('-p', '--prefix', required=True, default="trees", help='Prefix name of the database files. Default: %(default)s')
+    parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
+    parser.add_argument('--wipe', default=False, action="store_true", help='Wipe the target directory before building the index.')
+    args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
-    #os.system("rm -f /mnt/ssd/sdata/all/*")
-    src_data=read_conll(gzip.open('../pbv4_ud.part-00.gz', 'rt'), 1500000)
+    os.system("mkdir -p "+args.dir)
+    if args.wipe:
+        print >> sys.stderr, "Wiping target"
+        cmd="rm -f %s/*.db %s/symbols.json"%(args.dir,args.dir)
+        print >> sys.stderr, cmd
+        os.system(cmd)
+
+    src_data=read_conll(sys.stdin, args.max)
     set_dict={}
     lengths=0
     counter=0
     db = py_store_lmdb.Py_LMDB()
-    db.open('./ebin')
+    db.open(args.dir)
     db.start_transaction()
     tree_id=0
     from collections import Counter
     setarr_count = Counter([])
 
+    try:
+        inf = open('set_dict','rb')
+        set_dict, setarr_count = pickle.load(inf)
+        inf.close()
+    except:
+        pass
+
     for sent,comments in src_data:
         if tree_id%10000 == 0:
             print tree_id
         s=py_tree_lmdb.Py_Tree()
-        blob,stuff =s.serialize_from_conllu(sent,comments,set_dict)
-        print binascii.hexlify(blob)
-        print stuff
-        import pdb;pdb.set_trace()
+        #print 'Python Side:', tree_id
+        blob, stuff =s.serialize_from_conllu(sent,comments,set_dict)
+        #print stuff
+        #print binascii.hexlify(blob)
+        #print 'End_python side'
+        #import pdb;pdb.set_trace()
         s.deserialize(blob)
         lengths+=len(blob)
         counter+=len(blob)
@@ -135,14 +158,17 @@ if __name__=="__main__":
 
         #storing
         for flag_number in set_indexes:
-            db.store_tree_flag(tree_id, flag_number)
-            db.store_tree_flag_val(flag_number, tree_id)
+            db.store_tree_flag_val(tree_id, flag_number)
+            #print (tree_id, flag_number)#import pdb;pdb.set_trace()
         for flag_number in arr_indexes:
-            db.store_tree_flag(tree_id, flag_number)
-            db.store_tree_flag_val(flag_number, tree_id)
+            db.store_tree_flag_val(tree_id, flag_number)
+            #print (tree_id, flag_number)
         db.store_tree_data(tree_id, blob, len(blob))#sys.getsizeof(blob))
-
+        #print (tree_id, blob, len(blob))
         tree_id+=1
+
+        #if tree_id > 500:
+        #    break
 
     print lengths/float(counter)
     print len(set_dict)
