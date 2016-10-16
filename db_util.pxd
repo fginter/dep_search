@@ -40,6 +40,7 @@ cdef extern from "tree_lmdb.h":
 cdef extern from "fetch_lmdb.h":
     cdef cppclass LMDB_Fetch:
         Tree *tree
+        bool finished
 
         int open(const char *)
         void close()
@@ -57,6 +58,7 @@ cdef class DB:
     
     cdef int fill_sets(self, void **set_pointers, uint32_t *indices, unsigned char *types, unsigned char *optional, int size)
 
+    cdef bool finished(self)
     #def get_tree_text(self)
 
     

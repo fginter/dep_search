@@ -49,6 +49,10 @@ cdef class DB:
         tree  = self.thisptr.tree
         return tree.fill_sets(set_pointers, indices, types, optional, size)
 
+    cdef bool finished(self):
+        return self.thisptr.finished
+
+    
 
     #Oh dear, is this the way?
     #XXX todo terrible code

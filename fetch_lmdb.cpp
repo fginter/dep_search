@@ -94,9 +94,9 @@ int LMDB_Fetch::get_next_fitting_tree() {
     move_to_next_tree();
     while (!finished) {
 	err=mdb_cursor_get(k2t_cursor,&key,&tree_id_val,MDB_GET_CURRENT);
-	std::cerr << "In get_next_fitting_tree key is now " << *((uint32_t*)key.mv_data) << " and tid " << *((uint32_t*)tree_id_val.mv_data) << std::endl;
+	//std::cerr << "In get_next_fitting_tree key is now " << *((uint32_t*)key.mv_data) << " and tid " << *((uint32_t*)tree_id_val.mv_data) << std::endl;
 	if (err || (*((uint32_t*)key.mv_data)!=rarest)) {
-	    std::cerr << "In get_next_fitting_tree key is " << *((uint32_t*)key.mv_data) << " but rarest is set to " << rarest << std::endl;
+	    //std::cerr << "In get_next_fitting_tree key is " << *((uint32_t*)key.mv_data) << " but rarest is set to " << rarest << std::endl;
 	    report("Failed to retrieve from k2t",err);
 	    return err;
 	}
@@ -182,7 +182,6 @@ int LMDB_Fetch::open(const char *name) {
 
 //Given a pointer to tree data, check that it has all the required sets
 bool LMDB_Fetch::check_tree(void *tree_data) {
-    std::cout << "here" << std::endl;
     tree->deserialize(tree_data);
     for(int i=0; i<len_sets;i++){
         if (binary_search(sets[i], tree->set_indices, tree->set_indices+tree->set_count) == 0){

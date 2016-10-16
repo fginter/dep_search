@@ -55,6 +55,10 @@ cdef class Search:  # base class for all searches
     #Declared here, overridden in the generated query code
     cdef TSet *exec_search(self):
         pass
+
+    cdef void initialize(self):
+        pass
+    #End of overriden declarations
     
     def set_db_options(self, p_set_ids, p_types, p_optional):
 
@@ -88,7 +92,6 @@ cdef class Search:  # base class for all searches
 
 
     def next_result(self, DB db):
-        self.ops += 1
         cdef int size=len(self.query_fields)
         cdef PyTSet py_result=PyTSet(0)
         cdef TSet *result
@@ -97,7 +100,7 @@ cdef class Search:  # base class for all searches
         cdef uint32_t * tree_id
 
         err=db.get_next_fitting_tree()
-        if err or db.finished:
+        if err or db.finished():
             return -1
 
         self.initialize()
