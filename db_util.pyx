@@ -53,16 +53,10 @@ cdef class DB:
         return self.thisptr.finished
 
     
-
-    #Oh dear, is this the way?
-    #XXX todo terrible code
     def get_tree_text(self):
-        tree  = self.thisptr.tree
-        tree_text = []
-        for i in range(tree.zipped_tree_text_length):
-            tree_text.append(struct.pack('=b',self.thisptr.tree.zipped_tree_text[i]))
-        #res = bytes(tree_text)
-        #print ''.join(tree_text)
-        return zlib.decompress(''.join(tree_text))#json.loads(''.join(tree_text))
+        cdef Tree * tree  = self.thisptr.tree
+        cdef char * tree_text_data=tree.zipped_tree_text
+        return zlib.decompress(tree_text_data[:tree.zipped_tree_text_length])
+    
 
 

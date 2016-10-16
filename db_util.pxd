@@ -2,6 +2,9 @@ from libcpp cimport bool
 from libc.stdint cimport uint16_t
 from libc.stdint cimport uint32_t
 
+"""
+DB is a cython wrapper class for fetch_lmdb.cpp / fetch_lmdb.h
+"""
 
 cdef extern from "tset.h" namespace "tset":
     cdef cppclass TSet:

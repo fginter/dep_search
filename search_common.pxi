@@ -109,28 +109,10 @@ cdef class Search:  # base class for all searches
         result=self.exec_search()
 
         result_set = set()
-        #Really + 1 ?
+        #Really + 1 ?  xxx check
         for x in range(result.tree_length + 1):
             if result.has_item(x):
                 result_set.add(x)
 
         return result_set
 
-
-    # def x_next_result(self, DB db):
-    #     cdef int size=len(self.query_fields)
-    #     cdef PyTSet py_result=PyTSet(0)
-    #     cdef TSet *result
-    #     cdef int graph_id
-    #     cdef int rows=0
-    #     while db.next()==0:
-    #         rows+=1
-    #         graph_id=db.get_integer(0)
-    #         #db.fill_sets(self.sets,self.set_types,size)
-    #         self.initialize()
-    #         result=self.exec_search()
-    #         if not result.is_empty():
-    #             py_result.acquire_thisptr(result)
-    #             return graph_id,py_result,rows
-
-    #     return None,None,rows
