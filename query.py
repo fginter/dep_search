@@ -286,7 +286,7 @@ def main(argv):
     print >> sys.stderr, 'dbs:',dbs
     #dbs = eval(dbs)
 
-    inf = open(dbs[0].strip('/') + '/set_dict.pickle','rb')
+    inf = open(dbs[0].lstrip('/') + '/set_dict.pickle','rb')
     set_dict, set_count = pickle.load(inf)
     inf.close()
     #print set_dict, set_count
