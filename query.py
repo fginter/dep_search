@@ -65,12 +65,18 @@ def map_set_id(args, set_dict, set_count):
         if narg.startswith('token_s'):
             oarg = set_dict['f_' + narg[8:]]
             it_is_set = True
+
+        #Here! Add so that if not found as tag, try tokens
         if narg.startswith('tag_s'):
             it_is_set = True
             if narg[:6] in set_dict.keys():
                 oarg = narg[:6]
             else:
-                oarg = set_dict['p_' + narg[6:]]
+                try:
+                    oarg = set_dict['p_' + narg[6:]]
+                except:
+                    oarg = set_dict['f_' + narg[6:]]
+
         types.append(not it_is_set)
 
         #print compulsory
@@ -184,6 +190,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
     db.open(unicode(db_name))
     
     rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional = map_set_id(query_obj.query_fields, set_dict, set_count)
+
     db.begin_search(c_args_s, c_args_m, rarest)
     q_obj.set_db_options(just_all_set_ids, types, optional)
 
@@ -279,7 +286,7 @@ def main(argv):
     print >> sys.stderr, 'dbs:',dbs
     #dbs = eval(dbs)
 
-    inf = open('set_dict','rb')
+    inf = open(dbs[0].strip('/') + '/set_dict.pickle','rb')
     set_dict, set_count = pickle.load(inf)
     inf.close()
     #print set_dict, set_count
