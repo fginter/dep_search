@@ -285,19 +285,22 @@ def main(argv):
     dbs.sort()
 
     #hacking and cracking
-    
     print >> sys.stderr, 'dbs:',dbs
     #dbs = eval(dbs)
 
-    inf = open(dbs[0].rstrip('/') + '/set_dict.pickle','rb')
-    set_dict, set_count = pickle.load(inf)
-    inf.close()
+    #inf = open(dbs.rstrip('/') + '/set_dict.pickle','rb')
+    #set_dict, set_count = pickle.load(inf)
+    #inf.close()
     #print set_dict, set_count
     #import pdb;pdb.set_trace()
 
     total_hits=0
     for d in dbs:
         print >> sys.stderr, 'querying' ,d
+
+        inf = open(d.rstrip('/') + '/set_dict.pickle','rb')
+        set_dict, set_count = pickle.load(inf)
+        inf.close()
 
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context, set_dict, set_count)
         #if total_hits >= args.max and args.max > 0:
