@@ -200,11 +200,10 @@ def generate_search_code(node, tag_list=[], val_dict={}):
     for l in generate_code(node, set_manager, node_dict, order_of_execution, tag_list=tag_list, val_dict=val_dict):
         code_lines.append(l)
 
-    ###XXX!!! GET RID OF THIS! NOW, IF YOU ARE READING THIS! TEMPORARY HACK!
-    n_code_lines = [code_lines[0]]
-    n_code_lines.extend(init_lines[1:])
-    n_code_lines.extend(code_lines[1:])
-    lines.extend(n_code_lines)
+    #n_code_lines = [code_lines[0]]
+    #n_code_lines.extend(init_lines[1:])
+    #n_code_lines.extend(code_lines[1:])
+    lines.extend(code_lines)
 
     return lines
 
