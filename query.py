@@ -69,13 +69,16 @@ def map_set_id(args, set_dict, set_count):
         #Here! Add so that if not found as tag, try tokens
         if narg.startswith('tag_s'):
             it_is_set = True
-            if narg[:6] in set_dict.keys():
-                oarg = narg[:6]
+            if narg[6:] in set_dict.keys():
+                oarg = set_dict[narg[6:]]
             else:
-                try:
+                if 'p_' + narg[6:] in set_dict.keys():
                     oarg = set_dict['p_' + narg[6:]]
-                except:
-                    oarg = set_dict['f_' + narg[6:]]
+                else:
+                    try:#if 'oarg in set_dict.keys():
+                        oarg = set_dict['f_' + narg[6:]]
+                    except:
+                        import pdb;pdb.set_trace()
 
         types.append(not it_is_set)
 
@@ -286,7 +289,7 @@ def main(argv):
     print >> sys.stderr, 'dbs:',dbs
     #dbs = eval(dbs)
 
-    inf = open(dbs[0].lstrip('/') + '/set_dict.pickle','rb')
+    inf = open(dbs[0].rstrip('/') + '/set_dict.pickle','rb')
     set_dict, set_count = pickle.load(inf)
     inf.close()
     #print set_dict, set_count

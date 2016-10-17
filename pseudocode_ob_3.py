@@ -188,11 +188,23 @@ def generate_search_code(node, tag_list=[], val_dict={}):
     for l in get_cinit_function(set_manager):
         lines.append(l)
 
+    init_lines = []
+
     for l in get_init_function(set_manager):
-        lines.append(l)
+        init_lines.append(l)
+
+    lines.extend(init_lines)
+
+    code_lines=[]
 
     for l in generate_code(node, set_manager, node_dict, order_of_execution, tag_list=tag_list, val_dict=val_dict):
-        lines.append(l)
+        code_lines.append(l)
+
+    ###XXX!!! GET RID OF THIS! NOW, IF YOU ARE READING THIS! TEMPORARY HACK!
+    n_code_lines = [code_lines[0]]
+    n_code_lines.extend(init_lines[1:])
+    n_code_lines.extend(code_lines[1:])
+    lines.extend(n_code_lines)
 
     return lines
 
@@ -357,12 +369,12 @@ def handle_root_extra_comments(node, set_manager):
        if com.startswith('max_tree_len='):
            tree_len = int(com.split('=')[-1])
            sentence_count_str = get_sentence_count_str(set_manager)
-           output_lines.append('if ' + sentence_count_str + '.tree_length >= ' + str(tree_len) + ': return self.empty_set')
+           output_lines.append('if ' + 'self.' + sentence_count_str + '.tree_length >= ' + str(tree_len) + ': return self.empty_set')
 
        if com.startswith('min_tree_len='):
            tree_len = int(com.split('=')[-1])
            sentence_count_str = get_sentence_count_str(set_manager)
-           output_lines.append('if ' + sentence_count_str + '.tree_length <= ' + str(tree_len) + ': return self.empty_set')
+           output_lines.append('if ' + 'self.' + sentence_count_str + '.tree_length <= ' + str(tree_len) + ': return self.empty_set')
 
     return output_lines
 
@@ -379,7 +391,6 @@ def generate_code(nodes, set_manager, node_dict, order_of_execution, tag_list=[]
         for l in handle_root_extra_comments(order_of_execution[-1], set_manager):
             match_code_lines.append(l)
 
-
     for node in order_of_execution:
         match_block, node_extra_functions = generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag_list=tag_list, val_dict=val_dict)
 
@@ -392,9 +403,11 @@ def generate_code(nodes, set_manager, node_dict, order_of_execution, tag_list=[]
         lines.append(' '*8 + l)
     lines.append(' '*8 + 'return self.' + node_output_dict['0'])
 
+
     for f in extra_functions:
         for l in f:
             lines.append(' '*4 + l)
+
 
     return lines
 
@@ -416,7 +429,7 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             output_set = set_manager.node_needs[node.node_id]['all_tokens_label'][0]
             match_lines.append('#Reporting ' + output_set + ' as output set')
             node_output_dict[node.node_id] = output_set
-            return match_lines, extra_functions
+            #return match_lines, extra_functions
         else:
             #Get the setname
             db_set = set_manager.node_needs[node.node_id]['db_sets_label'][what_I_need_from_the_db[0]]
@@ -424,7 +437,7 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             match_lines.append('self.' + output_set_name + '.copy(self.' + db_set + ')')
             match_lines.append('#Reporting ' + output_set_name + ' as output set')
             node_output_dict[node.node_id] = output_set_name
-            return match_lines, extra_functions
+            #return match_lines, extra_functions
 
     elif isinstance(node, DeprelNode):
 
@@ -486,7 +499,7 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             match_lines.append('#Reporting ' + output_set_name + ' as output array')
             node_output_dict[node.node_id] = output_set_name
 
-        return match_lines, extra_functions
+        #return match_lines, extra_functions
         
     elif isinstance(node, SetNode_And):
 
@@ -642,7 +655,32 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         match_lines.append('#Reporting ' + output_set + ' as output set')
         node_output_dict[node.node_id] = output_set
 
+    #Get match_lines for extra requirements:
+    match_lines.append('#' + str(node.extra_comments))
+    if len(node.extra_comments) > 0:
+        match_lines.extend(get_match_lines_for_extra_comments(node, node_output_dict, set_manager))
+
     return match_lines, extra_functions
+
+def get_match_lines_for_extra_comments(node, node_output_dict, set_manager):
+
+    sentence_count_str = get_sentence_count_str(set_manager)
+    match_lines = []
+    temp_set_name = node_output_dict[node.node_id]
+    for comment in node.extra_comments:
+
+        if comment.startswith('len_set='):
+            #Rip the int
+            #try:
+            the_int = int(comment.split('=')[-1])
+            match_lines.append('len_temp_set = 0')
+            match_lines.append('for n in range(0, self.' + sentence_count_str + '.tree_length):')
+            match_lines.append(' '*4 + 'if self.' + temp_set_name + '.has_item(n): len_temp_set += 1')
+            match_lines.append('if len_temp_set != ' + str(the_int) + ': self.' + temp_set_name + '.copy(self.empty_set)')
+        #except:
+        #    match_lines=[]
+
+    return match_lines
 
 
 def generate_filtering(filtering_function_name, deprels, input_sets, negateds, sentence_count_str):
