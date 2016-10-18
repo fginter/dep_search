@@ -69,13 +69,16 @@ def map_set_id(args, set_dict, set_count):
         #Here! Add so that if not found as tag, try tokens
         if narg.startswith('tag_s'):
             it_is_set = True
-            if narg[:6] in set_dict.keys():
-                oarg = narg[:6]
+            if narg[6:] in set_dict.keys():
+                oarg = set_dict[narg[6:]]
             else:
-                try:
+                if 'p_' + narg[6:] in set_dict.keys():
                     oarg = set_dict['p_' + narg[6:]]
-                except:
-                    oarg = set_dict['f_' + narg[6:]]
+                else:
+                    try:#if 'oarg in set_dict.keys():
+                        oarg = set_dict['f_' + narg[6:]]
+                    except:
+                        import pdb;pdb.set_trace()
 
         types.append(not it_is_set)
 
@@ -284,19 +287,22 @@ def main(argv):
     dbs.sort()
 
     #hacking and cracking
-    
     print >> sys.stderr, 'dbs:',dbs
     #dbs = eval(dbs)
 
-    inf = open(dbs[0].lstrip('/') + '/set_dict.pickle','rb')
-    set_dict, set_count = pickle.load(inf)
-    inf.close()
+    #inf = open(dbs.rstrip('/') + '/set_dict.pickle','rb')
+    #set_dict, set_count = pickle.load(inf)
+    #inf.close()
     #print set_dict, set_count
     #import pdb;pdb.set_trace()
 
     total_hits=0
     for d in dbs:
         print >> sys.stderr, 'querying' ,d
+
+        inf = open(d.rstrip('/') + '/set_dict.pickle','rb')
+        set_dict, set_count = pickle.load(inf)
+        inf.close()
 
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context, set_dict, set_count)
         #if total_hits >= args.max and args.max > 0:

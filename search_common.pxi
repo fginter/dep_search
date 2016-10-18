@@ -106,8 +106,8 @@ cdef class Search:  # base class for all searches
             print >> sys.stderr, "No next result err=",err," db finished=", db.finished()
             return -1
 
-        self.initialize()
         db.fill_sets(self.sets, self.set_ids, <unsigned char *>self.types, self.optional, self.set_size)
+        self.initialize()
         result=self.exec_search()
 
         result_set = set()
