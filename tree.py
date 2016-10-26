@@ -103,14 +103,14 @@ class Tree(object):
                     if cat is not None:
                         t.tags[cat].add_item(idx)
             if cols[HEAD] not in (u"_",u"0"):
-                t.add_rel(int(cols[HEAD])-1,idx,cols[DEPREL],len(conll))
-                symb_stats.symb(cols[DEPREL],"DTYPE",None)
+                t.add_rel(int(cols[HEAD])-1,idx,cols[DEPREL].replace("_","-"),len(conll))
+                symb_stats.symb(cols[DEPREL].replace("_","-"),"DTYPE",None)
                 t.add_rel(int(cols[HEAD])-1,idx,u"anyrel",len(conll))
                 if deps!=u"_":
                     for dep in deps.split(u"|"):
                         g,dtype=dep.split(u":",1)
-                        t.add_rel(int(g)-1,idx,dtype,len(conll))
-                        symb_stats.symb(dtype,"DTYPE",None)
+                        t.add_rel(int(g)-1,idx,dtype.replace("_","-"),len(conll))
+                        symb_stats.symb(dtype.replace("_","-"),"DTYPE",None)
         t.comments=u"\n".join(comments)
         t.conllu=u"\n".join(u"\t".join(l) for l in lines)
         return t
