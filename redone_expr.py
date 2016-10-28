@@ -17,7 +17,7 @@ class BaseNode():
     neg = False
     deprel = False
     parent_node = None
-    #extra_comments = []
+    extra_comments = []
     #def __init__(self):
     #    self.extra_comments = []
 
@@ -241,7 +241,7 @@ tokens=('TEXT',    #/..../
 
 #Here's regular expressions for the tokens defined above
 t_TEXT = ur'((?!(->|\+|&|\(|\)|\||==|<|>|"|\s)).)+'
-t_DEPOP = ur'(<|>)([^="<>_()&|\s]+)?'
+t_DEPOP = ur'(<|>)([^="<>()&|\s]+)?'
 
 def t_ECOM(t):
     ur'{[^}]+}'
