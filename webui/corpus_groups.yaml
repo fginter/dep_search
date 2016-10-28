@@ -14,3 +14,10 @@
   name: Latin Texts DigiHum
   corpora: CICERO NCICERO
 
+-
+  name: Biomedical
+  corpora: PubMed250K
+
+-
+  name: Parsebanks
+  corpora: PBV4 S24 SV

@@ -6,6 +6,10 @@ S24:
   paths: /media/external3TB/S24_INDEX
   name: Suomi24
 
+SV:
+  paths: /media/external3TB/SV90M_index
+  name: "Swedish Parsebank (90M)"
+
 "wildcard_UD_\\1-v13":
   pathglob: /media/external3TB/UDv13_INDEX/UD_*
   pathre: /media/external3TB/UDv13_INDEX/UD_(.*)
@@ -23,3 +27,7 @@ CICERO:
 NCICERO:
   paths: /home/avjves/ncicero.db
   name: "Non-Cicero texts DigiHum"
+
+PubMed250K:
+  paths: /mnt/ssd/PM/*.db
+  name: "PubMed 250K"
