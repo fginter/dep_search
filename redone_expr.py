@@ -238,9 +238,9 @@ tokens=('TEXT',    #/..../
         'SE',
         'ANYTOKEN',
         'ECOM',
-        'XDOT',)
-        #'BGN',
-        #'END')  #_
+        'XDOT',
+        'BGN',
+        'END')  #_
 
 #Here's regular expressions for the tokens defined above
 t_TEXT = ur'((?!(->|\+|&|\(|\)|\||==|<|>|"|\s)).)+'
@@ -314,7 +314,7 @@ def t_error(t):
 # the grammar rules are the comment strings of the functions
 
 #Main 
-precedence = (('left','PLUS'),('left','EQ'),('left','SE'),('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left', 'ECOM'), ('left','TEXT'), ('right', 'XDOT'))#, ('left', 'BGN'), ('left', 'END'))
+precedence = (('left','PLUS'),('left','EQ'),('left','SE'),('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left', 'ECOM'), ('left','TEXT'), ('right', 'XDOT'), ('left', 'BGN'), ('left', 'END'))
 
 def p_error(t):
     if t==None:
@@ -332,14 +332,14 @@ def p_top(t):
 #  ( expression )
 #  _
 
-#def p_bgn(t):
-#    u'''setnode : BGN setnode'''
-#    t[0] = SetNode_Dep(SetNode_Token('_'), t[2], DeprelNode_Not(DeprelNode('<lin@L')))
+def p_bgn(t):
+    u'''setnode : BGN setnode'''
+    t[0] = SetNode_Dep(t[2], SetNode_Token('_'), DeprelNode_Not(DeprelNode('<lin@L')))
 
 
-#def p_end(t):
-#    u'''setnode : setnode END'''
-#    t[0] = SetNode_Dep(SetNode_Token('_'), t[1], DeprelNode_Not(DeprelNode('<lin@R')))
+def p_end(t):
+    u'''setnode : setnode END'''
+    t[0] = SetNode_Dep(t[1], SetNode_Token('_'), DeprelNode_Not(DeprelNode('<lin@R')))
 
 def p_dot(t):
     u'''setnode : tokendef XDOT setnode'''
