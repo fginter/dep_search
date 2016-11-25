@@ -101,7 +101,7 @@ class NodeInterpreter():
             if len(dtype) < 1:
                 dtype = 'anyrel'
 
-            if dtype == 'lin':
+            if dtype.startswith('lin'):
                 return_list.append(prechar + u'no_db_' + dtype)
             else:
                 return_list.append(prechar + u'gov_a_' + dtype)
@@ -114,7 +114,7 @@ class NodeInterpreter():
             if len(dtype) < 1:
                 dtype = 'anyrel'
 
-            if dtype == 'lin':
+            if dtype.startswith('lin'):
                 return_list.append(prechar + u'no_db_' + dtype)
             else:
                 return_list.append(prechar + u'dep_a_' + dtype)
@@ -459,7 +459,16 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
 
             #We need linear order set
             if what_I_need_from_the_db[0].strip('!').startswith('no_db_lin'):
-                match_lines.append('self.' + output_set_name + '.make_lin(1)')
+
+                the_int = 1
+                #TODO: reduce hackiness of this contraption!
+                try:
+                    the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
+                except:
+                    pass
+                    the_int = 1
+
+                match_lines.append('self.' + output_set_name + '.make_lin(' + str(the_int) + ')')
 
             if node.dep_restriction[-2:] == '@L':
                 match_lines.append('self.' + output_set_name + '.filter_direction(True)')
