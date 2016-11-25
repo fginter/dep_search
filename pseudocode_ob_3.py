@@ -502,6 +502,20 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
             match_lines.append('self.' + output_set_name + '.copy(self.' + anyrel_for_negation + ')')
 
+
+            if what_I_need_from_the_db[0].strip('!').startswith('no_db_lin'):
+
+                the_int = 1
+                #TODO: reduce hackiness of this contraption!
+                try:
+                    the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
+                except:
+                    pass
+                    the_int = 1
+
+                match_lines.append('self.' + db_set + '.make_lin(' + str(the_int) + ')')
+                match_lines.append('self.' + output_set_name + '.make_lin(delf' + output_set_name + '.tree_length)')
+
             if node.dep_restriction[-2:] == '@L':
                 match_lines.append('self.' + db_set + '.filter_direction(True)')
             elif node.dep_restriction[-2:] == '@R':
