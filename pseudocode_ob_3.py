@@ -449,7 +449,7 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
         #I'll find the name of the assigned array
         what_I_need_from_the_db = node_ni.deprel_node_into_db_label()
-
+        
         #Get the setname
         if not negated:
             db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]][0]
@@ -502,19 +502,22 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
             match_lines.append('self.' + output_set_name + '.copy(self.' + anyrel_for_negation + ')')
 
-
-            if what_I_need_from_the_db[0].strip('!').startswith('no_db_lin'):
+            match_lines.append('#' + str(what_I_need_from_the_db))
+            if what_I_need_from_the_db[1].strip('!').startswith('no_db_lin'):
 
                 the_int = 1
                 #TODO: reduce hackiness of this contraption!
                 try:
                     the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
                 except:
-                    pass
                     the_int = 1
 
+                sentence_count_str = get_sentence_count_str(set_manager)
+                match_lines.append('self.' + db_set + '.set_length(self.' + sentence_count_str + '.tree_length)')
+                match_lines.append('self.' + output_set_name + '.set_length(self.' + sentence_count_str + '.tree_length)')
+
                 match_lines.append('self.' + db_set + '.make_lin(' + str(the_int) + ')')
-                match_lines.append('self.' + output_set_name + '.make_lin(delf' + output_set_name + '.tree_length)')
+                match_lines.append('self.' + output_set_name + '.make_lin(self.' + output_set_name + '.tree_length)')
 
             if node.dep_restriction[-2:] == '@L':
                 match_lines.append('self.' + db_set + '.filter_direction(True)')
@@ -753,6 +756,10 @@ def get_sentence_count_str(set_manager):
 
     for key in set_manager.node_needs.keys():
         for ikey in set_manager.node_needs[key]['db_sets_label'].keys():
+
+            if 'no_db' in ikey:
+                continue
+
             db_set = set_manager.node_needs[key]['db_sets_label'][ikey]
             if ikey.startswith('!') and 'no_db' not in ikey:
                 compulsory.append(db_set)
@@ -760,6 +767,10 @@ def get_sentence_count_str(set_manager):
             else:
                 non_compulsory.append(db_set)
         for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
+
+            if 'no_db' in ikey:
+                continue
+
             db_set = set_manager.node_needs[key]['db_arrays_label'][ikey][0]
             if ikey.startswith('!') and 'no_db' not in ikey:
                 compulsory.append(db_set)
