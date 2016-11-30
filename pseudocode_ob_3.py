@@ -512,11 +512,11 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
                 except:
                     the_int = 1
 
-                sentence_count_str = get_sentence_count_str(set_manager)
-                match_lines.append('self.' + db_set + '.set_length(self.' + sentence_count_str + '.tree_length)')
-                match_lines.append('self.' + output_set_name + '.set_length(self.' + sentence_count_str + '.tree_length)')
+                #sentence_count_str = get_sentence_count_str(set_manager)
+                #match_lines.append('self.' + db_set + '.set_length(self.' + sentence_count_str + '.tree_length)')
+                #match_lines.append('self.' + output_set_name + '.set_length(self.' + sentence_count_str + '.tree_length)')
 
-                match_lines.append('self.' + db_set + '.make_lin(' + str(the_int) + ')')
+                #match_lines.append('self.' + db_set + '.make_lin(' + str(the_int) + ')')
                 match_lines.append('self.' + output_set_name + '.make_lin(self.' + output_set_name + '.tree_length)')
 
             if node.dep_restriction[-2:] == '@L':
