@@ -467,19 +467,14 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
                     the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
                     the_beg = 1
                 except:
-                    pass
+                    #pass
                     #the_int = 1
-                try:
-                    the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0])
-                    the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1])
-                except:
-                    pass
-
-
-
-
-
-                match_lines.append('self.' + output_set_name + '.make_lin(' + str(the_int) + ')')
+                    try:
+                        the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1])
+                        the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0])
+                    except:
+                        pass
+                match_lines.append('self.' + output_set_name + '.make_lin_2(' + str(the_int) + ', ' + str(the_beg) + ')')
 
             if node.dep_restriction[-2:] == '@L':
                 match_lines.append('self.' + output_set_name + '.filter_direction(True)')
@@ -514,6 +509,9 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             match_lines.append('self.' + output_set_name + '.copy(self.' + anyrel_for_negation + ')')
 
             match_lines.append('#' + str(what_I_need_from_the_db))
+
+
+            '''
             if what_I_need_from_the_db[1].strip('!').startswith('no_db_lin'):
 
                 the_int = 1
@@ -522,13 +520,32 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
                     the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
                 except:
                     the_int = 1
+            '''
+            #We need linear order set
+            if what_I_need_from_the_db[0].strip('!').startswith('no_db_lin'):
+
+                the_int = 2
+                the_beg = 1
+                #TODO: reduce hackiness of this contraption!
+                try:
+                    the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
+                    the_beg = 1
+                except:
+                    #pass
+                    #the_int = 1
+                    try:
+                        the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1])
+                        the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0])
+                    except:
+                        pass
+                match_lines.append('self.' + output_set_name + '.make_lin_2(' + str(the_int) + ', ' + str(the_beg) + ')')
 
                 #sentence_count_str = get_sentence_count_str(set_manager)
                 #match_lines.append('self.' + db_set + '.set_length(self.' + sentence_count_str + '.tree_length)')
                 #match_lines.append('self.' + output_set_name + '.set_length(self.' + sentence_count_str + '.tree_length)')
 
                 #match_lines.append('self.' + db_set + '.make_lin(' + str(the_int) + ')')
-                match_lines.append('self.' + output_set_name + '.make_lin(self.' + output_set_name + '.tree_length)')
+                #match_lines.append('self.' + output_set_name + '.make_lin(self.' + output_set_name + '.tree_length)')
 
             if node.dep_restriction[-2:] == '@L':
                 match_lines.append('self.' + db_set + '.filter_direction(True)')

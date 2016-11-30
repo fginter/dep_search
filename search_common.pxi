@@ -36,6 +36,12 @@ cdef extern from "tset.h" namespace "tset":
         void copy(TSetArray *other)
         void filter_direction(bool direction)
         void make_lin(int window)
+        void make_lin_2(int window, int begin)
+
+        void extend_subtrees(TSetArray* other)
+        void add_arch(int a, int b)
+        TSet get_all_children(int id, TSet * other)
+
 
 
 cdef extern from "query_functions.h":
