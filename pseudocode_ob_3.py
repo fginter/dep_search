@@ -460,13 +460,24 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             #We need linear order set
             if what_I_need_from_the_db[0].strip('!').startswith('no_db_lin'):
 
-                the_int = 1
+                the_int = 2
+                the_beg = 1
                 #TODO: reduce hackiness of this contraption!
                 try:
                     the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
+                    the_beg = 1
                 except:
                     pass
-                    the_int = 1
+                    #the_int = 1
+                try:
+                    the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0])
+                    the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1])
+                except:
+                    pass
+
+
+
+
 
                 match_lines.append('self.' + output_set_name + '.make_lin(' + str(the_int) + ')')
 
