@@ -478,10 +478,39 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
                     #pass
                     #the_int = 1
                     try:
-                        the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1])
-                        the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0])
+                        if ';' in what_I_need_from_the_db[0]:
+
+                            the_int_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1]
+                            the_beg_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0]
+
+                            if len(the_int_str) < 1:
+                                #Get sentence_ln
+                                sentence_count_str = get_sentence_count_str(set_manager)
+                                the_int = 'self.' + sentence_count_str + '.tree_length'
+                            else:
+                                the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1])
+
+                            the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0])
+
+
+                        elif ':' in what_I_need_from_the_db[0]:
+
+                            the_int_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1]
+                            the_beg_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0]
+
+                            if len(the_int_str) < 1:
+                                #Get sentence_ln
+                                sentence_count_str = get_sentence_count_str(set_manager)
+                                the_int = 'self.' + sentence_count_str + '.tree_length'
+                            else:
+                                the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1])
+
+                            the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0])
                     except:
                         pass
+
+                print 'the_int,the_beg', the_int, the_beg
+
                 match_lines.append('self.' + output_set_name + '.make_lin_2(' + str(the_int) + ', ' + str(the_beg) + ')')
 
             if node.dep_restriction[-2:] == '@L':
@@ -542,10 +571,41 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
                     #pass
                     #the_int = 1
                     try:
-                        the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1])
-                        the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0])
+
+                        if ';' in what_I_need_from_the_db[0]:
+
+                            the_int_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1]
+                            the_beg_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0]
+
+                            if len(the_int_str) < 1:
+                                #Get sentence_ln
+                                sentence_count_str = get_sentence_count_str(set_manager)
+                                the_int = 'self.' + sentence_count_str + '.tree_length'
+                            else:
+                                the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1])
+
+                            the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0])
+
+
+                        elif ':' in what_I_need_from_the_db[0]:
+
+                            the_int_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1]
+                            the_beg_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0]
+
+                            if len(the_int_str) < 1:
+                                #Get sentence_ln
+                                sentence_count_str = get_sentence_count_str(set_manager)
+                                the_int = 'self.' + sentence_count_str + '.tree_length'
+                            else:
+                                the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1])
+
+                            the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0])
+
                     except:
                         pass
+
+                print 'int_beg', the_int, the_beg
+
                 match_lines.append('self.' + output_set_name + '.make_lin_2(' + str(the_int) + ', ' + str(the_beg) + ')')
 
                 #sentence_count_str = get_sentence_count_str(set_manager)
