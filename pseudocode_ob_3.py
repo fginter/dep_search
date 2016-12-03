@@ -178,9 +178,17 @@ class SetManager():
             #5. Do you need an output set, what is your output set called?
             self.node_needs[key]['own_output'], self.node_needs[key]['own_output_set'], self.node_needs[key]['own_output_set_type'] = ni.what_output_do_you_need()
 
-            set_and_array_labels.extend(self.node_needs[key]['db_sets_label'])
-            set_and_array_labels.extend(self.node_needs[key]['db_arrays_label'])
+            #set_and_array_labels.extend(self.node_needs[key]['db_sets_label'])
+            #set_and_array_labels.extend(self.node_needs[key]['db_arrays_label'])
+            for label in self.node_needs[key]['db_sets_label']:
+                if 'no_db' not in label:
+                    set_and_array_labels.append(label)
 
+            for label in self.node_needs[key]['db_arrays_label']:
+                if 'no_db' not in label:
+                    set_and_array_labels.append(label)
+
+        #print 'set_and_array_labels', set_and_array_labels
         #If nothing was found add a virtual node 'extra' just to add something into the db_query
         if len(set_and_array_labels) < 1:
             self.node_needs['extra'] = {'temp_sets': [], 'all_tokens': False, 'all_tokens_label': [], 'db_arrays_label': {u'!dep_a_anyrel': ['extra_array']}, 'db_sets': [], 'db_arrays': [u'!dep_a_anyrel'], 'db_sets_label': {}, 'own_output_set': '', 'own_output_set_type': '', 'own_output': False}
