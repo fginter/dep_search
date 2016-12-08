@@ -1,1 +1,2 @@
 gem 'minima'
+gem 'jekyll'
