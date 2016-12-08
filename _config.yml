@@ -1,2 +1,11 @@
+# Setup
+name: "Dep_search"
+tagline: "Large-scale parsebank search tool"
+baseurl: ""
+
+# Gems
+gems:
+  - jekyll-paginate
+
+#Others
 markdown: kramdown
-theme: minima
