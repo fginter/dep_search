@@ -5,6 +5,7 @@ sudo apt-get update
 sudo apt-get install gcc
 sudo apt-get install g++
 sudo apt-get install python-dev
+sudo apt-get install python-yaml
 sudo easy_install cython
 sudo apt-get install sqlite3
 sudo apt-get install libsqlite3-dev
@@ -14,13 +15,26 @@ git submodule init
 git submodule update   
 make   
 
-Index some data
+# Index some example data
+cat example_en.conllu | python build_index.py --wipe -d example_en_db
 
-#WebUI
-cd ../webui/
+# Test query
+python query.py '_ <nsubj _' --dblist example_en_db/*.db
 
-Prepare corpora.json
-Prepare available_corpora.json
+cd webui
+
+# Prepare corpora.yaml
+
+#english_demo:
+#  paths: /path/to/example_en_db
+#  name: "Small English demo corpus"
+
+## Prepare corpus_groups.yaml
+
+#-
+#  name: "My dev treebanks"
+#  corpora: english_demo
+
 
 #Install nginx & install webui
 sudo apt-get install nginx
@@ -30,13 +44,12 @@ sudo apt-get install uwsgi-plugin-python
 
 #Start the the webservice
 
-Edit serve.py, add the host name
 sudo apt-get install uwsgi
 
-Create a socket:
+# Create a socket:
 uwsgi --plugin python --module serve --callable app --socket search.sock --pythonpath /home/ubuntu/dep_search/webui --processes 5 --master --harakiri 5000 --chmod-socket=666
 
-Add these lines into an enabled nginx site config:
+# Add these lines into an enabled nginx site config:
 
 location = /dep_search { rewrite ^ /dep_search/; }
 location /dep_search { try_files $uri @dep_search; }
@@ -48,4 +61,6 @@ location @dep_search {
   uwsgi_pass unix:/home/ubuntu/dep_search/webui/search.sock;
 }
 
-Restart nginx
+# Restart nginx
+
+######### Rest is TODO
