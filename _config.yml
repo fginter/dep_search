@@ -1,5 +1,5 @@
 # Setup
-name: "Dep_search"
+name: "dep_search"
 tagline: "Large-scale parsebank search tool"
 baseurl: ""
 
