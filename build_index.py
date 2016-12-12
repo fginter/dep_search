@@ -204,7 +204,7 @@ def fill_db(conn,src_data,stats):
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Train')
     parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
-    parser.add_argument('-p', '--prefix', required=True, default="trees", help='Prefix name of the database files. Default: %(default)s')
+    parser.add_argument('-p', '--prefix', default="trees", help='Prefix name of the database files. Default: %(default)s')
     parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
     parser.add_argument('--wipe', default=False, action="store_true", help='Wipe the target directory before building the index.')
     args = parser.parse_args()
