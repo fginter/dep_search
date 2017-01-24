@@ -55,7 +55,7 @@ The below command to start the application via uWSGI is in the `launch_webgui_vi
     --plugin python
     --module serve_depsearch
     --callable app
-    --socket /path/to/dep_search_webgui.sock
+    --socket /path/to/dep_search_serve/dep_search_webgui.sock
     --pythonpath /path/to/dep_search_serve
     --processes 5
     --master
@@ -73,7 +73,7 @@ command=/usr/bin/uwsgi
   --plugin python
   --module serve_depsearch
   --callable app
-  --socket /path/to/dep_search_webgui.sock
+  --socket /path/to/dep_search_serve/dep_search_webgui.sock
   --pythonpath /path/to/dep_search_serve
   --processes 5
   --master
@@ -99,7 +99,7 @@ This is all that should be needed as far as nginx goes:
 location /dep_search_webgui/ {
          rewrite /dep_search_webgui(.*) $1 break;
          include uwsgi_params;
-         uwsgi_pass unix:/full/path/to/dep_search_webgui.sock;
+         uwsgi_pass unix:/path/to/dep_search_serve/dep_search_webgui.sock;
          uwsgi_param SCRIPT_NAME /dep_search_webgui;
 }
 ```

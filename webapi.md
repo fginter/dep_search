@@ -82,8 +82,8 @@ The below command to start the application via uWSGI is in the `launch_via_uwsgi
   --plugin python
   --module serve_webapi
   --callable app
-  --socket /path/to/dep_search_webapi/webapi/dep_search_webapi.sock
-  --pythonpath /path/to/dep_search_webapi/webapi
+  --socket /path/to/dep_search/webapi/dep_search_webapi.sock
+  --pythonpath /path/to/dep_search/webapi
   --processes 5
   --master
   --harakiri 5000
@@ -99,18 +99,18 @@ command=/usr/bin/uwsgi
   --plugin python
   --module serve_webapi
   --callable app
-  --socket /path/to/dep_search_webapi/webapi/dep_search_webapi.sock
-  --pythonpath /path/to/dep_search_webapi/webapi
+  --socket /path/to/dep_search/webapi/dep_search_webapi.sock
+  --pythonpath /path/to/dep_search/webapi
   --processes 5
   --master
   --harakiri 5000
   --manage-script-name
   --chmod-socket=666
-directory=/home/ginter/online_live/dep_search_webapi/webapi
+directory=/path/to/dep_search/webapi
 user=ginter
 autostart=true
 autorestart=true
-stdout_logfile=/home/ginter/online_live/dep_search_webapi/webapi/dep_search_webapi.log
+stdout_logfile=/path/to/dep_search/webapi/dep_search_webapi.log
 redirect_stderr=true
 stopsignal=QUIT
 ```
@@ -125,7 +125,7 @@ This is all that should be needed as far as nginx goes:
 location /dep_search_webapi/ {
          rewrite /dep_search_webapi(.*) $1 break;
          include uwsgi_params;
-         uwsgi_pass unix:/full/path/to/dep_search_webapi.sock;
+         uwsgi_pass unix:/path/to/dep_search/webapi/dep_search_webapi.sock;
          uwsgi_param SCRIPT_NAME /dep_search_webapi;
 }
 ```
