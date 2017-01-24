@@ -13,16 +13,25 @@ For Ubuntu, these are available as following packages:
 * python-dev  
 * cython
 
-The webUI requires the python libraries flask and yaml, and for uWSGI based deployment uwsgi & uwsgi-python plugin. For Ubuntu, these are available as:  
+The webUI requires the python libraries flask, requests and yaml, and for uWSGI based deployment the uwsgi program and its python plugin. For Ubuntu, these are available as:  
 
 * uwsgi  
-* uwsgi-python-plugin  
+* uwsgi-plugin-python
 * python-flask
 * python-yaml
+* python-requests
+
+You also need a basic build environment (make, C compiler, ...):
+
+* build-essential
 
 ```
-sudo apt-get install libsqlite3-dev python-dev cython uwsgi uwsgi-python-plugin python-flask python-yaml
+sudo apt-get install build-essential libsqlite3-dev python-dev cython uwsgi uwsgi-plugin-python python-flask python-yaml python-requests
 ```
+
+# Python3
+
+The web application, but not (yet) the web API is also compatible with Python3. The support for Python3 for the web API is in the works.
 
 # Installation
 
@@ -43,6 +52,3 @@ cat example_en.conllu | python build_index.py --wipe -d example_en_db
 python query.py '_ <nsubj _' --dblist example_en_db/*.db
 ```
 
-# Full installation command log
-
-In the file [install_webui_into_clean_ubuntu.txt](https://github.com/fginter/dep_search/blob/master/install_webui_into_clean_ubuntu.txt) you can find all the required commands needed to install the software onto a clean, out-of-the-box Ubuntu Linux.
