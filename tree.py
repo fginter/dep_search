@@ -1,7 +1,8 @@
 import setlib.pytset as pytset
 import json
+import sys
 
-ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
+#ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
 class SymbolStats(object):
 
@@ -126,8 +127,8 @@ class Tree(object):
                 t.normlemmas[lnorm].add_item(idx)
             #
 
-            if cols[POS]!=u"_":
-                pos=cols[POS]
+            if cols[UPOS]!=u"_":
+                pos=cols[UPOS]
                 if pos not in t.tags:
                     t.tags[pos]=pytset.PyTSet(len(conll))
                 t.tags[pos].add_item(idx)
