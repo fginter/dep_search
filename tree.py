@@ -32,31 +32,77 @@ class SymbolStats(object):
 class Tree(object):
 
     @classmethod
+    def sanitize_conllu(cls,conllu):
+        """Removes tokens, fakes nulls as words"""
+        ID,FORM,LEMMA,UPOS,XPOS,FEAT,HEAD,DEPREL,DEPS,MISC=range(10)
+
+        newcols=[]
+        counter=1
+        repl={} #ID -> new ID
+        for cols in conllu:
+            if u"." in cols[ID]:
+                #nullnode
+                assert cols[ID] not in repl
+                repl[cols[ID]]=unicode(counter)
+                cols[ID]=unicode(counter)
+                if cols[FEAT]==u"_":
+                    cols[FEAT]=u"Nullnode=Nullnode"
+                else:
+                    cols[FEAT]+=u"|Nullnode=Nullnode"
+            else:
+                repl[cols[ID]]=unicode(counter)
+                cols[ID]=unicode(counter)
+            newcols.append(cols)
+            counter+=1
+        for cols in newcols:
+            if cols[HEAD]!=u"0" and cols[HEAD]!=u"_":
+                cols[HEAD]=repl[cols[HEAD]]
+            if cols[DEPS]!=u"_":
+                newdeps=[]
+                for g_dt in cols[DEPS].split(u"|"):
+                    g,dt=g_dt.split(u":",1)
+                    if g!=u"0":
+                        g=repl[g]
+                    newdeps.append(g+u":"+dt)
+                cols[DEPS]=u"|".join(newdeps)
+        return newcols
+                
+            
+    @classmethod
     def from_conll(cls,comments,conll,symb_stats):
         t=cls()
-        lines=[] #will accumulate here conll-u lines
+        lines=[cols[:] for cols in conll] #will accumulate here conll-u lines
+        assert len(lines[0])==10, "Only CoNLL-U supported"
+        try:
+            conll=cls.sanitize_conllu(conll)
+        except:
+            print lines
+            raise
         for idx,cols in enumerate(conll):
-            # convert second layer into conll-u
-            if len(cols)==10: #conllu
-                ID,FORM,LEMMA,POS,LANGPOS,FEAT,HEAD,DEPREL,DEPS,MISC=range(10)
-                lines.append(cols) #this is conll-u already
-                deps=cols[DEPS] #conll09 doesn't have this, so we have it in a variable
-            else:
-                #conll09 for old code compat
-                ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
-                heads,deprels=cols[HEAD].split(u","),cols[DEPREL].split(u",")
-                deps=[]
-                for index,(g,dtype) in enumerate(zip(heads,deprels)):
-                    if index==0:
-                        continue
-                    deps.append((int(g),dtype))
-                cols[HEAD]=heads[0]
-                cols[DEPREL]=deprels[0]
-                if deps:
-                    deps=u"|".join(unicode(g)+u":"+dtype for g,dtype in sorted(deps))
-                else:
-                    deps=u"_"
-                lines.append([cols[ID],cols[FORM],cols[LEMMA],cols[POS],cols[POS],cols[FEAT],cols[HEAD],cols[DEPREL],deps,u"_"])
+            ID,FORM,LEMMA,UPOS,XPOS,FEAT,HEAD,DEPREL,DEPS,MISC=range(10)
+        #     # convert second layer into conll-u
+        #     if len(cols)==10: #conllu
+        #         ID,FORM,LEMMA,POS,LANGPOS,FEAT,HEAD,DEPREL,DEPS,MISC=range(10)
+        #         lines.append(cols) #this is conll-u already
+        #         deps=cols[DEPS] #conll09 doesn't have this, so we have it in a variable
+        #     else:
+        #         #conll09 for old code compat
+        #         ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
+        #         heads,deprels=cols[HEAD].split(u","),cols[DEPREL].split(u",")
+        #         deps=[]
+        #         for index,(g,dtype) in enumerate(zip(heads,deprels)):
+        #             if index==0:
+        #                 continue
+        #             deps.append((int(g),dtype))
+        #         cols[HEAD]=heads[0]
+        #         cols[DEPREL]=deprels[0]
+        #         if deps:
+        #             deps=u"|".join(unicode(g)+u":"+dtype for g,dtype in sorted(deps))
+        #         else:
+        #             deps=u"_"
+        #         lines.append([cols[ID],cols[FORM],cols[LEMMA],cols[POS],cols[POS],cols[FEAT],cols[HEAD],cols[DEPREL],deps,u"_"])
+
+            #now I need to renumber the words to get null nodes accounted for
 
             #Add tokens and lemmas
             if cols[FORM] not in t.tokens:
@@ -106,8 +152,8 @@ class Tree(object):
                 t.add_rel(int(cols[HEAD])-1,idx,cols[DEPREL].replace("_","-"),len(conll))
                 symb_stats.symb(cols[DEPREL].replace("_","-"),"DTYPE",None)
                 t.add_rel(int(cols[HEAD])-1,idx,u"anyrel",len(conll))
-                if deps!=u"_":
-                    for dep in deps.split(u"|"):
+                if cols[DEPS]!=u"_":
+                    for dep in cols[DEPS].split(u"|"):
                         g,dtype=dep.split(u":",1)
                         t.add_rel(int(g)-1,idx,dtype.replace("_","-"),len(conll))
                         symb_stats.symb(dtype.replace("_","-"),"DTYPE",None)

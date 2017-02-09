@@ -111,7 +111,7 @@ def print_sent(r,idx,res_db,args):
     hit,hit_comment=get_data_from_db(res_db,idx)
     hit_lines=hit.splitlines()
     for x in sorted(r):
-        print "# visual-style\t%s\tbgColor:lightgreen"%(x+1)
+        print "# visual-style\t%s\tbgColor:lightgreen"%(hit_lines[x].split("\t",1)[0])
         print "# hittoken:\t"+hit_lines[x]
     if hit_comment:
         print hit_comment
