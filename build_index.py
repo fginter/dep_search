@@ -195,10 +195,20 @@ def fill_db(conn,src_data,stats):
             conn.execute('INSERT INTO rel VALUES(?,?,?,?)', [sent_idx,dtype,buffer(serialize_as_tset_array(len(sent),govs)),buffer(serialize_as_tset_array(len(sent),deps))])
         if sent_idx%10000==0:
             print str(datetime.now()), sent_idx
+            sys.stdout.flush()
         if sent_idx%10000==0:
             conn.commit()
     conn.commit()
     return counter
+
+def save_stats(stats):
+    try:
+        if os.path.exists(os.path.join(args.dir,"symbols.json")):
+            stats.update_with_json(os.path.join(args.dir,"symbols.json"))
+    except:
+        traceback.print_exc()
+    stats.save_json(os.path.join(args.dir,"symbols.json"))
+
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Train')
@@ -211,16 +221,16 @@ if __name__=="__main__":
     os.system("mkdir -p "+args.dir)
     if args.wipe:
         print >> sys.stderr, "Wiping target"
-        cmd="rm -f %s/*.db %s/symbols.json"%(args.dir,args.dir)
+        cmd="rm -f %s/*.db %s/*.db-journal %s/symbols.json"%(args.dir, args.dir,args.dir)
         print >> sys.stderr, cmd
         os.system(cmd)
 
-    stats=SymbolStats()
     src_data=read_conll(sys.stdin,args.max)
-        
+
     batch=500000
     counter=0
     while True:
+        stats=SymbolStats()
         db_name=args.dir+"/%s_%05d.db"%(args.prefix,counter)
         if os.path.exists(db_name):
             os.system("rm -f "+db_name)
@@ -230,13 +240,9 @@ if __name__=="__main__":
         filled=fill_db(conn,it,stats)
         if filled==0:
             os.system("rm -f "+db_name)
+            save_stats(stats)
             break
         build_indices(conn)
         conn.close()
         counter+=1
-    try:
-        if os.path.exists(os.path.join(args.dir,"symbols.json")):
-            stats.update_with_json(os.path.join(args.dir,"symbols.json"))
-    except:
-        traceback.print_exc()
-    stats.save_json(os.path.join(args.dir,"symbols.json"))
+        save_stats(stats)
