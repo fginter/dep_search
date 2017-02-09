@@ -55,7 +55,7 @@ class NodeInterpreter():
         if isinstance(self.node, SetNode_Token):
             #Tag, Lemma or Word
             db_orders = self.set_node_token_into_db_label()
-            if db_orders == None: import pdb;pdb.set_trace()
+            #if db_orders == None: import pdb;pdb.set_trace()
         name_dict = {}
         for dbo in db_orders:
             self.set_count += 1
@@ -99,16 +99,26 @@ class NodeInterpreter():
             dtype = self.node.dep_restriction[1:].split('@')[0].lstrip('!')
             
             if len(dtype) < 1:
-                dtype = 'anyrel' 
-            return_list.append(prechar + u'gov_a_' + dtype)
+                dtype = 'anyrel'
+
+            if dtype.startswith('lin'):
+                return_list.append(prechar + u'no_db_' + dtype)
+            else:
+                return_list.append(prechar + u'gov_a_' + dtype)
+
             return return_list
 
         if self.node.dep_restriction.startswith('<'):
 
             dtype = self.node.dep_restriction[1:].split('@')[0].lstrip('!')
             if len(dtype) < 1:
-                dtype = 'anyrel' 
-            return_list.append(prechar + u'dep_a_' + dtype)
+                dtype = 'anyrel'
+
+            if dtype.startswith('lin'):
+                return_list.append(prechar + u'no_db_' + dtype)
+            else:
+                return_list.append(prechar + u'dep_a_' + dtype)
+
             return return_list
 
 
@@ -168,9 +178,17 @@ class SetManager():
             #5. Do you need an output set, what is your output set called?
             self.node_needs[key]['own_output'], self.node_needs[key]['own_output_set'], self.node_needs[key]['own_output_set_type'] = ni.what_output_do_you_need()
 
-            set_and_array_labels.extend(self.node_needs[key]['db_sets_label'])
-            set_and_array_labels.extend(self.node_needs[key]['db_arrays_label'])
+            #set_and_array_labels.extend(self.node_needs[key]['db_sets_label'])
+            #set_and_array_labels.extend(self.node_needs[key]['db_arrays_label'])
+            for label in self.node_needs[key]['db_sets_label']:
+                if 'no_db' not in label:
+                    set_and_array_labels.append(label)
 
+            for label in self.node_needs[key]['db_arrays_label']:
+                if 'no_db' not in label:
+                    set_and_array_labels.append(label)
+
+        #print 'set_and_array_labels', set_and_array_labels
         #If nothing was found add a virtual node 'extra' just to add something into the db_query
         if len(set_and_array_labels) < 1:
             self.node_needs['extra'] = {'temp_sets': [], 'all_tokens': False, 'all_tokens_label': [], 'db_arrays_label': {u'!dep_a_anyrel': ['extra_array']}, 'db_sets': [], 'db_arrays': [u'!dep_a_anyrel'], 'db_sets_label': {}, 'own_output_set': '', 'own_output_set_type': '', 'own_output': False}
@@ -211,7 +229,10 @@ def get_cinit_function(set_manager, max_len=2048):
         for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
 
             for v in set_manager.node_needs[key]['db_arrays_label'][ikey]:
-                load_list_array.append((ikey, v))
+                if not ikey.strip('!').startswith('no_db_'):
+                    load_list_array.append((ikey, v))
+                else:
+                    temp_array_list.append(v)
 
         for ikey in set_manager.node_needs[key]['all_tokens_label']:
             temp_set_list.append(ikey)
@@ -436,12 +457,61 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
         output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
         #I'll find the name of the assigned array
         what_I_need_from_the_db = node_ni.deprel_node_into_db_label()
-
+        
         #Get the setname
         if not negated:
             db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]][0]
+            #o_name_db_set = db_set = set_manager.node_needs[node.node_id]['db_arrays_label'][what_I_need_from_the_db[0]][0]
             output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
             match_lines.append('self.' + output_set_name + '.copy(self.' + db_set + ')')
+
+            #We need linear order set
+            if what_I_need_from_the_db[0].strip('!').startswith('no_db_lin'):
+
+                the_int = 2
+                the_beg = 1
+                #TODO: reduce hackiness of this contraption!
+                try:
+                    the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
+                    the_beg = 1
+                except:
+                    #pass
+                    #the_int = 1
+                    try:
+                        if ';' in what_I_need_from_the_db[0]:
+
+                            the_int_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1]
+                            the_beg_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0]
+
+                            if len(the_int_str) < 1:
+                                #Get sentence_ln
+                                sentence_count_str = get_sentence_count_str(set_manager)
+                                the_int = 'self.' + sentence_count_str + '.tree_length'
+                            else:
+                                the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1])
+
+                            the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0])
+
+
+                        elif ':' in what_I_need_from_the_db[0]:
+
+                            the_int_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1]
+                            the_beg_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0]
+
+                            if len(the_int_str) < 1:
+                                #Get sentence_ln
+                                sentence_count_str = get_sentence_count_str(set_manager)
+                                the_int = 'self.' + sentence_count_str + '.tree_length'
+                            else:
+                                the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1])
+
+                            the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0])
+                    except:
+                        pass
+
+                print 'the_int,the_beg', the_int, the_beg
+
+                match_lines.append('self.' + output_set_name + '.make_lin_2(' + str(the_int) + ', ' + str(the_beg) + ')')
 
             if node.dep_restriction[-2:] == '@L':
                 match_lines.append('self.' + output_set_name + '.filter_direction(True)')
@@ -474,6 +544,76 @@ def generate_code_for_a_node(node, set_manager, node_dict, node_output_dict, tag
             db_set = db_array_for_use
             output_set_name = set_manager.node_needs[node.node_id]['own_output_set']
             match_lines.append('self.' + output_set_name + '.copy(self.' + anyrel_for_negation + ')')
+
+            match_lines.append('#' + str(what_I_need_from_the_db))
+
+
+            '''
+            if what_I_need_from_the_db[1].strip('!').startswith('no_db_lin'):
+
+                the_int = 1
+                #TODO: reduce hackiness of this contraption!
+                try:
+                    the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
+                except:
+                    the_int = 1
+            '''
+            #We need linear order set
+            if what_I_need_from_the_db[0].strip('!').startswith('no_db_lin'):
+
+                the_int = 2
+                the_beg = 1
+                #TODO: reduce hackiness of this contraption!
+                try:
+                    the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0])
+                    the_beg = 1
+                except:
+                    #pass
+                    #the_int = 1
+                    try:
+
+                        if ';' in what_I_need_from_the_db[0]:
+
+                            the_int_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1]
+                            the_beg_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0]
+
+                            if len(the_int_str) < 1:
+                                #Get sentence_ln
+                                sentence_count_str = get_sentence_count_str(set_manager)
+                                the_int = 'self.' + sentence_count_str + '.tree_length'
+                            else:
+                                the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[1])
+
+                            the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(';')[0])
+
+
+                        elif ':' in what_I_need_from_the_db[0]:
+
+                            the_int_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1]
+                            the_beg_str = what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0]
+
+                            if len(the_int_str) < 1:
+                                #Get sentence_ln
+                                sentence_count_str = get_sentence_count_str(set_manager)
+                                the_int = 'self.' + sentence_count_str + '.tree_length'
+                            else:
+                                the_int = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[1])
+
+                            the_beg = int(what_I_need_from_the_db[0].strip('!').split('_')[3].split('@')[0].split(':')[0])
+
+                    except:
+                        pass
+
+                print 'int_beg', the_int, the_beg
+
+                match_lines.append('self.' + output_set_name + '.make_lin_2(' + str(the_int) + ', ' + str(the_beg) + ')')
+
+                #sentence_count_str = get_sentence_count_str(set_manager)
+                #match_lines.append('self.' + db_set + '.set_length(self.' + sentence_count_str + '.tree_length)')
+                #match_lines.append('self.' + output_set_name + '.set_length(self.' + sentence_count_str + '.tree_length)')
+
+                #match_lines.append('self.' + db_set + '.make_lin(' + str(the_int) + ')')
+                #match_lines.append('self.' + output_set_name + '.make_lin(self.' + output_set_name + '.tree_length)')
 
             if node.dep_restriction[-2:] == '@L':
                 match_lines.append('self.' + db_set + '.filter_direction(True)')
@@ -712,15 +852,23 @@ def get_sentence_count_str(set_manager):
 
     for key in set_manager.node_needs.keys():
         for ikey in set_manager.node_needs[key]['db_sets_label'].keys():
+
+            if 'no_db' in ikey:
+                continue
+
             db_set = set_manager.node_needs[key]['db_sets_label'][ikey]
-            if ikey.startswith('!'):
+            if ikey.startswith('!') and 'no_db' not in ikey:
                 compulsory.append(db_set)
                 break
             else:
                 non_compulsory.append(db_set)
         for ikey in set_manager.node_needs[key]['db_arrays_label'].keys():
+
+            if 'no_db' in ikey:
+                continue
+
             db_set = set_manager.node_needs[key]['db_arrays_label'][ikey][0]
-            if ikey.startswith('!'):
+            if ikey.startswith('!') and 'no_db' not in ikey:
                 compulsory.append(db_set)
                 break
             else:

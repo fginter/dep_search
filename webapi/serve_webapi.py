@@ -7,6 +7,8 @@ import random
 import os.path
 import available_corpora
 
+DEFAULT_PORT=45678
+
 THISDIR=os.path.abspath(os.path.dirname(__file__))
 
 help_response="""\
@@ -89,8 +91,8 @@ def run_query():
     return resp
 
 if __name__=="__main__":
+    #DEFAULT_PORT set at the top of this file, defaults to 45678
     host='0.0.0.0'
-    port=45678
-    app.run(host=host, port=port, debug=True, use_reloader=True)
+    app.run(host=host, port=DEFAULT_PORT, debug=True, use_reloader=True)
 
 
