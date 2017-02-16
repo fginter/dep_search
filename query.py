@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import traceback
 import sys
 import os
 
@@ -273,10 +273,11 @@ def main(argv):
 
     if not args.keep_query:
         try:
-            os.remove(temp_file_name)
-            os.remove(temp_file_name[:-4] + '.cpp')
-            os.remove(temp_file_name[:-4] + '.so')
+            os.remove(query_folder+temp_file_name)
+            os.remove(query_folder+temp_file_name[:-4] + '.cpp')
+            os.remove(query_folder+temp_file_name[:-4] + '.so')
         except:
+            traceback.print_exc()
             pass
 
 
