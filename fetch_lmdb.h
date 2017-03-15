@@ -23,6 +23,7 @@ public:
     MDB_cursor *tdata_cursor; //The cursor to be used
 
     bool finished; //We are done, tree and tree_id do not contain anything reasonable
+    bool query_started;
     Tree *tree;
     uint32_t tree_id;
 

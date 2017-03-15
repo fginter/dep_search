@@ -60,6 +60,8 @@ class TSetArray {
         void deserialize(const void *data, int size);
         void deserialize(int s_length, const void *data, int size);
         void set_length(int tree_length);
+        void make_lin(int window);
+        void make_lin_2(int window, int begin);
         void filter_direction(bool direction);
 	void print_array();
 };

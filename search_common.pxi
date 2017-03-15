@@ -34,9 +34,17 @@ cdef extern from "tset.h" namespace "tset":
         void get_set(int index, TSet *result)
         void deserialize(const void *data, int size)
         void print_array()
-        void erase()
         void set_length(int tree_length)
         void copy(TSetArray *other)
+        void filter_direction(bool direction)
+        void make_lin(int window)
+        void make_lin_2(int window, int begin)
+
+        void extend_subtrees(TSetArray* other)
+        void add_arch(int a, int b)
+        TSet get_all_children(int id, TSet * other)
+
+
 
 cdef extern from "query_functions.h":
     void pairing(TSet *index_set, TSet *other_set, TSetArray *mapping, bool negated)
@@ -101,16 +109,22 @@ cdef class Search:  # base class for all searches
         cdef int rows=0
         cdef uint32_t * tree_id
 
-        err=db.get_next_fitting_tree()
-        if err or db.finished():
-            print >> sys.stderr, "No next result err=",err," db finished=", db.finished()
-            return -1
+        if True:#self.started:
+
+            err=db.get_next_fitting_tree()
+            if err or db.finished():
+                print >> sys.stderr, "No next result err=",err," db finished=", db.finished()
+                return -1
+
+        else:
+            self.started = True
 
         db.fill_sets(self.sets, self.set_ids, <unsigned char *>self.types, self.optional, self.set_size)
         self.initialize()
         result=self.exec_search()
 
         result_set = set()
+
         #Really + 1 ?  xxx check
         for x in range(result.tree_length + 1):
             if result.has_item(x):

@@ -1,6 +1,6 @@
 #ifndef _lmdb_store_h_
 #define _lmdb_store_h_
-
+#include <stdint.h>
 #include <lmdb.h>
 #include <sstream>
 uint32_t *binary_search(uint32_t what, uint32_t *beg, uint32_t *end);

@@ -1,6 +1,6 @@
 #ifndef __tree_lmdb_h__
 #define __tree_lmdb_h__
-
+#include <stdint.h>
 #include <lmdb.h>
 #include "setlib/tset.h"
 using namespace tset;

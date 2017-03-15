@@ -33,6 +33,7 @@ int LMDB_Fetch::begin_search(int len_sets, int len_arrays, uint32_t *lsets, uint
     val.mv_data=NULL;
 
     finished=false;
+    query_started=false;
     this->rarest = rarest;
     this->sets = lsets; //new uint32_t[len_sets];
     this->arrays= larrays; //new uint32_t[len_arrays];
@@ -108,9 +109,17 @@ int LMDB_Fetch::get_next_fitting_tree() {
     //so the k2t cursor is pointing at a tree not seen so far
     MDB_val key,tree_id_val,t_val;
     int err;
-    move_to_next_tree();
+    if (query_started){
+        move_to_next_tree();
+    }
+    else {
+    query_started=true;
+    }
+
     while (!finished) {
 	err=mdb_cursor_get(k2t_cursor,&key,&tree_id_val,MDB_GET_CURRENT);
+
+
 	//std::cerr << "In get_next_fitting_tree key is now " << *((uint32_t*)key.mv_data) << " and tid " << *((uint32_t*)tree_id_val.mv_data) << std::endl;
 	if (err || (*((uint32_t*)key.mv_data)!=rarest)) {
 	    //std::cerr << "In get_next_fitting_tree key is " << *((uint32_t*)key.mv_data) << " but rarest is set to " << rarest << std::endl;
@@ -126,6 +135,7 @@ int LMDB_Fetch::get_next_fitting_tree() {
 	//Now t_val points to serialized tree data
 	//Does it have all we need?
 	if (check_tree(t_val.mv_data)) { //YES!
+
 	    tree_id=*((uint32_t*)tree_id_val.mv_data);
 	    //the tree itself is now deserialized in tree, so that should be okay
 	    return 0;

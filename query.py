@@ -207,11 +207,14 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
             #The result set we've got already
             #Get the tree text:
             tree_text = db.get_tree_text()
-            tree_lines=tree_text.split(u"\n")
+            tree_lines=tree_text.split("\n")
             #Get the tree_id
             for r in res:
                 print "# visual-style	" + str(r + 1) + "	bgColor:lightgreen"
-                print "# hittoken:\t"+tree_lines[r] 
+                try:
+                    print "# hittoken:\t"+tree_lines[r] 
+                except:
+                    print '##', r
                 #hittoken once the tree is really here!
             #print db.get_current_tree_id()
             print tree_text

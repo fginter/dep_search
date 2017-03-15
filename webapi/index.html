@@ -1,0 +1,132 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{ SERVER_URL }}/css/bootstrap.css">
+        <link rel="stylesheet" href="{{ SERVER_URL }}/css/bootstrap-theme.css">
+        <link rel="stylesheet" href="{{ SERVER_URL }}/css/depsearch-main.css">
+
+	<!-- annotation visualization stuff --> 
+	<link rel="stylesheet" href="{{ SERVER_URL }}/css/jquery-ui-redmond.css">
+	<link rel="stylesheet" href="{{ SERVER_URL }}/css/annodoc-main.css">
+	<link rel="stylesheet" href="{{ SERVER_URL }}/css/style-vis.css">
+	<link rel="stylesheet" href="{{ SERVER_URL }}/css/depsearch.css">
+	<script type="text/javascript" src="js/ext/head.load.min.js"></script>
+	<!-- end annotation visualization stuff --> 
+
+        <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
+
+<style>
+    body {
+        padding-top: 0px;
+        
+    }
+
+</style>
+
+
+    </head>
+    <body>
+
+   <nav class="navbar navbar-inverse navbar-static-top">
+        <a class="navbar-brand" href="#">SETS: Scalable and Efficient Tree Search in Dependency Graphs
+   </a>
+   </nav>
+
+    <div class="container">
+
+      <form class="query-form" action="{{ SERVER_URL }}" method="GET">
+	<div class="form-group">
+<!-- 	  <label for="queryInput">Query</label> -->
+          <select id='db_sel'
+                  name="db"
+	          class="form-control btn btn-primary"
+		  style="display:inline; width:auto">
+	  {{ OPTIONS }}
+	  </select>
+	  <input id="queryInput" class="form-control"
+		 type="text" name="search"
+		 placeholder="Enter query (e.g. &quot;_ <nsubj _&quot;)"
+		 value="{{ QUERY }}">
+	  <button type="submit" class="btn btn-primary">Search!</button>
+        <p>
+	<a id='types_link' href="{{ SERVER_URL }}/types/{{ DBNAME }}">Show types</a>
+        <a class="Query Language" href="http://bionlp.utu.fi/searchexpressions-new.html">Query Language</a>
+        </p>
+
+	</div>
+      </form>
+
+      {{ ERROR }}
+
+      <hr>
+      <!-- Don't change the "CONTENT" comments or stuff will break. -->
+      <!-- CONTENT-START -->
+      <!-- CONTENT-END -->
+
+      <hr>
+      <footer>
+        <p>&copy; University of Turku 2015</p>
+      </footer>
+    </div> <!-- /container -->        
+    
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.2.min.js"><\/script>')</script>
+      <script src="js/vendor/bootstrap.min.js"></script>
+      
+      <script src="js/main.js"></script>
+
+<!-- annotation visualization stuff --> 
+<script type="text/javascript">
+    var root = '';
+    head.js(
+        // External libraries
+        root + 'js/ext/jquery.min.js',
+        root + 'js/ext/jquery.svg.min.js',
+        root + 'js/ext/jquery.svgdom.min.js',
+        root + 'js/ext/jquery-ui.min.js',
+        root + 'js/ext/waypoints.min.js',
+        // brat helper modules
+        root + 'js/brat/configuration.js',
+        root + 'js/brat/util.js',
+        root + 'js/brat/annotation_log.js',
+        root + 'js/ext/webfont.js',
+        // brat main modules
+        root + 'js/brat/dispatcher.js',
+        root + 'js/brat/url_monitor.js',
+        root + 'js/brat/visualizer.js',
+        // external parsing libraries
+        root + 'js/ext/conllu.js/conllu.js',
+        // annotation documentation support
+        root + 'js/local/annodoc.js',
+        // project-specific collection data
+        root + 'js/local/collections.js',
+        // project-specific configuration
+        root + 'js/local/config.js'
+    );
+
+    var webFontURLs = [
+        root + 'static/fonts/PT_Sans-Caption-Web-Regular.ttf',
+        root + 'static/fonts/Liberation_Sans-Regular.ttf'
+    ];
+
+    head.ready(function() {
+        // mark current collection (filled in by Jekyll)
+        Collections.listing['_current'] = '{{ page.collection }}';
+
+	// performs all embedding and support functions
+	Annodoc.activate(Config.bratCollData, Collections.listing);
+    });
+</script>
+<!-- end annotation visualization stuff -->
+<script>
+$("#types_link").attr("href", "{{ SERVER_URL }}/types/" + $("#db_sel option:selected").text())
+$("#db_sel").change(function() { $("#types_link").attr("href", "{{ SERVER_URL }}/types/" + $("#db_sel option:selected").text())/* do something here */ });
+</script>
+
+    </body>
+</html>

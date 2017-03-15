@@ -1,0 +1,25 @@
+/* ==========================================================================
+   Author's custom styles
+   ========================================================================== */
+
+body {
+  padding-top: 40px;
+  padding-bottom: 0px;
+}
+
+@media screen and (min-width: 768px) {
+  .jumbotron h1,
+  .jumbotron .h1 {
+    font-size: 48px;
+  }
+}
+
+.query-form {
+  padding-top: 30px;
+  padding-bottom: 20px;
+}
+
+#queryInput {
+  display: inline;
+  max-width: 80%;
+}

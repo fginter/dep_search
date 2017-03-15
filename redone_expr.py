@@ -237,11 +237,14 @@ tokens=('TEXT',    #/..../
         'EQ',
         'SE',
         'ANYTOKEN',
-        'ECOM')  #_
+        'ECOM',
+        'XDOT',
+        'BGN',
+        'END')  #_
 
 #Here's regular expressions for the tokens defined above
 t_TEXT = ur'((?!(->|\+|&|\(|\)|\||==|<|>|"|\s)).)+'
-t_DEPOP = ur'(<|>)([^="<>_()&|\s]+)?'
+t_DEPOP = ur'(<|>)([^="<>()&|\s]+)?'
 
 def t_ECOM(t):
     ur'{[^}]+}'
@@ -283,6 +286,19 @@ def t_PLUS(t):
     ur"\+"
     return t
 
+def t_XDOT(t):
+    ur"[.]{1}"
+    return t
+
+def t_BGN(t):
+    ur"\^"
+    return t
+
+def t_END(t):
+    ur"\$"
+    return t
+
+
 def t_ANYTOKEN(t):
      ur"_"
      return t
@@ -298,7 +314,7 @@ def t_error(t):
 # the grammar rules are the comment strings of the functions
 
 #Main 
-precedence = (('left','PLUS'),('left','EQ'),('left','SE'),('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left', 'ECOM'), ('left','TEXT'))
+precedence = (('left','PLUS'),('left','EQ'),('left','SE'),('left','DEPOP'),('left','OR'),('left','AND'),('left','NEG'), ('left', 'ECOM'), ('left','TEXT'), ('right', 'XDOT'), ('left', 'BGN'), ('left', 'END'))
 
 def p_error(t):
     if t==None:
@@ -315,6 +331,19 @@ def p_top(t):
 
 #  ( expression )
 #  _
+
+def p_bgn(t):
+    u'''setnode : BGN setnode'''
+    t[0] = SetNode_Dep(t[2], SetNode_Token('_'), DeprelNode_Not(DeprelNode('<lin@L')))
+
+
+def p_end(t):
+    u'''setnode : setnode END'''
+    t[0] = SetNode_Dep(t[1], SetNode_Token('_'), DeprelNode_Not(DeprelNode('<lin@R')))
+
+def p_dot(t):
+    u'''setnode : tokendef XDOT setnode'''
+    t[0] = SetNode_Dep(t[1], t[3], DeprelNode('<lin@R'))
 
 def p_ecomxpr(t):
     u'''setnode : setnode ECOM'''
@@ -352,7 +381,10 @@ def p_exprp_d(t):
 
 def p_exprp2(t):
     u'''setnode : tokendef'''
+    #if isinstance(BaseNode):
     t[0]=t[1]  #if tokendef returns a Node(), this will also return a Node()
+    #else:
+    #    p_exprp3(t)    
 
 def p_exprp5(t):
     u'''depnode : depdef'''
