@@ -1,3 +1,4 @@
+import pysolr
 import gzip
 import sys
 import cPickle as pickle
@@ -93,6 +94,7 @@ if __name__=="__main__":
         cmd="rm -f %s/*.mdb %s/set_dict.pickle"%(args.dir,args.dir)
         print >> sys.stderr, cmd
         os.system(cmd)
+        pysolr.Solr(args.solr,timeout=10000000).delete(q="*:*")
 
     solr_idx=solr_index.SolrIDX(args)
         
@@ -137,10 +139,11 @@ if __name__=="__main__":
             solr_idx.new_doc(doc_url,u"fi")
         tree_id=solr_idx.add_to_idx(sent)
         #storing
-        #for flag_number in set_indexes:
-            #db.store_tree_flag_val(tree_id, flag_number)
-        #for flag_number in arr_indexes:
-            #db.store_tree_flag_val(tree_id, flag_number)
+        ### Comment out the four lines below when ready to use solr
+        for flag_number in set_indexes:
+            db.store_tree_flag_val(tree_id, flag_number)
+        for flag_number in arr_indexes:
+            db.store_tree_flag_val(tree_id, flag_number)
         db.store_tree_data(tree_id, blob, len(blob))#sys.getsizeof(blob))
     else:
         solr_idx.commit(force=True) #WHatever remains
