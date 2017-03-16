@@ -15,6 +15,7 @@ import itertools
 import py_tree_lmdb
 import py_store_lmdb
 import binascii 
+import solr_index
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -67,6 +68,15 @@ def serialize_as_tset_array(tree_len,sets):
     res=("".join(indices))
     return res
 
+doc_url_re=re.compile(r'^###C:<doc id=.+url="(.*?)"')
+def get_doc_url(comments):
+    for c in comments:
+        match=doc_url_re.match(c)
+        if match:
+            return match.group(1)
+    else:
+        return None
+    
 if __name__=="__main__":
     import argparse
 
@@ -74,6 +84,7 @@ if __name__=="__main__":
     parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
     parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
     parser.add_argument('--wipe', default=False, action="store_true", help='Wipe the target directory before building the index.')
+    parser.add_argument('--solr', default="http://localhost:8983/solr/dep_search",help='Solr url. default: %(default)s')
     args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     os.system("mkdir -p "+args.dir)
@@ -83,6 +94,8 @@ if __name__=="__main__":
         print >> sys.stderr, cmd
         os.system(cmd)
 
+    solr_idx=solr_index.SolrIDX(args)
+        
     src_data=read_conll(sys.stdin, args.max)
     set_dict={}
     lengths=0
@@ -103,9 +116,9 @@ if __name__=="__main__":
 
     print
     print
-    for sent,comments in src_data:
-        if (tree_id+1)%10000 == 0:
-            print "At tree ", tree_id+1
+    for counter,(sent,comments) in enumerate(src_data):
+        if (counter+1)%10000 == 0:
+            print "At tree ", counter+1
             sys.stdout.flush()
         s=py_tree_lmdb.Py_Tree()
         blob, form =s.serialize_from_conllu(sent,comments,set_dict) #Form is the struct module format for the blob, not used anywhere really
@@ -119,13 +132,19 @@ if __name__=="__main__":
         arr_indexes = struct.unpack('=' + str(arr_cnt[0]) + 'I', blob[6+set_cnt[0]*4:6+set_cnt[0]*4+arr_cnt[0]*4])
         setarr_count.update(set_indexes + arr_indexes)
 
+        doc_url=get_doc_url(comments)
+        if doc_url is not None:
+            solr_idx.new_doc(doc_url,u"fi")
+        tree_id=solr_idx.add_to_idx(sent)
         #storing
-        for flag_number in set_indexes:
-            db.store_tree_flag_val(tree_id, flag_number)
-        for flag_number in arr_indexes:
-            db.store_tree_flag_val(tree_id, flag_number)
+        #for flag_number in set_indexes:
+            #db.store_tree_flag_val(tree_id, flag_number)
+        #for flag_number in arr_indexes:
+            #db.store_tree_flag_val(tree_id, flag_number)
         db.store_tree_data(tree_id, blob, len(blob))#sys.getsizeof(blob))
-        tree_id+=1
+    else:
+        solr_idx.commit(force=True) #WHatever remains
+
 
     print "Average tree length:", lengths/float(counter)
     print "Length of set dict: ", len(set_dict)
