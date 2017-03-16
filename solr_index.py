@@ -8,16 +8,18 @@ class SolrIDX(object):
 
     def __init__(self,args):
         self.documents=[] # List of documents to be pushed into solr at the next convenient occasion
-        self.batch_size=10
+        self.batch_size=10000
         self.tree_count=0
         self.solr_url=args.solr
         self.current_id=0
+        self.url=u"unknown"
+        self.lang=u"unknown"
         
     def commit(self,force=False):
         if force or len(self.documents)>self.batch_size:
             try:
                 s=pysolr.Solr(self.solr_url,timeout=10)
-                self.tree_count+=sum(len(d[u"_childDocuments_"]) for d in self.documents)
+                self.tree_count+=len(self.documents) #sum(len(d[u"_childDocuments_"]) for d in self.documents)
                 print >> sys.stderr, self.tree_count, "trees in Solr"
                 s.add(self.documents)
                 self.documents=[]
@@ -34,7 +36,9 @@ class SolrIDX(object):
         return self.current_id
         
     def new_doc(self,url,lang):
-        self.documents.append({u"id":self.next_id(),u"url":url,u"lang":lang,u"_childDocuments_":[]})
+        self.url=url
+        self.lang=lang
+        #self.documents.append({u"id":self.next_id(),u"url":url,u"lang":lang,u"_childDocuments_":[]})
         
     def add_to_idx(self, conllu):
         """ 
@@ -78,11 +82,13 @@ class SolrIDX(object):
             d[u"feats"]=list(feats)
         if relations:
             d[u"relations"]=list(relations)
+        d[u"url"]=self.url
+        d[u"lang"]=self.lang
 
-        if not self.documents:
-            self.new_doc(u"unknown",u"unknown")
+        #if not self.documents:
+        #    self.new_doc(u"unknown",u"unknown")
 
-        self.documents[-1][u"_childDocuments_"].append(d)
-
+        #self.documents[-1][u"_childDocuments_"].append(d)
+        self.documents.append(d)
         self.commit()
         return d[u"id"]
