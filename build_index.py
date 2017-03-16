@@ -94,7 +94,7 @@ if __name__=="__main__":
         cmd="rm -f %s/*.mdb %s/set_dict.pickle"%(args.dir,args.dir)
         print >> sys.stderr, cmd
         os.system(cmd)
-        pysolr.Solr(args.solr,timeout=10000000).delete(q="*:*")
+        #pysolr.Solr(args.solr,timeout=10000000).delete(q="*:*")
 
     solr_idx=solr_index.SolrIDX(args)
         
