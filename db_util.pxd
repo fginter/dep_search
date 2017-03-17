@@ -46,6 +46,9 @@ cdef extern from "fetch_lmdb.h":
         Tree *tree
         bool finished
 
+        uint32_t* tree_ids
+        int tree_ids_count
+
         uint32_t* count
         uint32_t* tag_id
 

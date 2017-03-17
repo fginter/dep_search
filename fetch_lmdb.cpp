@@ -14,6 +14,8 @@
 LMDB_Fetch::LMDB_Fetch(){
 
     tree = new Tree();
+    tree_ids=NULL;
+    tree_ids_count=0;
 }
 
 

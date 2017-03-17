@@ -49,23 +49,26 @@ cdef class DB:
                 terms.append(u'+words:"%s"'%match.group(3))
         qry=u" ".join(terms)
         #### XXX TODO How many rows?
-        r=requests.get(solr+"/select",params={u"q":qry,u"wt":u"csv",u"rows":50,u"fl":u"id",u"sort":u"id asc"})
-        rows=r.text.count(u"\n")-1 #how many lines? minus one header line
-        cdef uint32_t *id_array=<uint32_t *>malloc(rows*sizeof(uint32_t))
+        r=requests.get(solr+"/select",params={u"q":qry,u"wt":u"csv",u"rows":500000,u"fl":u"id",u"sort":u"id asc"})
+        row_count=r.text.count(u"\n")-1 #how many lines? minus one header line
+        cdef uint32_t *id_array=<uint32_t *>malloc(row_count*sizeof(uint32_t))
         r_txt=StringIO.StringIO(r.text)
         col_name=r_txt.next() #column name
         assert col_name==u"id\n", repr(col_name)
         for idx,id in enumerate(r_txt):
-            assert idx<rows, (idx,rows)
+            assert idx<row_count, (idx,row_count)
             id_array[idx]=int(id)
-        print "Hits from solr:", rows
-            
+        print "Hits from solr:", row_count
+        self.thisptr.tree_ids=id_array
+        self.thisptr.tree_ids_count=row_count
+
         #for idx in range(rows):
         #    print id_array[idx],
         #print
         
         
     #Here's the modified begin_search, pretty simple changes, huh?
+    #XXX TODO Need solr address here
     cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items):
 
         #I have no idea if non_compulsory items provides any value, but its here nonetheless

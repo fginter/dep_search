@@ -25,7 +25,7 @@ public:
 
     MDB_cursor *k2t_cursor; //The cursor to be used
     MDB_cursor *tdata_cursor; //The cursor to be used
-
+    
     bool finished; //We are done, tree and tree_id do not contain anything reasonable
     bool query_started;
     Tree *tree;
@@ -37,12 +37,14 @@ public:
     int len_arrays;
     uint32_t rarest; //this is the key we iterate over
 
+    uint32_t *tree_ids; //solr fills this in db_util.pyx
+    int tree_ids_count;
+    
     uint32_t * count;
     uint32_t * tag_id;
 
     uint32_t get_tag_id();
     uint32_t get_count();
-
 
     LMDB_Fetch();
 
