@@ -55,7 +55,7 @@ cdef class Py_Tree:
         self.thisptr.deserialize(<void *>binary_blob)
         #print self.thisptr.zipped_tree_text_length
 
-    def serialize_from_conllu(self, lines, comments, set_dict):
+    def serialize_from_conllu(self, lines, comments, db_store, db_get):
         #this we need to save
         tree_data={"comments":comments,
                    "tokens":list(l[FORM] for l in lines),
@@ -74,21 +74,39 @@ cdef class Py_Tree:
         for t_idx,line in enumerate(lines):
             for tag in [u"p_"+line[UPOS],u"f_"+line[FORM],u"l_"+line[LEMMA]]+line[FEAT].split(u"|"):
                 if tag[2:]!=u"_":
-                    set_id=set_dict.setdefault(tag,len(set_dict))
+
+                    #Add tag into the db
+                    db_store.store_a_vocab_item(tag)
+                    set_id = db_store.get_id_for(tag)
+
+                    #set_id=set_dict.setdefault(tag,len(set_dict))
+
+
                     token_sets.setdefault(set_id,set()).add(t_idx)
             if line[DEPREL]!=u"_":
                 for gov,dep,dtype in [(int(line[HEAD])-1,t_idx, line[DEPREL])]:
                     if gov==-1:
                         continue
                     #TODO: DEPS field
-                    set_id_g=set_dict.setdefault(u"g_"+dtype,len(set_dict))
-                    arrays.setdefault(set_id_g,set()).add((gov,dep))
-                    set_id_g=set_dict.setdefault(u"g_anyrel",len(set_dict))
+
+                    db_store.store_a_vocab_item(u"g_"+dtype)
+                    set_id_g = db_store.get_id_for(u"g_"+dtype)
+                    #set_id_g=set_dict.setdefault(u"g_"+dtype,len(set_dict))
                     arrays.setdefault(set_id_g,set()).add((gov,dep))
 
-                    set_id_d=set_dict.setdefault(u"d_"+dtype,len(set_dict))
+                    db_store.store_a_vocab_item(u"g_anyrel")
+                    set_id_g = db_store.get_id_for(u"g_anyrel")
+                    #set_id_g=set_dict.setdefault(u"g_anyrel",len(set_dict))
+                    arrays.setdefault(set_id_g,set()).add((gov,dep))
+
+                    db_store.store_a_vocab_item(u"d_"+dtype)
+                    set_id_d = db_store.get_id_for(u"d_"+dtype)
+                    #set_id_d=set_dict.setdefault(u"d_"+dtype,len(set_dict))
                     arrays.setdefault(set_id_d,set()).add((dep,gov))
-                    set_id_d=set_dict.setdefault(u"d_anyrel",len(set_dict))
+
+                    db_store.store_a_vocab_item(u"g_anyrel")
+                    set_id_d = db_store.get_id_for(u"g_anyrel")
+                    #set_id_d=set_dict.setdefault(u"d_anyrel",len(set_dict))
                     arrays.setdefault(set_id_d,set()).add((dep,gov))
 
         #Produces the packed map data

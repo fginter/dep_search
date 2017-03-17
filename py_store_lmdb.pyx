@@ -1,6 +1,9 @@
 # distutils: language = c++
 # distutils: sources = store_lmdb.cpp
-# distutils: libraries = lmdb 
+# distutils: libraries = lmdb
+
+import ctypes
+from libc.stdint cimport uint32_t
 cdef class Py_LMDB:
     #cdef LMDB *thisptr ## defined in .pxd
 
@@ -37,4 +40,11 @@ cdef class Py_LMDB:
     def store_a_vocab_item(self, unicode key):
         cdef bytes key8=key.encode("utf-8")
         cdef char* c_string=key8
-        self.thisptr.store_a_vocab_item(c_string, len(key8))        
+        self.thisptr.store_a_vocab_item(c_string, len(key8))
+
+    cpdef uint32_t get_id_for(self, unicode key):
+        cdef bytes key8=key.encode("utf-8")
+        cdef char* c_string=key8
+        return self.thisptr.get_id_for(c_string, len(key8))
+
+      

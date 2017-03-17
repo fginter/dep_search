@@ -17,6 +17,7 @@ import py_tree_lmdb
 import py_store_lmdb
 import binascii 
 import solr_index
+import db_util
 
 ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
 
@@ -105,16 +106,15 @@ if __name__=="__main__":
     db = py_store_lmdb.Py_LMDB()
     db.open(args.dir)
     db.start_transaction()
+
+    xdb=db_util.DB()
+    xdb.open(args.dir)
+
     tree_id=0
     from collections import Counter
     setarr_count = Counter([])
 
-    try:
-        inf = open(args.dir+"/"+'set_dict.pickle','rb')
-        set_dict, setarr_count = pickle.load(inf)
-        inf.close()
-    except:
-        pass
+
 
     print
     print
@@ -123,7 +123,7 @@ if __name__=="__main__":
             print "At tree ", counter+1
             sys.stdout.flush()
         s=py_tree_lmdb.Py_Tree()
-        blob, form =s.serialize_from_conllu(sent,comments,set_dict) #Form is the struct module format for the blob, not used anywhere really
+        blob, form =s.serialize_from_conllu(sent,comments,db, xdb) #Form is the struct module format for the blob, not used anywhere really
 
         s.deserialize(blob)
         lengths+=len(blob)
@@ -150,10 +150,6 @@ if __name__=="__main__":
 
 
     print "Average tree length:", lengths/float(counter)
-    print "Length of set dict: ", len(set_dict)
     db.finish_indexing()
-    print "Most_common(10)", setarr_count.most_common(10)
-    out = open(args.dir+"/"+'set_dict.pickle','wb')
-    pickle.dump([set_dict, setarr_count], out)
-    out.close()
+    xdb.close()
 

@@ -123,12 +123,30 @@ int LMDB_Store::finish_indexing() {
 
 //Store a new id
 
+uint32_t LMDB_Store::get_id_for(char *key_data, int key_size) {
+
+    MDB_val key;
+    MDB_val value;
+
+    MDB_val temp_value;
+    temp_value.mv_data=NULL;
+    temp_value.mv_size = 0;
+
+    key.mv_size=key_size;
+    key.mv_data=(void*) key_data;
+
+    value.mv_size=sizeof(uint32_t);
+    uint32_t t_idx_copy=t_idx;
+    value.mv_data = &t_idx_copy;
+    
+    int xrr = mdb_get(txn,db_tk2id,&key,&temp_value);
+    if (xrr) {
+        report("Failed to get id(), that's bad!:",xrr);
+        }
+    return *((uint32_t *)temp_value.mv_data);
+}
+
 int LMDB_Store::store_a_vocab_item(char *key_data, int key_size) {
-
-    //for (int i=0;i<key_size;i++){ 
-    //    std::cerr << *((int*)key_data + i) << std::endl;
-    //}
-
 
     MDB_val key;
     MDB_val value;
@@ -151,6 +169,7 @@ int LMDB_Store::store_a_vocab_item(char *key_data, int key_size) {
             report("Failed to cput(), that's bad!:",err);
         }
 
+        /*
         uint32_t i_value_count;
         i_value_count = 0;
         MDB_val value_count;
@@ -165,7 +184,7 @@ int LMDB_Store::store_a_vocab_item(char *key_data, int key_size) {
         if (err) {
 	        report("Failed to put init count, that's bad!:",err);
 	    return err;
-        } 
+        } */
 
         t_idx++;
     }

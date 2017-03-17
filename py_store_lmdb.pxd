@@ -1,3 +1,6 @@
+from libcpp cimport bool
+from libc.stdint cimport uint16_t
+from libc.stdint cimport uint32_t
 cdef extern from "store_lmdb.h":
     cdef cppclass LMDB_Store:
         int open_db(const char *name)
@@ -10,6 +13,8 @@ cdef extern from "store_lmdb.h":
         int store_tree_flag_val(unsigned int tree_id, unsigned int flag_number)
         int incerement_a_vocab_item_count(void *key_data, int key_size)
         int store_a_vocab_item(void *key_data, int key_size)
+        uint32_t get_id_for(char *key_data, int key_size)
 
 cdef class Py_LMDB:
     cdef LMDB_Store *thisptr
+    cpdef uint32_t get_id_for(self, unicode key)
