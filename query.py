@@ -189,7 +189,7 @@ def get_url(comments):
             return c.split(u":",1)[1].strip()
     return None
 
-def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, set_count):
+def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict, set_count):
     start = time.time()
     db=db_util.DB()
     db.open(solr_url)
@@ -240,7 +240,7 @@ def main(argv):
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
     parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/pb-10M/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
-    parser.add_argument('-s', '--solr', default=None, help='Solr url. Default: STDOUT.')
+    parser.add_argument('-s', '--solr', default="http://localhost:8983/solr/dep_search", help='Solr url. Default: %(default)s')
     parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
@@ -316,11 +316,11 @@ def main(argv):
     for d in dbs:
         print >> sys.stderr, 'querying' ,d
 
-        inf = open(d.rstrip('/') + '/set_dict.pickle','rb')
-        set_dict, set_count = pickle.load(inf)
-        inf.close()
+        #inf = open(d.rstrip('/') + '/set_dict.pickle','rb')
+        #set_dict, set_count = pickle.load(inf)
+        #inf.close()
 
-        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context, set_dict, set_count)
+        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)#, set_dict, set_count)
         #if total_hits >= args.max and args.max > 0:
         #    break
     print >> sys.stderr, "Total number of hits:",total_hits

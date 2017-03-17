@@ -1,3 +1,4 @@
+
 from libcpp cimport bool
 from libc.stdint cimport uint16_t
 from libc.stdint cimport uint32_t
@@ -63,6 +64,7 @@ cdef class DB:
     cpdef open(self, solr_url)
     cpdef close(self)
 
+    cpdef get_ids_from_solr(self,extras_dict, compulsory_items,solr)
     cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items)
     cpdef int get_next_fitting_tree(self)
     

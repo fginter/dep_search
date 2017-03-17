@@ -15,7 +15,11 @@ import struct
 import json
 import zlib
 import sys
+import requests
+import re
+import StringIO
 
+field_re=re.compile(ur"^(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 cdef class DB:
 
     def __cinit__(self):
@@ -30,6 +34,37 @@ cdef class DB:
         print 'closing!'
         #self.thisptr.close()
 
+    cpdef get_ids_from_solr(self,extras_dict, compulsory_items,solr):
+        terms=[]
+        for c in compulsory_items:
+            match=field_re.match(c)
+            assert match, ("Not a known field description", c)
+            if match.group(1) in (u"gov",u"dep"):
+                terms.append(u'+relations:"%s"'%match.group(3))
+            elif match.group(1)==u"tag":
+                terms.append(u'+feats:"%s"'%match.group(3))
+            elif match.group(1)==u"lemma":
+                terms.append(u'+lemmas:"%s"'%match.group(3))
+            elif match.group(1)==u"token":
+                terms.append(u'+words:"%s"'%match.group(3))
+        qry=u" ".join(terms)
+        #### XXX TODO How many rows?
+        r=requests.get(solr+"/select",params={u"q":qry,u"wt":u"csv",u"rows":50,u"fl":u"id",u"sort":u"id asc"})
+        rows=r.text.count(u"\n")-1 #how many lines? minus one header line
+        cdef uint32_t *id_array=<uint32_t *>malloc(rows*sizeof(uint32_t))
+        r_txt=StringIO.StringIO(r.text)
+        col_name=r_txt.next() #column name
+        assert col_name==u"id\n", repr(col_name)
+        for idx,id in enumerate(r_txt):
+            assert idx<rows, (idx,rows)
+            id_array[idx]=int(id)
+        print "Hits from solr:", rows
+            
+        #for idx in range(rows):
+        #    print id_array[idx],
+        #print
+        
+        
     #Here's the modified begin_search, pretty simple changes, huh?
     cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items):
 
@@ -40,6 +75,7 @@ cdef class DB:
 
         #This, I guess, is the place in which the list of tree_ids will appear.
 
+        self.get_ids_from_solr(extras_dict,compulsory_items,"http://localhost:8983/solr/dep_search")
         '''
     	#array for sets
         cdef uint32_t *sets_array = <uint32_t *>malloc(len(sets) * sizeof(uint32_t))
