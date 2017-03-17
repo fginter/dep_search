@@ -47,14 +47,14 @@ int LMDB_Fetch::begin_search(int len_sets, int len_arrays, uint32_t *lsets, uint
     // 	arrays[i]=larrays[i];
     // }
 
-    std::cerr << "Begin search" << std::endl;
+    //std::cerr << "Begin search" << std::endl;
     for (int i=0; i<this->len_sets; i++) {
-	std::cerr << "  set " << this->sets[i] << std::endl;
+	//std::cerr << "  set " << this->sets[i] << std::endl;
     }
     for (int i=0; i<this->len_arrays; i++) {
-	std::cerr << "  array " << this->arrays[i] << std::endl;
+	//std::cerr << "  array " << this->arrays[i] << std::endl;
     }
-    std::cerr << "Rarest " << this->rarest << std::endl;
+    //std::cerr << "Rarest " << this->rarest << std::endl;
     
     
     err=mdb_cursor_get(k2t_cursor,&key,&val,MDB_SET);
@@ -63,7 +63,7 @@ int LMDB_Fetch::begin_search(int len_sets, int len_arrays, uint32_t *lsets, uint
     }
     else if (err==MDB_NOTFOUND) {
 	// Not a single instance in the db!
-	std::cerr << "Initial get failed" << std::endl;
+	//std::cerr << "Initial get failed" << std::endl;
 	finished=true;
 	return 0;
     }
@@ -100,6 +100,64 @@ int LMDB_Fetch::move_to_next_tree() {
 	return err;
     }
 }
+
+
+
+int LMDB_Fetch::get_id_for(char *key_data, int key_size) {
+
+    MDB_val key;
+    MDB_val value;
+    key.mv_size=key_size;
+    key.mv_data=(void*)key_data;
+
+    //for (int i=0;i<key_size;i++){ 
+    //    std::cerr << ((char*)key_data)[i];
+    //}
+    //std::cerr << key_size;
+    //std::cerr << "\n";
+
+    //Get the count
+    int err = mdb_get(txn, db_tk2id, &key, &value);
+    if (err) {
+	report("Failed to xget(), that's bad!:",err);
+	return err;
+    }
+    //std::cerr << "This actually worked!" << std::endl;    
+    this->tag_id = (uint32_t*)value.mv_data;
+}
+
+
+uint32_t LMDB_Fetch::get_tag_id(){
+
+return *(this->tag_id);
+
+}
+
+
+uint32_t LMDB_Fetch::get_count(){
+
+return *(this->count);
+
+}
+
+int LMDB_Fetch::get_count_for(unsigned int q_id) {
+
+    MDB_val key;
+    MDB_val value;
+    key.mv_size=sizeof(uint32_t);
+    key.mv_data=&q_id;
+
+    //Get the count
+    int err = mdb_get(txn, db_id2c, &key, &value);
+    if (err) {
+	report("Failed to get(), that's bad!:",err);
+	return err;
+    }    
+    this->count = (uint32_t*)value.mv_data;
+}
+
+
+
 
 //sets tree and tree_id to the next fitting tree, returns 0 and .finished=false
 //returns 0 and sets .finished=true if nothing found
@@ -169,7 +227,7 @@ int LMDB_Fetch::open(const char *name) {
         report("Failed to set env size:",err);
         return err;
     }
-    err=mdb_env_set_maxdbs(mdb_env,2); //to account for the two open databases
+    err=mdb_env_set_maxdbs(mdb_env,6); //to account for the two open databases
     if (err) {
         report("Failed to set maxdbs:",err);
         return err;
@@ -194,6 +252,22 @@ int LMDB_Fetch::open(const char *name) {
         report("Failed to open k2t DBI:",err);
         return err;
     }
+
+    //New stuff
+    err=mdb_dbi_open(txn,"tk2id",0,&db_tk2id); //integer key, integer tree numbers as values
+    if (err) {
+	report("Failed to open tk2id DBI:",err);
+	return err;
+    }
+
+    err=mdb_dbi_open(txn,"id2c",MDB_INTEGERKEY,&db_id2c); //integer key, integer tree numbers as values
+    if (err) {
+	report("Failed to open id2c DBI:",err);
+	return err;
+    }
+
+
+
     err = mdb_cursor_open(txn, db_k2t, &k2t_cursor);
     if (err){
         report("Failed to open k2t cursor", err);

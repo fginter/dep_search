@@ -21,16 +21,26 @@ cdef class DB:
     def __cinit__(self):
         self.thisptr= new LMDB_Fetch()
 
-    cpdef open(self,unicode db_name):
-        print >> sys.stderr, 'db_util:opening', db_name
-        self.thisptr.open(db_name)
+    #Solr_url is here now!
+    cpdef open(self, solr_url):
+        print >> sys.stderr, 'db_util:opening', solr_url
+        #self.thisptr.open(db_name)
 
     cpdef close(self):
         print 'closing!'
-        self.thisptr.close()
+        #self.thisptr.close()
 
-    cpdef begin_search(self, sets, arrays, int rarest):
+    #Here's the modified begin_search, pretty simple changes, huh?
+    cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items):
 
+        #I have no idea if non_compulsory items provides any value, but its here nonetheless
+        print 'compulsory', compulsory_items
+        print 'voluntary', noncompulsory_items
+        print 'extras', extras_dict
+
+        #This, I guess, is the place in which the list of tree_ids will appear.
+
+        '''
     	#array for sets
         cdef uint32_t *sets_array = <uint32_t *>malloc(len(sets) * sizeof(uint32_t))
         for i, s in enumerate(sets):
@@ -41,6 +51,7 @@ cdef class DB:
             maps_array[i] = s
 
         self.thisptr.begin_search(len(sets), len(arrays), sets_array, maps_array, rarest)
+        '''
 
     cpdef int get_next_fitting_tree(self):
         return self.thisptr.get_next_fitting_tree()
@@ -52,7 +63,19 @@ cdef class DB:
     cdef bool finished(self):
         return self.thisptr.finished
 
-    
+    cpdef uint32_t get_id_for(self, unicode key):
+
+        cdef bytes key8=key.encode("utf-8")
+        cdef char* c_string=key8
+        #self.thisptr.store_a_vocab_item(<void*> key8, len(key8))  
+        self.thisptr.get_id_for(c_string, len(key8))
+        return self.thisptr.get_tag_id()
+
+    cpdef uint32_t get_count_for(self, int idx):
+         self.thisptr.get_count_for(<uint32_t>idx)
+         return self.thisptr.get_count()
+
+
     def get_tree_text(self):
         cdef Tree * tree  = self.thisptr.tree
         cdef char * tree_text_data=tree.zipped_tree_text

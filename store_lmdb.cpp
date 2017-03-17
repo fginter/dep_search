@@ -10,6 +10,7 @@
 
 LMDB_Store::LMDB_Store() {
     op_count=0;
+    t_idx = 0;
 }
 
 mode_t get_mode() {
@@ -39,7 +40,7 @@ int LMDB_Store::open_db(const char *name) {
 	report("Failed to set env size:",err);
 	return err;
     }
-    err=mdb_env_set_maxdbs(mdb_env,4); //to account for the three open databases
+    err=mdb_env_set_maxdbs(mdb_env,6); //to account for the three open databases
     if (err) {
 	report("Failed to set maxdbs:",err);
 	return err;
@@ -81,6 +82,20 @@ int LMDB_Store::start_transaction() {
 	report("Failed to open tdata DBI:",err);
 	return err;
     }
+
+    //New stuff
+    err=mdb_dbi_open(txn,"tk2id",MDB_CREATE,&db_tk2id);
+    if (err) {
+	report("Failed to open tk2id DBI:",err);
+	return err;
+    }
+
+    err=mdb_dbi_open(txn,"id2c",MDB_INTEGERKEY|MDB_CREATE,&db_id2c); 
+    if (err) {
+	report("Failed to open id2c DBI:",err);
+	return err;
+    }
+
     return 0;
 }
 
@@ -104,6 +119,144 @@ int LMDB_Store::finish_indexing() {
 	return err;
     }
     return 0;
+}
+
+//Store a new id
+
+int LMDB_Store::store_a_vocab_item(char *key_data, int key_size) {
+
+    //for (int i=0;i<key_size;i++){ 
+    //    std::cerr << *((int*)key_data + i) << std::endl;
+    //}
+
+
+    MDB_val key;
+    MDB_val value;
+
+    MDB_val temp_value;
+    temp_value.mv_data=NULL;
+    temp_value.mv_size = 0;
+
+    key.mv_size=key_size;
+    key.mv_data=(void*) key_data;
+
+    value.mv_size=sizeof(uint32_t);
+    uint32_t t_idx_copy=t_idx;
+    value.mv_data = &t_idx_copy;
+    
+    int xrr = mdb_get(txn,db_tk2id,&key,&temp_value);
+    if (xrr) {
+        int err=mdb_put(txn,db_tk2id,&key,&value,MDB_NOOVERWRITE);
+        if (err) {
+            report("Failed to cput(), that's bad!:",err);
+        }
+
+        uint32_t i_value_count;
+        i_value_count = 0;
+        MDB_val value_count;
+        value_count.mv_size=sizeof(uint32_t);
+        value_count.mv_data=&i_value_count;
+
+        MDB_val kval;
+        kval.mv_size=sizeof(uint32_t);
+        kval.mv_data=&t_idx;
+
+        err = mdb_put(txn, db_id2c, &kval, &value_count,0);
+        if (err) {
+	        report("Failed to put init count, that's bad!:",err);
+	    return err;
+        } 
+
+        t_idx++;
+    }
+    else {
+        //std::cerr << "Found at " << *((uint32_t *)temp_value.mv_data) << " data size " << temp_value.mv_size << " pointer " << temp_value.mv_data << std::endl;
+    }
+    return 0;
+
+
+
+
+
+    /*
+    if (xrr){
+
+        int err=mdb_put(txn,db_tk2id,&key,&value,MDB_NOOVERWRITE);
+        if (err) {
+	        report("Failed to cput(), that's bad!:",err);
+            std::cerr << ":Z" << std::endl;
+	    return err;
+        }
+        //std::cerr << ":)" << std::endl;
+        //std::cerr << "key: " << key.mv_data << " " << key.mv_size  << std::endl;
+
+        uint32_t i_value_count;
+        i_value_count = 0;
+        MDB_val value_count;
+        value_count.mv_size=sizeof(uint32_t);
+        value_count.mv_data=&i_value_count;
+
+        MDB_val kval;
+        kval.mv_size=sizeof(uint32_t);
+        kval.mv_data=&t_idx;
+
+        err = mdb_put(txn, db_id2c, &kval, &value_count,0);
+        if (err) {
+	        report("Failed to put(), that's bad!:",err);
+	    return err;
+        } 
+
+        t_idx++;
+        op_count++;
+    } else {
+        //report("Already Found!:",xrr);
+        //std::cerr << ":(" << std::endl;
+        //std::cerr << "found_id " << *(uint32_t*)temp_value.mv_data << "\n";
+
+    }*/
+    return restart_transaction();
+}
+
+int LMDB_Store::incerement_a_vocab_item_count(char *key_data, int key_size) {
+
+    MDB_val key;
+    MDB_val value;
+    MDB_val value_count;
+    
+    key.mv_size=key_size;
+    key.mv_data=(char *)key_data;
+
+    unsigned int count;
+
+    //Get the id
+    int err = mdb_get(txn, db_tk2id, &key, &value);
+    if (err) {
+	report("Failed to get id, that's bad!:",err);
+	return err;
+    }
+    op_count++;
+    //Get the count
+    err = mdb_get(txn, db_id2c, &value, &value_count);
+    if (err) {
+	report("Failed to get count, that's bad!:",err);
+	return err;
+    }
+    op_count++;
+
+    //memcpy it!
+    memcpy(&count, value_count.mv_data, sizeof(uint32_t));
+    //Let's increment it!
+    count++;
+    value_count.mv_data = &count;
+    //And, let's put it back!
+
+    err = mdb_put(txn, db_id2c, &value, &value_count,0);
+    if (err) {
+	    report("Failed to put(), that's bad!:",err);
+	return err;
+    }
+    op_count++;
+    return restart_transaction();
 }
 
 

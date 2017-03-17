@@ -25,6 +25,8 @@ import sys
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 query_folder = './queries/'
 
+#XXX: Very very temporary hack!
+extras_dict = {}
 
 def map_set_id(args, set_dict, set_count):
 
@@ -190,11 +192,14 @@ def get_url(comments):
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, set_count):
     start = time.time()
     db=db_util.DB()
-    db.open(unicode(db_name))
+    db.open(solr_url)
     
-    rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional = map_set_id(query_obj.query_fields, set_dict, set_count)
+    #rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional = map_set_id(query_obj.query_fields, set_dict, set_count)
 
-    db.begin_search(c_args_s, c_args_m, rarest)
+    db.begin_search(extras_dict, [item[1:] for item in query_obj.query_fields if item.startswith('!')], [item for item in query_obj.query_fields if not item.startswith('!')])
+
+
+    '''
     q_obj.set_db_options(just_all_set_ids, types, optional)
 
     counter=0
@@ -221,15 +226,21 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context,set_dict, se
             print 
             
     print >> sys.stderr, "Found %d trees in %.3fs time"%(counter,time.time()-start)
+    '''
+    counter = 0
     return counter
     
 def main(argv):
     global query_obj
 
+    #XXX: Will fix!
+    global solr_url
+
     parser = argparse.ArgumentParser(description='Execute a query against the db')
     parser.add_argument('-m', '--max', type=int, default=500, help='Max number of results to return. 0 for all. Default: %(default)d.')
     parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/pb-10M/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
+    parser.add_argument('-s', '--solr', default=None, help='Solr url. Default: STDOUT.')
     parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
@@ -251,6 +262,8 @@ def main(argv):
         import hashlib
         m = hashlib.md5()
         m.update(args.search)
+
+        solr_url = args.solr
 
         #1. Check if the queries folder has the search
         #2. If not, generate it here and move to the new folder

@@ -28,3 +28,13 @@ cdef class Py_LMDB:
 
     def store_tree_data(self, unsigned int tree_id, char* t_data, int size):
         self.thisptr.store_tree_data(tree_id, <void *> t_data, size)
+
+    def incerement_a_vocab_item_count(self, unicode key):
+        cdef bytes key8=key.encode("utf-8")
+        cdef char* c_string=key8
+        self.thisptr.incerement_a_vocab_item_count(c_string, len(key8))
+
+    def store_a_vocab_item(self, unicode key):
+        cdef bytes key8=key.encode("utf-8")
+        cdef char* c_string=key8
+        self.thisptr.store_a_vocab_item(c_string, len(key8))        

@@ -45,18 +45,25 @@ cdef extern from "fetch_lmdb.h":
         Tree *tree
         bool finished
 
+        uint32_t* count
+        uint32_t* tag_id
+
+        uint32_t get_tag_id()
+        uint32_t get_count()
+
         int open(const char *)
         void close()
         int begin_search(int ls, int la, uint32_t *lsets, uint32_t* larrays, uint32_t rarest)
         int get_next_fitting_tree()
-        
+        int get_id_for(char *key_data, int key_size)
+        int get_count_for(uint32_t q_id)
 
 cdef class DB:
     cdef LMDB_Fetch *thisptr
-    cpdef open(self,unicode db_name)
+    cpdef open(self, solr_url)
     cpdef close(self)
 
-    cpdef begin_search(self, sets, arrays, int rarest)
+    cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items)
     cpdef int get_next_fitting_tree(self)
     
     cdef int fill_sets(self, void **set_pointers, uint32_t *indices, unsigned char *types, unsigned char *optional, int size)
@@ -64,6 +71,8 @@ cdef class DB:
     cdef bool finished(self)
     #def get_tree_text(self)
 
+    cpdef uint32_t get_id_for(self, unicode key)
+    cpdef uint32_t get_count_for(self, int idx)
     
 cdef int TSET=1
 cdef int TSETARRAY=2
