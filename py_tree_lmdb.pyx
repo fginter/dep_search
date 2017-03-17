@@ -55,7 +55,7 @@ cdef class Py_Tree:
         self.thisptr.deserialize(<void *>binary_blob)
         #print self.thisptr.zipped_tree_text_length
 
-    def serialize_from_conllu(self, lines, comments, db_store, db_get):
+    def serialize_from_conllu(self, lines, comments, db_store):
         #this we need to save
         tree_data={"comments":comments,
                    "tokens":list(l[FORM] for l in lines),
@@ -108,6 +108,8 @@ cdef class Py_Tree:
                     set_id_d = db_store.get_id_for(u"g_anyrel")
                     #set_id_d=set_dict.setdefault(u"d_anyrel",len(set_dict))
                     arrays.setdefault(set_id_d,set()).add((dep,gov))
+
+
 
         #Produces the packed map data
         map_lengths=[]
