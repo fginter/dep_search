@@ -107,9 +107,6 @@ if __name__=="__main__":
     db.open(args.dir)
     db.start_transaction()
 
-    xdb=db_util.DB()
-    xdb.open(args.dir)
-
     tree_id=0
     from collections import Counter
     setarr_count = Counter([])
@@ -119,11 +116,12 @@ if __name__=="__main__":
     print
     print
     for counter,(sent,comments) in enumerate(src_data):
+        sys.stdout.write('\r' + str(counter))
         if (counter+1)%10000 == 0:
             print "At tree ", counter+1
             sys.stdout.flush()
         s=py_tree_lmdb.Py_Tree()
-        blob, form =s.serialize_from_conllu(sent,comments,db, xdb) #Form is the struct module format for the blob, not used anywhere really
+        blob, form =s.serialize_from_conllu(sent,comments,db) #Form is the struct module format for the blob, not used anywhere really
 
         s.deserialize(blob)
         lengths+=len(blob)
@@ -138,6 +136,7 @@ if __name__=="__main__":
         if doc_url is not None:
             solr_idx.new_doc(doc_url,u"fi")
         tree_id=solr_idx.add_to_idx(sent)
+
         #storing
         ### Comment out the four lines below when ready to use solr
         for flag_number in set_indexes:
@@ -151,5 +150,3 @@ if __name__=="__main__":
 
     print "Average tree length:", lengths/float(counter)
     db.finish_indexing()
-    xdb.close()
-
