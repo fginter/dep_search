@@ -113,11 +113,11 @@ bool LMDB_Fetch::has_id(char *key_data, int key_size) {
     key.mv_size=key_size;
     key.mv_data=(void*)key_data;
 
-    //for (int i=0;i<key_size;i++){ 
-    //    std::cerr << ((char*)key_data)[i];
-    //}
-    //std::cerr << key_size;
-    //std::cerr << "\n";
+    for (int i=0;i<key_size;i++){ 
+        std::cerr << ((char*)key_data)[i];
+    }
+    std::cerr << key_size;
+    std::cerr << "\n";
 
     //Get the count
     int err = mdb_get(txn, db_tk2id, &key, &value);
@@ -311,6 +311,12 @@ int LMDB_Fetch::set_tree_to_next_id(){
 
     //get tree data
     //tree data is void pointer
+    if (tree_ids_count < 1){
+        finished = true;
+        return 0;
+    }
+
+
 
     MDB_val key,tree_id_val,t_val;
     tree_id_val.mv_data = tree_ids + tree_id_pointer;

@@ -218,10 +218,9 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
 
     #Inits of all kind
     db.init_lmdb(c_args_s, c_args_m, rarest)
-    db.begin_search(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], [item for item in solr_args if not item.startswith('!')])
+    db.begin_search(extras_dict, [item[1:] for item in solr_args if item.startswith('!') and not 'a_anyrel' in item], [item for item in solr_args if not item.startswith('!') and not 'a_anyrel' in item])
     q_obj.set_db_options(just_all_set_ids, types, optional)    
 
-    q_obj.set_db_options(just_all_set_ids, types, optional)
 
     counter=0
     while True:
@@ -235,6 +234,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
             tree_text = db.get_tree_text()
             tree_lines=tree_text.split("\n")
             #Get the tree_id
+            #import pdb;pdb.set_trace()
+
             for r in res:
                 print "# visual-style	" + str(r + 1) + "	bgColor:lightgreen"
                 try:

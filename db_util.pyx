@@ -114,8 +114,8 @@ cdef class DB:
         '''
 
     cpdef int get_next_fitting_tree(self):
-        self.thisptr.set_tree_to_next_id() 
-        return 0
+        return self.thisptr.set_tree_to_next_id() 
+        
 
     cdef int fill_sets(self, void **set_pointers, uint32_t *indices, unsigned char *types, unsigned char *optional, int size):
         tree  = self.thisptr.tree
