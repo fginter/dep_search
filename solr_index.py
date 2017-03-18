@@ -15,7 +15,7 @@ class SolrIDX(object):
         self.solr_url=args.solr
         self.current_id=0
         self.url=u"unknown"
-        self.lang=u"unknown"
+        self.lang=unicode(args.lang)
         self.query_for_id()
 
     def query_for_id(self):

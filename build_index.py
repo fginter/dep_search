@@ -87,6 +87,7 @@ if __name__=="__main__":
     parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
     parser.add_argument('--wipe', default=False, action="store_true", help='Wipe the target directory before building the index.')
     parser.add_argument('--solr', default="http://localhost:8983/solr/dep_search",help='Solr url. default: %(default)s')
+    parser.add_argument('--lang', default="unknown", help='Language. default: %(default)s')
     args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     os.system("mkdir -p "+args.dir)
