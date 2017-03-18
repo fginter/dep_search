@@ -88,12 +88,15 @@ def map_set_id(args, db):
                     oarg = db.get_id_for(u'p_' + narg[6:])
                     solr_args.append(arg)
                 else:
-                    try:#if 'oarg in set_dict.keys():
-                        oarg = db.get_id_for(u'f_' + narg[6:])
+                    try:
                         if compulsory:
                             solr_args.append('!token_s_' + narg[6:])
                         else:
                             solr_args.append('token_s_' + narg[6:])
+
+                        if db.has_id(u'f_' + narg[6:]):
+                            #oarg = db.get_id_for(u'f_' + narg[6:])
+                            oarg = db.get_id_for(u'f_' + narg[6:])
 
                     except:
                         pass#import pdb;pdb.set_trace()
@@ -212,7 +215,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
     start = time.time()
     db=db_util.DB()
     db.open(solr_url, db_name)
-    
+   
     rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args = map_set_id(query_obj.query_fields, db)
     #print rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args 
 
