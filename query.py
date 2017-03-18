@@ -60,19 +60,23 @@ def map_set_id(args, db):
         oarg = 0
 
         if narg.startswith('dep_a'):
-            oarg = db.get_id_for(u'd_' + narg[6:])
+            if db.has_id(u'd_' + narg[6:]):
+                oarg = db.get_id_for(u'd_' + narg[6:])
             it_is_set = False
 
         if narg.startswith('gov_a'):
-            oarg = db.get_id_for(u'g_' + narg[6:])
+            if db.has_id(u'g_' + narg[6:]):
+                oarg = db.get_id_for(u'g_' + narg[6:])
             it_is_set = False
 
 
         if narg.startswith('lemma_s'):
-            oarg = db.get_id_for(u'l_' + narg[8:])
+            if db.has_id(u'l_' + narg[8:]):
+                oarg = db.get_id_for(u'l_' + narg[8:])
             it_is_set = True
         if narg.startswith('token_s'):
-            oarg = db.get_id_for(u'f_' + narg[8:])
+            if db.has_id(u'f_' + narg[8:]):
+                oarg = db.get_id_for(u'f_' + narg[8:])
             it_is_set = True
 
         #Here! Add so that if not found as tag, try tokens
