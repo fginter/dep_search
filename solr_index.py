@@ -1,6 +1,8 @@
 import traceback
 import sys
 import pysolr
+import requests
+import json
 
 ID,FORM,LEMMA,UPOS,XPOS,FEATS,HEAD,DEPREL,DEPS,MISC=range(10)
 
@@ -14,6 +16,18 @@ class SolrIDX(object):
         self.current_id=0
         self.url=u"unknown"
         self.lang=u"unknown"
+        self.query_for_id()
+
+    def query_for_id(self):
+        s=pysolr.Solr(self.solr_url,timeout=10)
+        r=requests.get(self.solr_url+"/select",data={u"q":u"*:*",u"stats.field":"id",u"stats":u"true",u"wt":u"json",u"rows":0})
+        response=json.loads(r.text)
+        max_id=response["stats"]["stats_fields"]["id"]["max"]
+        if max_id is None:
+            self.current_id=0
+        else:
+            self.current_id=int(max_id)
+        print "Solr setting id to",self.current_id
         
     def commit(self,force=False):
         if force or len(self.documents)>self.batch_size:
