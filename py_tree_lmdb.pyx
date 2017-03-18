@@ -104,8 +104,8 @@ cdef class Py_Tree:
                     #set_id_d=set_dict.setdefault(u"d_"+dtype,len(set_dict))
                     arrays.setdefault(set_id_d,set()).add((dep,gov))
 
-                    db_store.store_a_vocab_item(u"g_anyrel")
-                    set_id_d = db_store.get_id_for(u"g_anyrel")
+                    db_store.store_a_vocab_item(u"d_anyrel")
+                    set_id_d = db_store.get_id_for(u"d_anyrel")
                     #set_id_d=set_dict.setdefault(u"d_anyrel",len(set_dict))
                     arrays.setdefault(set_id_d,set()).add((dep,gov))
 
