@@ -59,7 +59,7 @@ int LMDB_Fetch::begin_search(int len_sets, int len_arrays, uint32_t *lsets, uint
     }
     //std::cerr << "Rarest " << this->rarest << std::endl;
     
-    
+    /*
     err=mdb_cursor_get(k2t_cursor,&key,&val,MDB_SET);
     if (!err) {
 	return err; //0
@@ -73,7 +73,7 @@ int LMDB_Fetch::begin_search(int len_sets, int len_arrays, uint32_t *lsets, uint
     else {
 	report("Cursor_get failed",err);
 	return err;
-    }
+    }*/
 }
 
 // Positions the k2t cursor on the next tree for the "rarest" key
