@@ -253,7 +253,7 @@ uint32_t LMDB_Store::update_t_idx(){
             current_max = *(uint32_t*)value.mv_data;
         }
     }
-    t_idx = current_max;
+    t_idx = current_max + 1;
     return t_idx;
 }
 
