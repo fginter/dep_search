@@ -18,6 +18,7 @@ import sys
 import requests
 import re
 import StringIO
+import time
 
 field_re=re.compile(ur"^(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 cdef class DB:
@@ -53,6 +54,7 @@ cdef class DB:
         qry=u" ".join(terms)
         print >> sys.stderr, "Solr qry", qry
         #### XXX TODO How many rows?
+        beg=time.time()
         r=requests.get(solr+"/select",params={u"q":qry,u"wt":u"csv",u"rows":500000,u"fl":u"id",u"sort":u"id asc"})
         row_count=r.text.count(u"\n")-1 #how many lines? minus one header line
         cdef uint32_t *id_array=<uint32_t *>malloc(row_count*sizeof(uint32_t))
@@ -62,7 +64,7 @@ cdef class DB:
         for idx,id in enumerate(r_txt):
             assert idx<row_count, (idx,row_count)
             id_array[idx]=int(id)
-        print "Hits from solr:", row_count
+        print "Hits from solr:", row_count, " in", time.time()-beg, "seconds"
         self.thisptr.tree_ids=id_array
         self.thisptr.tree_ids_count=row_count
 
