@@ -73,6 +73,21 @@ cdef class DB:
         self.thisptr.get_id_for(c_string, len(key8))
         return self.thisptr.has_id(c_string, len(key8))
 
+    cpdef init_lmdb(self, sets, arrays, int rarest):
+
+    	#array for sets
+        cdef uint32_t *sets_array = <uint32_t *>malloc(len(sets) * sizeof(uint32_t))
+        for i, s in enumerate(sets):
+            sets_array[i] = s
+	    
+        cdef uint32_t *maps_array = <uint32_t *>malloc(len(arrays) * sizeof(uint32_t))
+        for i, s in enumerate(arrays):
+            maps_array[i] = s
+
+        self.thisptr.begin_search(len(sets), len(arrays), sets_array, maps_array, rarest)
+
+
+
     #Here's the modified begin_search, pretty simple changes, huh?
     #XXX TODO Need solr address here
     cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items):

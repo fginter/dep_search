@@ -62,6 +62,7 @@ cdef extern from "fetch_lmdb.h":
         int get_id_for(char *key_data, int key_size)
         int get_count_for(uint32_t q_id)
         bool has_id(char *key_data, int key_size)
+
 cdef class DB:
     cdef LMDB_Fetch *thisptr
     cpdef open(self, solr_url, db_name)
@@ -79,6 +80,7 @@ cdef class DB:
     cpdef uint32_t get_id_for(self, unicode key)
     cpdef uint32_t get_count_for(self, int idx)
     cpdef bool has_id(self, unicode key)    
+    cpdef init_lmdb(self, sets, arrays, int rarest)
 
 cdef int TSET=1
 cdef int TSETARRAY=2

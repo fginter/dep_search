@@ -214,13 +214,12 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
     db.open(solr_url, db_name)
     
     rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args = map_set_id(query_obj.query_fields, db)
+    #print rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args 
 
-    print rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args 
-
-
-    import pdb;pdb.set_trace()
+    #Inits of all kind
+    db.init_lmdb(c_args_s, c_args_m, rarest)
     db.begin_search(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], [item for item in solr_args if not item.startswith('!')])
-
+    q_obj.set_db_options(just_all_set_ids, types, optional)    
 
     '''
     q_obj.set_db_options(just_all_set_ids, types, optional)
