@@ -14,6 +14,9 @@ cdef extern from "store_lmdb.h":
         int incerement_a_vocab_item_count(void *key_data, int key_size)
         int store_a_vocab_item(void *key_data, int key_size)
         uint32_t get_id_for(char *key_data, int key_size)
+        uint32_t update_t_idx()
+        uint32_t get_max_tree_id()
+
 
 cdef class Py_LMDB:
     cdef LMDB_Store *thisptr

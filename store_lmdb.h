@@ -35,6 +35,9 @@ public:
     int store_a_vocab_item(char *key_data, int key_size);
     uint32_t get_id_for(char *key_data, int key_size);
 
+    uint32_t update_t_idx();
+    uint32_t get_max_tree_id();
+
 
 };
 

@@ -47,4 +47,10 @@ cdef class Py_LMDB:
         cdef char* c_string=key8
         return self.thisptr.get_id_for(c_string, len(key8))
 
+    def continue_and_get_max_tree_id(self):
+
+        starting_token_id = self.thisptr.update_t_idx()
+        max_tree_id = self.thisptr.get_max_tree_id()
+        return starting_token_id, max_tree_id
+
       

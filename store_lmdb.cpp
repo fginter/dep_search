@@ -236,6 +236,54 @@ int LMDB_Store::store_a_vocab_item(char *key_data, int key_size) {
     return restart_transaction();
 }
 
+uint32_t LMDB_Store::update_t_idx(){
+
+    uint32_t current_max = 0;
+    //Go through all vocab
+    MDB_cursor *tk2idx_cursor;
+    int err = mdb_cursor_open(txn, db_tk2id, &tk2idx_cursor);
+
+    MDB_val key;
+    MDB_val value;
+
+    err=mdb_cursor_get(tk2idx_cursor,&key,&value,MDB_FIRST);
+    while(!(mdb_cursor_get(tk2idx_cursor,&key,&value,MDB_NEXT))){
+
+        if(current_max < *(uint32_t*)value.mv_data){
+            current_max = *(uint32_t*)value.mv_data;
+        }
+    }
+    t_idx = current_max;
+    return t_idx;
+}
+
+uint32_t LMDB_Store::get_max_tree_id(){
+
+
+    uint32_t current_max = 0;
+    //Go through all vocab
+    MDB_cursor *tdata_cursor;
+    int err = mdb_cursor_open(txn, db_tdata, &tdata_cursor);
+
+    MDB_val key;
+    MDB_val value;
+
+    err=mdb_cursor_get(tdata_cursor,&key,&value,MDB_FIRST);
+    while (!(mdb_cursor_get(tdata_cursor,&key,&value,MDB_NEXT))){
+
+        if(current_max < *(uint32_t*)key.mv_data){
+            current_max = *(uint32_t*)key.mv_data;
+        }
+    }
+    //t_idx = current_max;
+    return current_max;
+
+
+
+}
+
+
+
 int LMDB_Store::incerement_a_vocab_item_count(char *key_data, int key_size) {
 
     MDB_val key;
