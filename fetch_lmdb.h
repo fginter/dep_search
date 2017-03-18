@@ -71,7 +71,7 @@ public:
 
     int get_id_for(char *key_data, int key_size);
     int get_count_for(unsigned int q_id);
-
+    bool has_id(char *key_data, int key_size);
 
 };
 

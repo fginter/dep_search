@@ -26,13 +26,13 @@ cdef class DB:
         self.thisptr= new LMDB_Fetch()
 
     #Solr_url is here now!
-    cpdef open(self, solr_url):
+    cpdef open(self, solr_url, db_name):
         print >> sys.stderr, 'db_util:opening', solr_url
-        #self.thisptr.open(db_name)
+        self.thisptr.open(db_name)
 
     cpdef close(self):
         print 'closing!'
-        #self.thisptr.close()
+        self.thisptr.close()
 
     cpdef get_ids_from_solr(self,extras_dict, compulsory_items,solr):
         terms=[]
@@ -62,11 +62,17 @@ cdef class DB:
         self.thisptr.tree_ids=id_array
         self.thisptr.tree_ids_count=row_count
 
-        #for idx in range(rows):
-        #    print id_array[idx],
-        #print
+        for idx in range(row_count):
+            print id_array[idx]
+        print
         
-        
+    cpdef bool has_id(self, unicode key):
+        cdef bytes key8=key.encode("utf-8")
+        cdef char* c_string=key8
+        #self.thisptr.store_a_vocab_item(<void*> key8, len(key8))  
+        self.thisptr.get_id_for(c_string, len(key8))
+        return self.thisptr.has_id(c_string, len(key8))
+
     #Here's the modified begin_search, pretty simple changes, huh?
     #XXX TODO Need solr address here
     cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items):

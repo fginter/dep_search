@@ -105,6 +105,30 @@ int LMDB_Fetch::move_to_next_tree() {
 
 
 
+bool LMDB_Fetch::has_id(char *key_data, int key_size) {
+
+    MDB_val key;
+    MDB_val value;
+    key.mv_size=key_size;
+    key.mv_data=(void*)key_data;
+
+    //for (int i=0;i<key_size;i++){ 
+    //    std::cerr << ((char*)key_data)[i];
+    //}
+    //std::cerr << key_size;
+    //std::cerr << "\n";
+
+    //Get the count
+    int err = mdb_get(txn, db_tk2id, &key, &value);
+    if (err) {
+	report("Failed to xget(), that's bad!:",err);
+	return false;
+    }
+    //std::cerr << "This actually worked!" << std::endl;    
+    return true;
+}
+
+
 int LMDB_Fetch::get_id_for(char *key_data, int key_size) {
 
     MDB_val key;

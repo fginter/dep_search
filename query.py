@@ -28,7 +28,9 @@ query_folder = './queries/'
 #XXX: Very very temporary hack!
 extras_dict = {}
 
-def map_set_id(args, set_dict, set_count):
+def map_set_id(args, db):
+
+    #XXX: figure out a way to check if this and that is in the db. 
 
     just_all_set_ids = []
     optional = []
@@ -38,6 +40,8 @@ def map_set_id(args, set_dict, set_count):
     s_args_s = []
     c_args_m = []
     s_args_m = []
+
+    solr_args = []
 
     for arg in args:
 
@@ -56,31 +60,45 @@ def map_set_id(args, set_dict, set_count):
         oarg = 0
 
         if narg.startswith('dep_a'):
-            oarg = set_dict['d_' + narg[6:]]
+            oarg = db.get_id_for(u'd_' + narg[6:])
             it_is_set = False
+
         if narg.startswith('gov_a'):
-            oarg = set_dict['g_' + narg[6:]]
+            oarg = db.get_id_for(u'g_' + narg[6:])
             it_is_set = False
+
+
         if narg.startswith('lemma_s'):
-            oarg = set_dict['l_' + narg[8:]]
+            oarg = db.get_id_for(u'l_' + narg[8:])
             it_is_set = True
         if narg.startswith('token_s'):
-            oarg = set_dict['f_' + narg[8:]]
+            oarg = db.get_id_for(u'f_' + narg[8:])
             it_is_set = True
 
         #Here! Add so that if not found as tag, try tokens
         if narg.startswith('tag_s'):
             it_is_set = True
-            if narg[6:] in set_dict.keys():
-                oarg = set_dict[narg[6:]]
+            if db.has_id(u'' + narg[6:]):
+            #if narg[6:] in set_dict.keys():
+                oarg = db.get_id_for(u'' + narg[6:])
+                solr_args.append(arg)
             else:
-                if 'p_' + narg[6:] in set_dict.keys():
-                    oarg = set_dict['p_' + narg[6:]]
+                if db.has_id(u'p_' + narg[6:]):
+                #if 'p_' + narg[6:] in set_dict.keys():
+                    oarg = db.get_id_for(u'p_' + narg[6:])
+                    solr_args.append(arg)
                 else:
                     try:#if 'oarg in set_dict.keys():
-                        oarg = set_dict['f_' + narg[6:]]
+                        oarg = db.get_id_for(u'f_' + narg[6:])
+                        if compulsory:
+                            solr_args.append('!token_s_' + narg[6:])
+                        else:
+                            solr_args.append('token_s_' + narg[6:])
+
                     except:
-                        import pdb;pdb.set_trace()
+                        pass#import pdb;pdb.set_trace()
+        else:
+            solr_args.append(arg)
 
         types.append(not it_is_set)
 
@@ -101,13 +119,14 @@ def map_set_id(args, set_dict, set_count):
 
     together = c_args_s + c_args_m
 
-    counts = [set_count[x] for x in together]
-    min_c = min(counts)
-    rarest = together[counts.index(min_c)]
+    counts = []# [set_count[x] for x in together]
+    min_c = 0#min(counts)
+    rarest = together[0]#counts.index(min_c)]
     print >> sys.stderr, 'optional:', optional
     print >> sys.stderr, 'types:', types
 
-    return rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional 
+    return rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args
+
 
 
 def query(query_fields):
@@ -192,11 +211,15 @@ def get_url(comments):
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict, set_count):
     start = time.time()
     db=db_util.DB()
-    db.open(solr_url)
+    db.open(solr_url, db_name)
     
-    #rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional = map_set_id(query_obj.query_fields, set_dict, set_count)
+    rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args = map_set_id(query_obj.query_fields, db)
 
-    db.begin_search(extras_dict, [item[1:] for item in query_obj.query_fields if item.startswith('!')], [item for item in query_obj.query_fields if not item.startswith('!')])
+    print rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args 
+
+
+    import pdb;pdb.set_trace()
+    db.begin_search(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], [item for item in solr_args if not item.startswith('!')])
 
 
     '''
