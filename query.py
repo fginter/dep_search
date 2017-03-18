@@ -235,7 +235,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
             tree_lines=tree_text.split("\n")
             #Get the tree_id
             #import pdb;pdb.set_trace()
-            if counter >= max_hits:
+            if counter >= max_hits and max_hits > 0:
                 break
 
 
