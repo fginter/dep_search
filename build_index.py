@@ -139,10 +139,10 @@ if __name__=="__main__":
 
         #storing
         ### Comment out the four lines below when ready to use solr
-        for flag_number in set_indexes:
-            db.store_tree_flag_val(tree_id, flag_number)
-        for flag_number in arr_indexes:
-            db.store_tree_flag_val(tree_id, flag_number)
+        #for flag_number in set_indexes:
+        #    db.store_tree_flag_val(tree_id, flag_number)
+        #for flag_number in arr_indexes:
+        #    db.store_tree_flag_val(tree_id, flag_number)
         db.store_tree_data(tree_id, blob, len(blob))#sys.getsizeof(blob))
     else:
         solr_idx.commit(force=True) #WHatever remains
