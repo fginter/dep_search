@@ -12,10 +12,12 @@ cdef class Py_LMDB:
 
     def open(self,name):
         self.thisptr.open_db(name)
-        self.thisptr.update_t_idx()
+        #self.thisptr.update_t_idx()
 
     def start_transaction(self):
         self.thisptr.start_transaction()
+        self.thisptr.update_t_idx()
+
 
     def finish_indexing(self):
         self.thisptr.finish_indexing()
