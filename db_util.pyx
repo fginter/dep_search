@@ -62,9 +62,9 @@ cdef class DB:
         self.thisptr.tree_ids=id_array
         self.thisptr.tree_ids_count=row_count
 
-        for idx in range(row_count):
-            print id_array[idx]
-        print
+        #for idx in range(row_count):
+        #    print id_array[idx]
+        #print
         
     cpdef bool has_id(self, unicode key):
         cdef bytes key8=key.encode("utf-8")
@@ -89,29 +89,16 @@ cdef class DB:
 
 
     #Here's the modified begin_search, pretty simple changes, huh?
-    #XXX TODO Need solr address here
-    cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items):
+    cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items, solr_address):
 
         #I have no idea if non_compulsory items provides any value, but its here nonetheless
-        print 'compulsory', compulsory_items
-        print 'voluntary', noncompulsory_items
-        print 'extras', extras_dict
+        #print 'compulsory', compulsory_items
+        #print 'voluntary', noncompulsory_items
+        #print 'extras', extras_dict
 
         #This, I guess, is the place in which the list of tree_ids will appear.
 
-        self.get_ids_from_solr(extras_dict,compulsory_items,"http://localhost:8983/solr/dep_search")
-        '''
-    	#array for sets
-        cdef uint32_t *sets_array = <uint32_t *>malloc(len(sets) * sizeof(uint32_t))
-        for i, s in enumerate(sets):
-            sets_array[i] = s
-	    
-        cdef uint32_t *maps_array = <uint32_t *>malloc(len(arrays) * sizeof(uint32_t))
-        for i, s in enumerate(arrays):
-            maps_array[i] = s
-
-        self.thisptr.begin_search(len(sets), len(arrays), sets_array, maps_array, rarest)
-        '''
+        self.get_ids_from_solr(extras_dict,compulsory_items,solr_address)#"http://localhost:8983/solr/dep_search")
 
     cpdef int get_next_fitting_tree(self):
         return self.thisptr.set_tree_to_next_id() 

@@ -73,7 +73,7 @@ cdef class DB:
     cpdef close(self)
 
     cpdef get_ids_from_solr(self,extras_dict, compulsory_items,solr)
-    cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items)
+    cpdef begin_search(self, extras_dict, compulsory_items, noncompulsory_items, solr_address)
     cpdef int get_next_fitting_tree(self)
     
     cdef int fill_sets(self, void **set_pointers, uint32_t *indices, unsigned char *types, unsigned char *optional, int size)
