@@ -221,7 +221,6 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
     db.begin_search(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], [item for item in solr_args if not item.startswith('!')])
     q_obj.set_db_options(just_all_set_ids, types, optional)    
 
-    '''
     q_obj.set_db_options(just_all_set_ids, types, optional)
 
     counter=0
@@ -248,8 +247,6 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
             print 
             
     print >> sys.stderr, "Found %d trees in %.3fs time"%(counter,time.time()-start)
-    '''
-    counter = 0
     return counter
     
 def main(argv):

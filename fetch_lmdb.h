@@ -39,6 +39,9 @@ public:
 
     uint32_t *tree_ids; //solr fills this in db_util.pyx
     int tree_ids_count;
+
+    int tree_id_pointer;
+
     
     uint32_t * count;
     uint32_t * tag_id;
@@ -64,7 +67,7 @@ public:
     //returns 0 and sets .finished=true if nothing found
     //returns nonzero on error
     int get_next_fitting_tree();
-
+    int set_tree_to_id(uint32_t tree_id);
 
     //Checks the tree binary data at tdata w.r.t. to the sets and arrays given by begin_search() initially
     bool check_tree(void *tdata);
@@ -72,6 +75,7 @@ public:
     int get_id_for(char *key_data, int key_size);
     int get_count_for(unsigned int q_id);
     bool has_id(char *key_data, int key_size);
+    int set_tree_to_next_id(); 
 
 };
 

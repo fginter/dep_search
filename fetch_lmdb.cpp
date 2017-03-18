@@ -28,7 +28,8 @@ int LMDB_Fetch::begin_search(int len_sets, int len_arrays, uint32_t *lsets, uint
     MDB_val key,val;
     uint32_t k=rarest;
     int err;
-    
+    tree_id_pointer = 0;
+
     key.mv_size=sizeof(k);
     key.mv_data=&k;
     val.mv_size=0;
@@ -306,6 +307,57 @@ int LMDB_Fetch::open(const char *name) {
 }
 
 
+int LMDB_Fetch::set_tree_to_next_id(){
+
+    //get tree data
+    //tree data is void pointer
+
+    MDB_val key,tree_id_val,t_val;
+    tree_id_val.mv_data = tree_ids + tree_id_pointer;
+    tree_id_val.mv_size = sizeof(uint32_t);
+
+    //Now tree_id_val holds the tree id of the tree we want, so let's grab it to t_val
+    int err=mdb_cursor_get(tdata_cursor,&tree_id_val,&t_val,MDB_SET_KEY);
+    if (err){
+
+    report("Failed to retrieve tree from tdata",err);
+    return err;
+
+    }
+    tree->deserialize(t_val.mv_data);
+
+    tree_id_pointer++;
+    if (tree_id_pointer > tree_ids_count){
+
+        finished=true;
+    }
+
+    return 0;
+}
+
+
+
+
+int LMDB_Fetch::set_tree_to_id(uint32_t tree_id){
+
+    //get tree data
+    //tree data is void pointer
+
+    MDB_val key,tree_id_val,t_val;
+    tree_id_val.mv_data = &tree_id;
+    tree_id_val.mv_size = sizeof(uint32_t);
+
+    //Now tree_id_val holds the tree id of the tree we want, so let's grab it to t_val
+    int err=mdb_cursor_get(tdata_cursor,&tree_id_val,&t_val,MDB_SET_KEY);
+    if (err){
+
+    report("Failed to retrieve tree from tdata",err);
+    return err;
+
+    }
+    tree->deserialize(t_val.mv_data);
+    return 0;
+}
 
 //Given a pointer to tree data, check that it has all the required sets
 bool LMDB_Fetch::check_tree(void *tree_data) {
