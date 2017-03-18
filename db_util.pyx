@@ -40,7 +40,10 @@ cdef class DB:
             match=field_re.match(c)
             assert match, ("Not a known field description", c)
             if match.group(1) in (u"gov",u"dep"):
-                terms.append(u'+relations:"%s"'%match.group(3))
+                if match.group(3)==u"anydep":
+                   terms.append(u'+relations:*')
+                else:
+                   terms.append(u'+relations:"%s"'%match.group(3))
             elif match.group(1)==u"tag":
                 terms.append(u'+feats:"%s"'%match.group(3))
             elif match.group(1)==u"lemma":
