@@ -40,7 +40,7 @@ cdef class DB:
             match=field_re.match(c)
             assert match, ("Not a known field description", c)
             if match.group(1) in (u"gov",u"dep"):
-                if match.group(3)==u"anydep":
+                if match.group(3)==u"anyrel":
                    terms.append(u'+relations:*')
                 else:
                    terms.append(u'+relations:"%s"'%match.group(3))
@@ -51,6 +51,7 @@ cdef class DB:
             elif match.group(1)==u"token":
                 terms.append(u'+words:"%s"'%match.group(3))
         qry=u" ".join(terms)
+        print >> sys.stderr, "Solr qry", qry
         #### XXX TODO How many rows?
         r=requests.get(solr+"/select",params={u"q":qry,u"wt":u"csv",u"rows":500000,u"fl":u"id",u"sort":u"id asc"})
         row_count=r.text.count(u"\n")-1 #how many lines? minus one header line
