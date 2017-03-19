@@ -19,7 +19,7 @@ import binascii
 import solr_index
 import db_util
 
-ID,FORM,LEMMA,PLEMMA,POS,PPOS,FEAT,PFEAT,HEAD,PHEAD,DEPREL,PDEPREL=range(12)
+ID,FORM,LEMMA,UPOS,XPOS,FEATS,HEAD,DEPREL,DEPS,MISC=range(10)
 
 symbs=re.compile(ur"[^A-Za-z0-9_]",re.U)
 
@@ -88,6 +88,7 @@ if __name__=="__main__":
     parser.add_argument('--wipe', default=False, action="store_true", help='Wipe the target directory before building the index.')
     parser.add_argument('--solr', default="http://localhost:8983/solr/dep_search",help='Solr url. default: %(default)s')
     parser.add_argument('--lang', default="unknown", help='Language. default: %(default)s')
+    parser.add_argument('--source', default="unknown", help='Source (like UDv2, fi_pbank). default: %(default)s')
     args = parser.parse_args()
 #    gather_tbl_names(codecs.getreader("utf-8")(sys.stdin))
     os.system("mkdir -p "+args.dir)
@@ -117,7 +118,12 @@ if __name__=="__main__":
     print
     print
     for counter,(sent,comments) in enumerate(src_data):
-        sys.stdout.write('\r' + str(counter))
+        if len(sent)>256:
+            continue #Skip too long sentences
+        if max(len(cols[FORM]) for cols in sent)>50 or max(len(cols[LEMMA]) for cols in sent)>50:
+            continue
+
+        #sys.stdout.write('\r' + str(counter))
         if (counter+1)%10000 == 0:
             print "At tree ", counter+1
             sys.stdout.flush()
@@ -138,6 +144,10 @@ if __name__=="__main__":
             solr_idx.new_doc(doc_url,u"fi")
         tree_id=solr_idx.add_to_idx(sent)
 
+        # print >> sys.stderr, comments
+        # print >> sys.stderr
+        # sys.stderr.flush()
+        
         #storing
         ### Comment out the four lines below when ready to use solr
         #for flag_number in set_indexes:
