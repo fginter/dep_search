@@ -101,7 +101,7 @@ int LMDB_Store::start_transaction() {
 
 int LMDB_Store::restart_transaction() {
     //Call this function every now and then to make sure our transaction doesn't grow too big
-    if (op_count<10000000) { //not enough operations, keep going
+    if (op_count<500000) { //not enough operations, keep going
 	return 0;
     }
     int err=mdb_txn_commit(txn);
