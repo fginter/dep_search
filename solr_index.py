@@ -16,6 +16,7 @@ class SolrIDX(object):
         self.current_id=0
         self.url=u"unknown"
         self.lang=unicode(args.lang)
+        self.source=unicode(args.source)
         self.query_for_id()
 
     def query_for_id(self):
@@ -30,7 +31,7 @@ class SolrIDX(object):
         print "Solr setting id to",self.current_id
         
     def commit(self,force=False):
-        if force or len(self.documents)>self.batch_size:
+        if force or len(self.documents)>=self.batch_size:
             try:
                 s=pysolr.Solr(self.solr_url,timeout=10)
                 self.tree_count+=len(self.documents) #sum(len(d[u"_childDocuments_"]) for d in self.documents)
@@ -98,6 +99,7 @@ class SolrIDX(object):
             d[u"relations"]=list(relations)
         d[u"url"]=self.url
         d[u"lang"]=self.lang
+        d[u"source"]=self.source
 
         #if not self.documents:
         #    self.new_doc(u"unknown",u"unknown")
