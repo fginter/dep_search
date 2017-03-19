@@ -7,7 +7,7 @@ do
     echo "***************************************************************"
     echo "Starting $l"
     date
-    curl -sL https://lindat.mff.cuni.cz/repository/xmlui/bitstream/handle/11234/1-1989/$l-annotated-conll17.tar | tar xO --wildcards '*.xz' | xzcat | python build_index.py -d conll17 --lang $l --max 1000000
+    curl -sL https://lindat.mff.cuni.cz/repository/xmlui/bitstream/handle/11234/1-1989/$l-annotated-conll17.tar | tar xO --wildcards '*.xz' | xzcat | python build_index.py -d conll17 --lang $l --source conll17 --max 2000000
     echo "Done $l"
     date
     echo
