@@ -20,7 +20,7 @@ class SolrIDX(object):
         self.query_for_id()
 
     def query_for_id(self):
-        s=pysolr.Solr(self.solr_url,timeout=10)
+        s=pysolr.Solr(self.solr_url,timeout=600)
         r=requests.get(self.solr_url+"/select",data={u"q":u"*:*",u"stats.field":"id",u"stats":u"true",u"wt":u"json",u"rows":0})
         response=json.loads(r.text)
         max_id=response["stats"]["stats_fields"]["id"]["max"]
