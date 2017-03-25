@@ -256,7 +256,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
 
             print tree_text
             print 
-            
+
+    solr_q.kill()         
     print >> sys.stderr, "Found %d trees in %.3fs time"%(counter,time.time()-start)
     return counter
     
