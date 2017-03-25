@@ -34,6 +34,9 @@ class SolrQuery():
         self.finished=True
         self.tree_id_queue.put(-1)
 
+    def kill(self):
+        self.process.terminate()
+
     def ids_from_solr_gen(self):
 
         terms=[]
