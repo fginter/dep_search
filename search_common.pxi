@@ -79,15 +79,15 @@ cdef class Search:  # base class for all searches
 
         cdef unsigned char *types = <unsigned char *>malloc(len(p_set_ids) * sizeof(unsigned char))
         self.types = types
-        print >> sys.stderr, "<types>"
+        #print >> sys.stderr, "<types>"
         for i, s in enumerate(p_types):
             if s:
                 types[i] = <char>2
-                print >> sys.stderr, i, s, 2
+                #print >> sys.stderr, i, s, 2
             else:
                 types[i] = <char>1
-                print >> sys.stderr, i, s, 1
-        print >> sys.stderr, "</types>"
+                #print >> sys.stderr, i, s, 1
+        #print >> sys.stderr, "</types>"
 
         cdef unsigned char *optional = <unsigned char *>malloc(len(p_optional) * sizeof(unsigned char))
         for i, s in enumerate(p_optional):
@@ -99,6 +99,21 @@ cdef class Search:  # base class for all searches
 
         self.set_size = len(p_set_ids)
         self.started = False
+
+    def check_tree_id(self, uint32_t tree_id, DB db):
+
+        #db.set_tree_to_id(tree_id)
+        db.fill_sets(self.sets, self.set_ids, <unsigned char *>self.types, self.optional, self.set_size)
+        self.initialize()
+        result=self.exec_search()
+        result_set = set()
+
+        #Really + 1 ?  xxx check
+        for x in range(result.tree_length + 1):
+            if result.has_item(x):
+                result_set.add(x)
+
+        return result_set
 
 
     def next_result(self, DB db):

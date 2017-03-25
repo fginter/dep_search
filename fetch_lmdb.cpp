@@ -342,8 +342,6 @@ int LMDB_Fetch::set_tree_to_next_id(){
 }
 
 
-
-
 int LMDB_Fetch::set_tree_to_id(uint32_t tree_id){
 
     //get tree data
@@ -364,6 +362,28 @@ int LMDB_Fetch::set_tree_to_id(uint32_t tree_id){
     tree->deserialize(t_val.mv_data);
     return 0;
 }
+
+
+
+bool LMDB_Fetch::set_tree_to_id_and_check(uint32_t tree_id){
+
+    //get tree data
+    //tree data is void pointer
+
+    MDB_val key,tree_id_val,t_val;
+    tree_id_val.mv_data = &tree_id;
+    tree_id_val.mv_size = sizeof(uint32_t);
+
+    //Now tree_id_val holds the tree id of the tree we want, so let's grab it to t_val
+    int err=mdb_cursor_get(tdata_cursor,&tree_id_val,&t_val,MDB_SET_KEY);
+    if (err){
+    report("Failed to retrieve tree from tdata",err);
+    return false;
+    }
+    tree->deserialize(t_val.mv_data);
+    return check_tree(t_val.mv_data);
+}
+
 
 //Given a pointer to tree data, check that it has all the required sets
 bool LMDB_Fetch::check_tree(void *tree_data) {

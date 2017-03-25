@@ -35,6 +35,49 @@ cdef class DB:
         print 'closing!'
         self.thisptr.close()
 
+
+    cpdef bool set_tree_to_id_and_check(self, uint32_t tree_id):
+
+        return self.thisptr.set_tree_to_id_and_check(tree_id)
+
+    cpdef int xset_tree_to_id(self, uint32_t tree_id):
+
+        return self.thisptr.set_tree_to_id(tree_id)
+
+    def get_ids_from_solr_generator(self,extras_dict, compulsory_items,solr):
+        terms=[]
+        for c in compulsory_items:
+            match=field_re.match(c)
+            assert match, ("Not a known field description", c)
+            if match.group(1) in (u"gov",u"dep"):
+                if match.group(3)==u"anyrel":
+                   terms.append(u'+relations:*')
+                else:
+                   terms.append(u'+relations:"%s"'%match.group(3))
+            elif match.group(1)==u"tag":
+                terms.append(u'+feats:"%s"'%match.group(3))
+            elif match.group(1)==u"lemma":
+                terms.append(u'+lemmas:"%s"'%match.group(3))
+            elif match.group(1)==u"token":
+                terms.append(u'+words:"%s"'%match.group(3))
+        qry=u" ".join(terms)
+        print >> sys.stderr, "Solr qry", qry
+        #### XXX TODO How many rows?
+        beg=time.time()
+        r=requests.get(solr+"/select",params={u"q":qry,u"wt":u"csv",u"rows":500000,u"fl":u"id",u"sort":u"id asc"})
+        row_count=r.text.count(u"\n")-1 #how many lines? minus one header line
+        cdef uint32_t *id_array=<uint32_t *>malloc(row_count*sizeof(uint32_t))
+        r_txt=StringIO.StringIO(r.text)
+        col_name=r_txt.next() #column name
+        assert col_name==u"id\n", repr(col_name)
+        for idx,id in enumerate(r_txt):
+            assert idx<row_count, (idx,row_count)
+            yield int(id)
+        print "Hits from solr:", row_count, " in", time.time()-beg, "seconds"
+        self.thisptr.tree_ids=id_array
+        self.thisptr.tree_ids_count=row_count
+
+
     cpdef get_ids_from_solr(self,extras_dict, compulsory_items,solr):
         terms=[]
         for c in compulsory_items:
@@ -69,7 +112,7 @@ cdef class DB:
         self.thisptr.tree_ids_count=row_count
 
         #for idx in range(row_count):
-        #    print id_array[idx]
+        #    print id_array[idx], self.set_tree_to_id_and_check(id_array[idx])
         #print
         
     cpdef bool has_id(self, unicode key):

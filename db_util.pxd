@@ -64,7 +64,8 @@ cdef extern from "fetch_lmdb.h":
         int get_count_for(uint32_t q_id)
         bool has_id(char *key_data, int key_size)
         int set_tree_to_id(uint32_t tree_id)
-        int set_tree_to_next_id();
+        int set_tree_to_next_id()
+        bool set_tree_to_id_and_check(uint32_t tree_id)
 
 
 cdef class DB:
@@ -86,6 +87,10 @@ cdef class DB:
     cpdef bool has_id(self, unicode key)    
     cpdef init_lmdb(self, sets, arrays, int rarest)
     cpdef int get_next_fitting_tree(self)
+
+    cpdef bool set_tree_to_id_and_check(self, uint32_t tree_id)
+    cpdef int xset_tree_to_id(self, uint32_t tree_id)
+
 
 cdef int TSET=1
 cdef int TSETARRAY=2

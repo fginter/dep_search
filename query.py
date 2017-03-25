@@ -225,35 +225,35 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
 
     #Inits of all kind
     db.init_lmdb(c_args_s, c_args_m, rarest)
-    db.begin_search(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], [item for item in solr_args if not item.startswith('!')], "http://localhost:8983/solr/dep_search")
+    #db.begin_search(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], [item for item in solr_args if not item.startswith('!')], "http://localhost:8983/solr/dep_search")
     q_obj.set_db_options(just_all_set_ids, types, optional)    
 
+    from solr_query_thread import SolrQuery
+    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], "http://localhost:8983/solr/dep_search")
+    tree_id_queue = solr_q.get_queue()
 
-    counter=0
-    while True:
-        res = query_obj.next_result(db)
-        if res == -1:
-            break
-        if len(res) > 0:
+    counter = 0
+    while (not solr_q.finished or not tree_id_queue.empty()):
+        res = tree_id_queue.get()
+        if res == -1:break
+        db.xset_tree_to_id(res)
+        res_set = q_obj.check_tree_id(res, db)    
+
+        if len(res_set) > 0:
             counter+=1
-            #The result set we've got already
             #Get the tree text:
             tree_text = db.get_tree_text()
             tree_lines=tree_text.split("\n")
-            #Get the tree_id
-            #import pdb;pdb.set_trace()
             if counter >= max_hits and max_hits > 0:
                 break
-
-
-            for r in res:
-                print "# visual-style	" + str(r + 1) + "	bgColor:lightgreen"
+            for r in res_set:
+                print "# visual-style   " + str(r + 1) + "      bgColor:lightgreen"
                 try:
                     print "# hittoken:\t"+tree_lines[r] 
                 except:
                     print '##', r
                 #hittoken once the tree is really here!
-            #print db.get_current_tree_id()
+
             print tree_text
             print 
             

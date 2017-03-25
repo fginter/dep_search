@@ -68,6 +68,7 @@ public:
     //returns nonzero on error
     int get_next_fitting_tree();
     int set_tree_to_id(uint32_t tree_id);
+    bool set_tree_to_id_and_check(uint32_t tree_id);
 
     //Checks the tree binary data at tdata w.r.t. to the sets and arrays given by begin_search() initially
     bool check_tree(void *tdata);
