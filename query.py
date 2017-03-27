@@ -21,6 +21,7 @@ import db_util
 import glob
 import tempfile
 import sys
+from collections import defaultdict
 
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 query_folder = './queries/'
@@ -43,17 +44,26 @@ def map_set_id(args, db):
 
     solr_args = []
 
+    or_groups = defaultdict(list)
+
     for arg in args:
 
         #print >> sys.stderr, "arg:",arg
         compulsory = False
         it_is_set = True
+        or_group_id = None
+
 
         if arg.startswith('!'):
             compulsory = True    
             narg = arg[1:]
         else:
             narg = arg
+
+        if narg.startswith('org_'):
+            or_group_id = int(narg.split('_')[1])
+            narg = narg[6:]
+
         #print >> sys.stderr, "narg:", narg
         optional.append(not compulsory)
 
@@ -68,7 +78,6 @@ def map_set_id(args, db):
             if db.has_id(u'g_' + narg[6:]):
                 oarg = db.get_id_for(u'g_' + narg[6:])
             it_is_set = False
-
 
         if narg.startswith('lemma_s'):
             if db.has_id(u'l_' + narg[8:]):
@@ -86,17 +95,24 @@ def map_set_id(args, db):
             #if narg[6:] in set_dict.keys():
                 oarg = db.get_id_for(u'' + narg[6:])
                 solr_args.append(arg)
+                if or_group_id != None:
+                    or_groups[or_group_id].append(arg[6:])
             else:
                 if db.has_id(u'p_' + narg[6:]):
                 #if 'p_' + narg[6:] in set_dict.keys():
                     oarg = db.get_id_for(u'p_' + narg[6:])
                     solr_args.append(arg)
+                    if or_group_id != None:
+                        or_groups[or_group_id].append(arg[6:])
+
                 else:
                     try:
                         if compulsory:
                             solr_args.append('!token_s_' + narg[6:])
                         else:
                             solr_args.append('token_s_' + narg[6:])
+                            if or_group_id != None:
+                                or_groups[or_group_id].append('token_s_' + narg[6:])
 
                         if db.has_id(u'f_' + narg[6:]):
                             #oarg = db.get_id_for(u'f_' + narg[6:])
@@ -105,7 +121,13 @@ def map_set_id(args, db):
                     except:
                         pass#import pdb;pdb.set_trace()
         else:
-            solr_args.append(arg)
+            if not arg.startswith('org_'):
+                solr_args.append(arg)
+            else:
+                solr_args.append(arg[6:])
+                if or_group_id != None:
+                    or_groups[or_group_id].append(arg[6:])
+
 
         types.append(not it_is_set)
 
@@ -128,11 +150,13 @@ def map_set_id(args, db):
 
     counts = []# [set_count[x] for x in together]
     min_c = 0#min(counts)
-    rarest = together[0]#counts.index(min_c)]
+    rarest = 0#together[0]#counts.index(min_c)]
     #print >> sys.stderr, 'optional:', optional
     #print >> sys.stderr, 'types:', types
+    solr_or_groups = []
 
-    return rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args
+
+    return rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args, or_groups
 
 
 
@@ -218,18 +242,25 @@ def get_url(comments):
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict, set_count):
     start = time.time()
     db=db_util.DB()
+    
     db.open(solr_url, db_name)
    
-    rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args = map_set_id(query_obj.query_fields, db)
+    rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args, solr_or_groups = map_set_id(query_obj.query_fields, db)
     #print rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args 
+    print solr_or_groups
 
     #Inits of all kind
     db.init_lmdb(c_args_s, c_args_m, rarest)
-    db.begin_search(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], [item for item in solr_args if not item.startswith('!')], "http://localhost:8983/solr/dep_search")
+    #db.begin_search(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], [item for item in solr_args if not item.startswith('!')], "http://localhost:8983/solr/dep_search")
     q_obj.set_db_options(just_all_set_ids, types, optional)    
 
+
+    #import pdb;pdb.set_trace()
+
     from solr_query_thread import SolrQuery
-    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], "http://localhost:8983/solr/dep_search")
+    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, "http://localhost:8983/solr/dep_search")
+    print solr_q.get_solr_query()
+
     tree_id_queue = solr_q.get_queue()
 
     counter = 0
@@ -328,8 +359,10 @@ def main(argv):
             os.rename(temp_file_name[:-4] + '.so', query_folder + temp_file_name[:-4] + '.so')
 
     query_obj=mod.GeneratedSearch()
-    sql_query,sql_args=query(query_obj.query_fields)
-    
+    #sql_query,sql_args=query(query_obj.query_fields)
+    sql_query = ''
+    sql_args = ''
+ 
     dbs=glob.glob(args.database)
     dbs.sort()
 

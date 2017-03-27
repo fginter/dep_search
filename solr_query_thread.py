@@ -9,8 +9,9 @@ field_re=re.compile(ur"^(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 class SolrQuery():
 
 
-    def __init__(self,extras_dict, compulsory_items,solr):
+    def __init__(self,extras_dict, compulsory_items,or_groups, solr):
 
+        self.or_groups = or_groups
         self.extras_dict = extras_dict
         self.compulsory_items = compulsory_items
         self.solr = solr
@@ -37,7 +38,8 @@ class SolrQuery():
     def kill(self):
         self.process.terminate()
 
-    def ids_from_solr_gen(self):
+
+    def get_solr_query(self):
 
         terms=[]
         for c in self.compulsory_items:
@@ -54,7 +56,43 @@ class SolrQuery():
                 terms.append(u'+lemmas:"%s"'%match.group(3))
             elif match.group(1)==u"token":
                 terms.append(u'+words:"%s"'%match.group(3))
+
+        or_terms = []
+        for group in self.or_groups.values():
+            g_terms = []
+            for item in group:
+                print item
+                match=field_re.match(item)
+                assert match, ("Not a known field description", item)
+                if match.group(1) in (u"gov",u"dep"):
+                    if match.group(3)==u"anyrel":
+                       g_terms.append(u'relations:*')
+                    else:
+                       g_terms.append(u'relations:"%s"'%match.group(3))
+                elif match.group(1)==u"tag":
+                    g_terms.append(u'feats:"%s"'%match.group(3))
+                elif match.group(1)==u"lemma":
+                    g_terms.append(u'lemmas:"%s"'%match.group(3))
+                elif match.group(1)==u"token":
+                    g_terms.append(u'words:"%s"'%match.group(3))
+
+            or_terms.append(u'(' + u' OR '.join(g_terms)  + u')')
+
         qry=u" ".join(terms)
+        if len(terms) > 0 and len(or_terms) > 0:
+            qry += u' AND '
+        if len(or_terms) > 0:
+            qry += u' AND '.join(or_terms)
+            
+        return qry
+
+
+
+
+    def ids_from_solr_gen(self):
+
+        qry= self.get_solr_query()
+
         print >> sys.stderr, "Solr qry", qry
         #### XXX TODO How many rows?
         beg=time.time()

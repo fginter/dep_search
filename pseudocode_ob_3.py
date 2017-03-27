@@ -127,6 +127,10 @@ class NodeInterpreter():
         prechar = '!'
         if self.node.negs_above:
             prechar = ''
+
+        if self.node.or_group_id != None:
+            prechar = 'org_' + str(self.node.or_group_id) + '_'
+
         if self.node.proplabel == '' and self.node.token_restriction != '_':
             return [prechar + 'token_s_' + self.node.token_restriction]
         if self.node.proplabel == '@CGTAG' and self.node.token_restriction != '_':
@@ -977,7 +981,7 @@ def id_the_nodes(node, pid, lev, negs_above, node_dict):
     if negs_above or node.neg:
         negs = True
 
-    if isinstance(node, SetNode_Or) or isinstance(node, DeprelNode_Or):
+    if (isinstance(node, SetNode_Or) and node.or_group_id == None) or isinstance(node, DeprelNode_Or):
         negs = True
 
     node.node_id = pid
@@ -1075,6 +1079,8 @@ def main():
     e_parser=yacc.yacc()
     for expression in args.expression:
         nodes = e_parser.parse(expression.decode('utf8'))
+        add_or_groups_to_nodes(node)
+
         print nodes.to_unicode()
 
     code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
@@ -1123,6 +1129,8 @@ def generate_and_write_search_code_from_expression(expression, f, json_filename=
     e_parser=yacc.yacc()
 
     nodes = e_parser.parse(expression.decode('utf8'))
+    fill_negs_above(nodes, negs_above=False)
+    add_or_groups_to_nodes(nodes)
     #print nodes.to_unicode()
     code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
     write_cython_code(code_lines, f)

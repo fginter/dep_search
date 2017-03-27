@@ -18,6 +18,7 @@ class BaseNode():
     deprel = False
     parent_node = None
     extra_comments = []
+    or_group_id = None
     #def __init__(self):
     #    self.extra_comments = []
 
