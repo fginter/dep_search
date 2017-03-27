@@ -446,6 +446,208 @@ def p_sn_not(t):
     u'''tokendef : NEG tokendef'''
     t[0] = SetNode_Not(t[2])
 
+
+def get_or_groups(node):
+
+    #So how do these nodes work again?
+    or_nodes = []
+    subtrees = get_or_subtrees(node)
+    print 'Checking split queries!'
+    for sb in subtrees:
+        print sb.to_unicode()
+    print
+    print 'That was it!'
+
+
+def check_split(node):
+
+    #So how do these nodes work again?
+    or_nodes = []
+    subtrees = get_possible_subtrees(node)
+    print 'Checking split queries!'
+    for sb in subtrees:
+        print sb.to_unicode()
+    print
+    print 'That was it!'
+
+import itertools
+import copy
+
+
+def get_token_nodes(node):
+
+    token_nodes = []
+    kids = node.get_kid_nodes()
+    for kid in kids:
+        token_nodes.extend(get_token_nodes(kid))
+
+    if len(kids) == 0:
+        if isinstance(node, SetNode_Token):
+            return [node]
+
+    return token_nodes
+
+def check_or_subtree(node):
+
+    proper_or_group = True
+
+    if node.negs_above:
+        proper_or_group = False
+
+    kids = node.get_kid_nodes()
+
+    if len(kids) == 0:
+        proper_or_group = isinstance(node, SetNode_Token)
+
+    if not (isinstance(node, SetNode_Token) or isinstance(node, SetNode_Or)):
+        proper_or_group = False
+
+    for kid in kids:
+        if not check_or_subtree(kid):
+            proper_or_group = False
+
+    return proper_or_group
+
+def get_or_nodes(node):
+
+    proper_or_nodes = []
+    go_on = True
+
+    kids = node.get_kid_nodes()
+
+    #If this is an or_node, check it!
+    if node.neg:
+       return []
+
+    if isinstance(node, SetNode_Or):
+        if check_or_subtree(node):
+            #
+            return [node]
+        else:
+            go_on = False
+
+    if isinstance(node, SetNode_Not):
+        return []
+
+    if not isinstance(node, SetNode_Dep):
+
+        for kid in kids:
+            if go_on:
+                proper_or_nodes.extend(get_or_nodes(kid))
+    else:
+       ban = False
+       for kid in kids:
+
+           if go_on and not isinstance(node, DeprelNode_Not) and not ban:
+               proper_or_nodes.extend(get_or_nodes(kid))
+
+           if ban:
+               ban = False
+
+           if isinstance(node, DeprelNode_Not):
+               ban = True
+           
+
+           #if ban: ban = False
+
+
+    return proper_or_nodes
+
+def add_or_groups_to_nodes(node):
+
+    or_groups = get_or_groups(node)
+    for i, org in enumerate(or_groups):
+        for n in org:
+            n.or_group_id = i
+
+def get_or_groups(node):
+
+    or_nodes = get_or_nodes(node)
+    or_groups = []
+    for org in or_nodes:
+        or_groups.append(get_token_nodes(org))
+
+    filtered_or_groups = []
+    for og in or_groups:
+        if check_or_group(og):
+            filtered_or_groups.append(og)
+    
+    return filtered_or_groups
+
+def check_or_group(group):
+    #tag, lemma, token
+    return True
+
+def fill_negs_above(node, negs_above=False):
+
+    #Am I negated?
+    node.negs_above = negs_above
+    if node.neg:
+        negs_above = True
+
+    kids = node.get_kid_nodes()
+
+    if not isinstance(node, SetNode_Dep):
+        for kid in kids:
+            fill_negs_above(kid, negs_above)
+
+    else:
+        #First go through the nodes with their deprels
+        fill_negs_above(node.index_node, negs_above)
+
+        for deprel in node.deprels:
+            fill_negs_above(deprel[0], negs_above)
+            if isinstance(deprel[0], DeprelNode_Not):
+                fill_negs_above(deprel[1], True)
+            else:
+                fill_negs_above(deprel[1], negs_above)
+
+def get_possible_subtrees(node):
+
+    kids = node.get_kid_nodes()
+    if len(kids) == 0:
+        return [node,]
+
+    if not isinstance(node, SetNode_Or):
+        kid_trees = []
+        for k in kids:
+
+            #censor deprels out!
+            if not k.deprel:
+                kid_trees.append(get_possible_subtrees(k))
+
+        #Now all combinations of these
+        #I'm assuming there's only two children ouch! Fix later!
+        kid_products = itertools.product(*kid_trees)
+
+        nodes_to_return = []
+        for p in kid_products:
+            #Copy current node and add the kids
+            #print
+            #print n_node.to_unicode()
+            n_node = copy.copy(node)
+            #print [px.to_unicode() for px in p]
+            n_node.set_kids(p)
+
+            #print 'Set kids ', p
+            #print 'Kids set ', n_node.get_kid_nodes()
+
+            nodes_to_return.append(n_node)
+    else:
+           #OR node
+           #print 'ORN'
+           #print kids[0].to_unicode()
+           #print kids[1].to_unicode()
+           #print '!ORN'
+           st_1 = get_possible_subtrees(kids[0])
+           st_2 = get_possible_subtrees(kids[1])
+           st_1.extend(st_2)
+           return st_1
+
+    return nodes_to_return
+
+
+
 lex.lex(reflags=re.UNICODE)
 yacc.yacc(write_tables=0,debug=1,method='SLR')
 
@@ -463,3 +665,9 @@ if __name__=="__main__":
         log = logging.getLogger()
         ebin = e_parser.parse(expression.decode('utf8'), debug=0)
         print ebin.to_unicode()
+
+        print 'ORGS'
+        fill_negs_above(ebin, negs_above=False)
+        for g in get_or_groups(ebin):
+            print [t.to_unicode() for t in g]
+        print 'END!'
