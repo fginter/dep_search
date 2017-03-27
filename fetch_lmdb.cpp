@@ -122,7 +122,7 @@ bool LMDB_Fetch::has_id(char *key_data, int key_size) {
     //Get the count
     int err = mdb_get(txn, db_tk2id, &key, &value);
     if (err) {
-	report("Failed to xget(), that's bad!:",err);
+	//report("Failed to xget(), that's bad!:",err);
 	return false;
     }
     //std::cerr << "This actually worked!" << std::endl;    
@@ -146,7 +146,7 @@ int LMDB_Fetch::get_id_for(char *key_data, int key_size) {
     //Get the count
     int err = mdb_get(txn, db_tk2id, &key, &value);
     if (err) {
-	report("Failed to xget(), that's bad!:",err);
+	//report("Failed to xget(), that's bad!:",err);
 	return err;
     }
     //std::cerr << "This actually worked!" << std::endl;    
