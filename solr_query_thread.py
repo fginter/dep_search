@@ -101,7 +101,9 @@ class SolrQuery():
         print >> sys.stderr, "Solr qry", qry
         #### XXX TODO How many rows?
         beg=time.time()
-        r=requests.get(self.solr+"/select",params={u"q":qry,u"wt":u"csv",u"rows":500000,u"fl":u"id",u"sort":u"id asc"}, stream=True)
+        #r=requests.get(self.solr+"/select",params={u"q":qry,u"wt":u"csv",u"rows":50000,u"fl":u"id",u"sort":u"id asc"}, stream=True)
+        r=requests.get(self.solr+"/select",params={u"q":qry,u"wt":u"csv",u"fl":u"id",u"sort":u"id asc"}, stream=True)
+
         r_iter = r.iter_lines()
 
         #row_count=r.text.count(u"\n")-1 #how many lines? minus one header line
