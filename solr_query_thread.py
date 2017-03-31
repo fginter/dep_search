@@ -9,8 +9,9 @@ field_re=re.compile(ur"^(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 class SolrQuery():
 
 
-    def __init__(self,extras_dict, compulsory_items,or_groups, solr):
+    def __init__(self,extras_dict, compulsory_items,or_groups, solr, extras):
 
+        self.extra_string = extras
         self.or_groups = or_groups
         self.extras_dict = extras_dict
         self.compulsory_items = compulsory_items
@@ -83,7 +84,11 @@ class SolrQuery():
             qry += u' AND '
         if len(or_terms) > 0:
             qry += u' AND '.join(or_terms)
-            
+
+
+        if len(self.extra_string) > 0:
+            qry += ' ' + self.extra_string
+
         return qry
 
 

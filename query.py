@@ -239,7 +239,7 @@ def get_url(comments):
             return c.split(u":",1)[1].strip()
     return None
 
-def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict, set_count):
+def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, extras):#,set_dict, set_count):
     start = time.time()
     db=db_util.DB()
     
@@ -247,7 +247,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
    
     rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args, solr_or_groups = map_set_id(query_obj.query_fields, db)
     #print rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args 
-    print solr_or_groups
+    print >> sys.stderr, solr_or_groups
 
     #Inits of all kind
     db.init_lmdb(c_args_s, c_args_m, rarest)
@@ -255,10 +255,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
     q_obj.set_db_options(just_all_set_ids, types, optional)    
 
 
-    #import pdb;pdb.set_trace()
-
     from solr_query_thread import SolrQuery
-    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, "http://localhost:8983/solr/dep_search")
+    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, extras)
     print solr_q.get_solr_query()
 
     tree_id_queue = solr_q.get_queue()
@@ -268,6 +266,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
         res = tree_id_queue.get()
         if res == -1:break
         db.xset_tree_to_id(res)
+        idx=res
         res_set = q_obj.check_tree_id(res, db)    
 
         if len(res_set) > 0:
@@ -282,8 +281,32 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
                 try:
                     print "# hittoken:\t"+tree_lines[r] 
                 except:
-                    print '##', r
+                    pass
                 #hittoken once the tree is really here!
+
+
+            if context>0:
+                #hit_url=get_url(hit_comment.decode("utf-8"))
+                texts=[]
+                # get +/- context sentences from db
+                for i in range(idx-args.context,idx+args.context+1):
+                    if i==idx:
+                        data=tree_text
+                    else:
+                        db.xset_tree_to_id(i)
+                        data = db.get_tree_text()
+                        #data,data_comment=get_data_from_db(res_db,i)
+                        #XXX: add URL
+                        if data is None:#or get_url(data_comment.decode("utf-8"))!=hit_url:
+                            continue
+                    text=u" ".join(t.split(u"\t",2)[1] for t in data.decode(u"utf-8").split(u"\n"))
+                    if i<idx:
+                        texts.append(u"# context-before: "+text)
+                    elif i==idx:
+                        texts.append(u"# context-hit: "+text)
+                    else:
+                        texts.append(u"# context-after: "+text)
+                print (u"\n".join(text for text in texts)).encode(u"utf-8")
 
             print tree_text
             print 
@@ -303,6 +326,11 @@ def main(argv):
     parser.add_argument('-d', '--database', default="/mnt/ssd/sdata/pb-10M/*.db",help='Name of the database to query or a wildcard of several DBs. Default: %(default)s.')
     parser.add_argument('-o', '--output', default=None, help='Name of file to write to. Default: STDOUT.')
     parser.add_argument('-s', '--solr', default="http://localhost:8983/solr/dep_search", help='Solr url. Default: %(default)s')
+
+    parser.add_argument('-se', '--solr_extra_query', default="", help='Solr query extras. Default: %(default)s')
+
+    #parser.add_argument('--dblist', required=False, nargs="?", default='None', help='A list of databases to query. Note that this argument must be passed as the last to avoid the query term being interpreted as a database name.')
+
     parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
@@ -377,14 +405,17 @@ def main(argv):
     #import pdb;pdb.set_trace()
 
     total_hits=0
-    for d in dbs:
-        print >> sys.stderr, 'querying' ,d
+    #for d in dbs:
+    #    print >> sys.stderr, 'querying' ,d
 
         #inf = open(d.rstrip('/') + '/set_dict.pickle','rb')
         #set_dict, set_count = pickle.load(inf)
         #inf.close()
 
-        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)#, set_dict, set_count)
+    #XXX: GET RID OF THIS!!!
+    d = '/home/ginter/dep_search_union/conll17/'
+    total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context, args.solr_extra_query)#, set_dict, set_count)
+
         #if total_hits >= args.max and args.max > 0:
         #    break
     print >> sys.stderr, "Total number of hits:",total_hits
@@ -392,9 +423,9 @@ def main(argv):
     if not args.keep_query:
         try:
             pass
-            #os.remove(temp_file_name)
-            #os.remove(temp_file_name[:-4] + '.cpp')
-            #os.remove(temp_file_name[:-4] + '.so')
+            os.remove(temp_file_name)
+            os.remove(temp_file_name[:-4] + '.cpp')
+            os.remove(temp_file_name[:-4] + '.so')
         except:
             pass
 

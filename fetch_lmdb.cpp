@@ -113,11 +113,11 @@ bool LMDB_Fetch::has_id(char *key_data, int key_size) {
     key.mv_size=key_size;
     key.mv_data=(void*)key_data;
 
-    for (int i=0;i<key_size;i++){ 
-        std::cerr << ((char*)key_data)[i];
-    }
-    std::cerr << key_size;
-    std::cerr << "\n";
+    //for (int i=0;i<key_size;i++){ 
+    //    std::cerr << ((char*)key_data)[i];
+    //}
+    //std::cerr << key_size;
+    //std::cerr << "\n";
 
     //Get the count
     int err = mdb_get(txn, db_tk2id, &key, &value);
