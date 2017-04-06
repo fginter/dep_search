@@ -192,7 +192,12 @@ def fill_db(conn,src_data,stats):
             assert ne_g and ne_d
             gov_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(govs) if s))
             dep_set=pytset.PyTSet(len(sent),(idx for idx,s in enumerate(deps) if s))
-            conn.execute('INSERT INTO rel VALUES(?,?,?,?)', [sent_idx,dtype,buffer(serialize_as_tset_array(len(sent),govs)),buffer(serialize_as_tset_array(len(sent),deps))])
+            try:
+                conn.execute('INSERT INTO rel VALUES(?,?,?,?)', [sent_idx,dtype,buffer(serialize_as_tset_array(len(sent),govs)),buffer(serialize_as_tset_array(len(sent),deps))])
+            except struct.error:
+                for l in sent:
+                    print >> sys.stderr, l
+                print >> sys.stderr
         if sent_idx%10000==0:
             print str(datetime.now()), sent_idx
             sys.stdout.flush()
