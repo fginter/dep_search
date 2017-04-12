@@ -214,11 +214,22 @@ def save_stats(stats):
         traceback.print_exc()
     stats.save_json(os.path.join(args.dir,"symbols.json"))
 
+def skip(items,skip):
+    counter=0
+    for i in items:
+        counter+=1
+        if counter<=skip:
+            if counter%1000000==0:
+                print >> sys.stderr, "Skipped ", counter
+            continue
+        yield i
+        
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Train')
     parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
     parser.add_argument('-p', '--prefix', default="trees", help='Prefix name of the database files. Default: %(default)s')
+    parser.add_argument('--skip', type=int, default=0, help='How many sentences to skip from stdin before starting? default: %(default)d')
     parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
     parser.add_argument('--wipe', default=False, action="store_true", help='Wipe the target directory before building the index.')
     args = parser.parse_args()
@@ -230,7 +241,7 @@ if __name__=="__main__":
         print >> sys.stderr, cmd
         os.system(cmd)
 
-    src_data=read_conll(sys.stdin,args.max)
+    src_data=skip(read_conll(sys.stdin,args.max),args.skip)
 
     batch=500000
     counter=0
