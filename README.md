@@ -47,53 +47,16 @@ The following command will query perform a query '_ <nsubj _' of the trees index
 
     python query.py '_ <nsubj' --max 50 -d './fi-data/*.db'  
 
-WebUI
-=====
 
-Web based UI for the query system provides a nice way to query the data and it can be deployed locally or as a web service. It is a python flask app and it uses brat for visualization.
+Web Interface
+=============
 
-Setting Up
-----------
+The web interface of `dep_search` has two components. An API which is part of the dep_search codebase (`webapi` directory), and a browseable web interface which can be tested live at http://bionlp-www.utu.fi/dep_search. The code for the web interface is a separate project released at https://github.com/fginter/dep_search_serve.
 
-### Set up corpora
-
-The webUi expects two files describing the corpora used for the search.  
-The files are corpora.json and available_corpora.json. The corpora.json describes
-the locations and names for indexed data. While available_corpora.json lists
-the order of the corpora and which of them are available for query.
-
-Corpora.json file is a dictionary in json format, where key is the name of the data and
-value is the folder with the database files.  
-
-An example corpora.json could look like this:  
-{   
-  "Finnish": "/mnt/data/dep_search/Finnish.data",   
-  "English": "/mnt/data/dep_search/English.data",   
-  "Czech": "/mnt/data/dep_search/Czech.data"   
-}   
-
-And an available_corpora.json might look like this:   
-[   
-  "Finnish",   
-  "English",   
-  "Czech"   
-]   
-
-### Editing serve.py
-
-If you're deploying your webUI you will have to add your host into serve.py. You can also enable debug and change ports.
-
-uWSGI deployment
-----------------
-
-As a flask application it can be set up as a web service. A way to deploy the application using uWSGI is described at flask-documentation at: http://flask.pocoo.org/docs/0.10/deploying/uwsgi/
+The instructions for setting everything up are here: https://fginter.github.io/dep_search/
 
 Query Language
 ==============
 
 Query language is described in detail at: http://bionlp.utu.fi/searchexpressions-new.html
 
-Appendix: Installing on a fresh Ubuntu
-======================================
-
-Included file install_webui_into_clean_ubuntu.txt lists the required commands to install the software into a clean Ubuntu Linux.
