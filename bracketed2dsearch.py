@@ -5,6 +5,8 @@ import ply.lex as lex
 import ply.yacc as yacc
 import readline
 import urllib.parse
+import requests
+import sys
 
 class Node:
 
@@ -12,11 +14,29 @@ class Node:
         self.dtype=dtype
         self.children=children
 
+    def dsearch_ex_lin(self):
+        #cases like [dep xxx xxx xxx xxx]
+        assert sum(1 for c in self.children if isinstance(c,str))==len(self.children)
+        exprs=[]
+        for root_idx,root in enumerate(self.children):
+            expr=['"'+root+'"']
+            for other_idx,other in enumerate(self.children):
+                if other_idx<root_idx:
+                    expr.append('>lin@L "{}"'.format(other))
+                elif other_idx>root_idx:
+                    expr.append('>lin@R "{}"'.format(other))
+            exprs.append("("+(" ".join(expr))+")")
+        return "("+(" | ".join(exprs))+")"
+                
     def dsearch_ex(self):
         global macros
         #Now I guess I pick one of my STRING children to be the root or what?
         possible_roots=[c for c in self.children if isinstance(c,str)]
-        assert possible_roots
+        if len(possible_roots)==len(self.children) and len(self.children)>1:
+            return self.dsearch_ex_lin()
+        elif len(possible_roots)>1:
+            raise ValueError("Unsupported")
+        assert len(possible_roots)==1
         for r in possible_roots:
             bits=["(",macros.get(r,'"'+r+'"')] #Bits of the expression
             for c in self.children:
@@ -29,11 +49,11 @@ class Node:
                         bits.append(' > ')
                     else:
                         bits.append(' >'+c.dtype)
-                    bits.extend(c.dsearch_ex())
+                    bits.append(c.dsearch_ex())
                 else:
                     assert False, repr(c)
             bits.append(")")
-            return bits#I guess I should then generate the others too?
+            return " ".join(bits)#I guess I should then generate the others too?
 
 ### ---------- lexer -------------
 
@@ -95,6 +115,14 @@ def get_query_url(q):
     url+="?"+urllib.parse.urlencode({"search":q,"db":"RU160M","case_sensitive":"False","hits_per_page":"50"})
     return url
 
+def download(qry,maxnum,fname):
+    data={"search":qry,"db":"RU160M","case":"False","retmax":maxnum}
+    result=requests.get("http://epsilon-it.utu.fi/dep_search_webapi",params=data)
+    print(result.url)
+    with open(fname,"w") as f:
+        print(result.text,file=f)
+        
+
 ### ---------- run this ------------
 
 # * NP-Nom = NOUN Case=Nom
@@ -109,13 +137,17 @@ def get_query_url(q):
 
 macros_def="""
 NP-Nom : (NOUN&Nom)
+NP-Dat : (NOUN&Dat)
 XP : (NOUN|ADJ|ADV|PRON|VERB)
 PRON-Dat : (PRON&Dat)
 NOUN-Nom : (NOUN&Nom)
 VP : VERB
 AP : ADJ
 VP-Inf : (VERB&Inf)
+VP-Imper : (VERB&Mood=Imp)
+V-Past : (VERB&Past)
 Imper : (Mood=Imp)
+Cl : (VERB >nsubj _)
 _ : _
 """
 
@@ -124,19 +156,28 @@ for repl in macros_def.strip().split("\n"):
     src,trg=repl.split(" : ",1)
     macros[src]=trg
 
-# [root [nmod [case без] [nummod пяти] минут] NP-Nom]
-    
-while True:
-   try:
-       s = input('test > ')
-   except EOFError:
-       break
-   if not s:
-       continue
-   node = parser.parse(s)
-   qry=" ".join(node[0].dsearch_ex())
-   print(qry)
-   print(get_query_url(qry))
+
+expressions={} #filename -> list of expressions
+for line in sys.stdin:
+    line=line.strip()
+    if not line:
+        continue
+    if line.startswith("["):
+        #an expression
+        expression_list.append(line)
+    else: #construction name
+        line=line.replace(" ","_")
+        expression_list=[]
+        expressions[line]=expression_list
+
+for fname,expression_list in sorted(expressions.items()):
+    for expression in expression_list:
+        print("Parsing expression", expression, file=sys.stderr, flush=True)
+        node = parser.parse(expression)
+        qry=node[0].dsearch_ex()
+        print(qry)
+        download(qry,5,"dl/"+fname+".conllu")
+        
    
    
    
