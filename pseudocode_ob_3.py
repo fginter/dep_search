@@ -167,11 +167,15 @@ class SetManager():
         self.val_dict = val_dict
         #Interrogate the nodes
         set_and_array_labels = []
+        self.nodes = nodes
 
         for key in node_dict.keys():
             node = node_dict[key]
             self.node_needs[key] = {}
             ni = NodeInterpreter(node, tag_list=self.tag_list, val_dict=self.val_dict)
+
+            self.node_needs[key]['or_group'] = node.or_group_id
+
             self.node_needs[key]['db_sets'], self.node_needs[key]['db_sets_label'] = ni.what_sets_do_you_need()
             self.node_needs[key]['all_tokens'], self.node_needs[key]['all_tokens_label'] = ni.do_you_need_all_tokens()
             #2. What arrays do you need from the db?
@@ -216,6 +220,9 @@ def generate_search_code(node, tag_list=[], val_dict={}):
     for l in generate_code(node, set_manager, node_dict, order_of_execution, tag_list=tag_list, val_dict=val_dict):
         lines.append(l)
 
+    
+
+
     return lines
 
 def get_cinit_function(set_manager, max_len=2048):
@@ -250,6 +257,20 @@ def get_cinit_function(set_manager, max_len=2048):
 
     lines = []
     lines.append('    def __cinit__(self):')
+
+    lines.append('        self.node_needs = ' + str(set_manager.node_needs))
+
+    org_has_all = []
+    for key in set_manager.node_needs.keys():
+
+        if set_manager.node_needs[key]['all_tokens'] and set_manager.node_needs[key]['or_group'] != None:
+            org_has_all.append(set_manager.node_needs[key]['or_group'])
+    #
+    
+
+
+    lines.append('        self.org_has_all = ' + str(org_has_all))
+
     lines.append('        self.sets=<void**>malloc(' + str(len(load_list_set) + len(load_list_array)) + '*sizeof(void*))')
     lines.append('        self.set_types=<int*>malloc(' + str(len(load_list_set) + len(load_list_array)) + '*sizeof(int))')
 
@@ -371,6 +392,8 @@ def get_class_function(set_manager):
 
     lines.append(' ' * 4 + 'cdef TSet *empty_set')
     lines.append(' ' * 4 + 'cdef public object query_fields')
+    lines.append(' ' * 4 + 'cdef public object node_needs')
+    lines.append(' ' * 4 + 'cdef public object org_has_all')
 
     return lines
 
@@ -1080,7 +1103,7 @@ def main():
     for expression in args.expression:
         nodes = e_parser.parse(expression.decode('utf8'))
         add_or_groups_to_nodes(node)
-
+        print >> sys.stderr, nodes.to_unicode()
         print nodes.to_unicode()
 
     code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
@@ -1128,10 +1151,12 @@ def generate_and_write_search_code_from_expression(expression, f, json_filename=
 
     e_parser=yacc.yacc()
 
+    import sys
+
     nodes = e_parser.parse(expression.decode('utf8'))
     fill_negs_above(nodes, negs_above=False)
     add_or_groups_to_nodes(nodes)
-    #print nodes.to_unicode()
+    print >> sys.stderr, 'ps3orgs', nodes.to_unicode()
     code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
     write_cython_code(code_lines, f)
 

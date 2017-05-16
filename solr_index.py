@@ -87,10 +87,12 @@ class SolrIDX(object):
                         relations.add(dtype)
         d={}
         d[u"id"]=self.next_id()
-        d[u"words"]=u" ".join(words)
+        #d[u"words"]=u" ".join(words)
+        d[u"words"]=list(words)
         if words_lcase:
             d[u"words_lcase"]=u" ".join(words_lcase)
-        d[u"lemmas"]=u" ".join(lemmas)
+        #d[u"lemmas"]=u" ".join(lemmas)
+        d[u"lemmas"]=lemmas
         if lemmas_lcase:
             d[u"lemmas_lcase"]=u" ".join(lemmas_lcase)
         if feats:

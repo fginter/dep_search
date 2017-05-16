@@ -43,6 +43,10 @@ class SolrQuery():
 
         terms=[]
         for c in self.compulsory_items:
+
+            print >> sys.stderr, 'item', c
+
+
             match=field_re.match(c)
             assert match, ("Not a known field description", c)
             if match.group(1) in (u"gov",u"dep"):
@@ -61,7 +65,9 @@ class SolrQuery():
         for group in self.or_groups.values():
             g_terms = []
             for item in group:
-                print item
+
+                print >> sys.stderr, 'or_group_item', item
+
                 match=field_re.match(item)
                 assert match, ("Not a known field description", item)
                 if match.group(1) in (u"gov",u"dep"):
@@ -75,7 +81,7 @@ class SolrQuery():
                     g_terms.append(u'lemmas:"%s"'%match.group(3))
                 elif match.group(1)==u"token":
                     g_terms.append(u'words:"%s"'%match.group(3))
-
+            print >> sys.stderr, 'g_terms', g_terms
             or_terms.append(u'(' + u' OR '.join(g_terms)  + u')')
 
         qry=u" ".join(terms)

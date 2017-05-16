@@ -29,7 +29,7 @@ query_folder = './queries/'
 #XXX: Very very temporary hack!
 extras_dict = {}
 
-def map_set_id(args, db):
+def map_set_id(args, db, qobj):
 
     #XXX: figure out a way to check if this and that is in the db. 
 
@@ -48,7 +48,7 @@ def map_set_id(args, db):
 
     for arg in args:
 
-        #print >> sys.stderr, "arg:",arg
+        print >> sys.stderr, "arg:",arg
         compulsory = False
         it_is_set = True
         or_group_id = None
@@ -144,6 +144,11 @@ def map_set_id(args, db):
                 s_args_s.append(oarg)
             else:
                 s_args_m.append(oarg)
+
+
+    for item in qobj.org_has_all:
+        #
+        or_groups[item].append('dep_a_anyrel')
 
 
     together = c_args_s + c_args_m
@@ -244,10 +249,10 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
     db=db_util.DB()
     
     db.open(solr_url, db_name)
-   
-    rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args, solr_or_groups = map_set_id(query_obj.query_fields, db)
+    print >> sys.stderr, 'q_fields',query_obj.query_fields
+    rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args, solr_or_groups = map_set_id(query_obj.query_fields, db, query_obj)
     #print rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args 
-    print solr_or_groups
+    print >> sys.stderr, 'solor', solr_or_groups
 
     #Inits of all kind
     db.init_lmdb(c_args_s, c_args_m, rarest)
