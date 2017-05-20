@@ -137,7 +137,7 @@
 
     <field name="relations" type="string" docValues="false" multiValued="true" indexed="true" stored="true"/>
     
-    <field name="tags" type="string" indexed="true" stored="false" multiValued="true" docValues="false" />
+    <field name="feats" type="string" indexed="true" stored="false" multiValued="true" docValues="false" />
 
 
 

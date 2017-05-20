@@ -81,7 +81,6 @@ class SolrIDX(object):
                         relations.add(dtype)
         d={}
         d[u"id"]=self.next_id()
-        #d[u"words"]=u" ".join(words)
         d[u"words"]=u" ".join(words)
         d[u"lemmas"]=u" ".join(lemmas)
         if feats:
