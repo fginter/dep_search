@@ -9,11 +9,11 @@ field_re=re.compile(ur"^(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 class SolrQuery():
 
 
-    def __init__(self,extras_dict, compulsory_items,or_groups, solr, case):
+    def __init__(self,extra_term, compulsory_items,or_groups, solr, case):
 
         self.case = case
         self.or_groups = or_groups
-        self.extras_dict = extras_dict
+        self.extra_term = extra_term #extra solr term
         self.compulsory_items = compulsory_items
         self.solr = solr
         self.tree_id_queue = Queue()
@@ -43,6 +43,8 @@ class SolrQuery():
     def get_solr_query(self):
 
         terms=[]
+        if self.extra_term.strip():
+            terms.append(self.extra_term)
         for c in self.compulsory_items:
 
             match=field_re.match(c)
