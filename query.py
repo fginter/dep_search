@@ -26,9 +26,6 @@ from collections import defaultdict
 field_re=re.compile(ur"^(!?)(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 query_folder = './queries/'
 
-#XXX: Very very temporary hack!
-extras_dict = {}
-
 def map_set_id(args, db, qobj):
 
     #XXX: figure out a way to check if this and that is in the db. 
@@ -241,7 +238,8 @@ def get_url(comments):
             return c.split(u":",1)[1].strip()
     return None
 
-def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case):#,set_dict, set_count):
+def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):#,set_dict, set_count):
+    #args -> the command line args
 
     start = time.time()
     db=db_util.DB()
@@ -261,7 +259,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case):#,set
     #import pdb;pdb.set_trace()
 
     from solr_query_thread import SolrQuery
-    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case)#, q_obj=q_obj)
+    solr_q = SolrQuery(args.extra_solr_terms, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case)#, q_obj=q_obj)
     #print solr_q.get_solr_query()
 
     tree_id_queue = solr_q.get_queue()
@@ -313,6 +311,7 @@ def main(argv):
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
     parser.add_argument('-i', '--case', required=False, action='store_true',default=False, help='Case insensitive search.')
+    parser.add_argument('--extra-solr-terms',default="",help="Extra restrictions on Solr - a string passed verbatim in the Solr query")
 
     args = parser.parse_args(argv[1:])
 
@@ -398,7 +397,7 @@ def main(argv):
         #inf.close()
 
         
-        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context, args.case)#, set_dict, set_count)
+        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context, args.case, args)#, set_dict, set_count)
         #if total_hits >= args.max and args.max > 0:
         #    break
     print >> sys.stderr, "Total number of hits:",total_hits
