@@ -75,14 +75,21 @@ cdef class Py_Tree:
             for tag in [u"p_"+line[UPOS],u"f_"+line[FORM],u"l_"+line[LEMMA]]+line[FEAT].split(u"|"):
                 if tag[2:]!=u"_":
 
+                    has_lc_ver = False
+                    if tag.startswith('f_') and tag.lower() != tag:
+                        has_lc_ver = True
+
                     #Add tag into the db
                     db_store.store_a_vocab_item(tag)
                     set_id = db_store.get_id_for(tag)
-
-                    #set_id=set_dict.setdefault(tag,len(set_dict))
-
-
                     token_sets.setdefault(set_id,set()).add(t_idx)
+
+                    if has_lc_ver:
+                    
+                        db_store.store_a_vocab_item(tag.lower() + '_lc')
+                        set_id = db_store.get_id_for(tag.lower() + '_lc')
+                        token_sets.setdefault(set_id,set()).add(t_idx)
+
             if line[DEPREL]!=u"_":
                 for gov,dep,dtype in [(int(line[HEAD])-1,t_idx, line[DEPREL])]:
                     if gov==-1:
@@ -108,6 +115,43 @@ cdef class Py_Tree:
                     set_id_d = db_store.get_id_for(u"d_anyrel")
                     #set_id_d=set_dict.setdefault(u"d_anyrel",len(set_dict))
                     arrays.setdefault(set_id_d,set()).add((dep,gov))
+
+
+            #The Second layer
+            if line[DEPS]!=u"_":
+
+                dep = t_idx
+                for xx in line[DEPS].split('|'):
+
+                    #
+                    govs = xx.split(':')[0].split('.')
+                    for sgov in govs:
+
+                        gov = int(sgov)
+                        dtype = ':'.join(xx.split(':')[1:])
+                        if gov == -1:
+                            continue
+
+                        db_store.store_a_vocab_item(u"g_"+dtype)
+                        set_id_g = db_store.get_id_for(u"g_"+dtype)
+                        #set_id_g=set_dict.setdefault(u"g_"+dtype,len(set_dict))
+                        arrays.setdefault(set_id_g,set()).add((gov,dep))
+
+                        db_store.store_a_vocab_item(u"g_anyrel")
+                        set_id_g = db_store.get_id_for(u"g_anyrel")
+                        #set_id_g=set_dict.setdefault(u"g_anyrel",len(set_dict))
+                        arrays.setdefault(set_id_g,set()).add((gov,dep))
+
+                        db_store.store_a_vocab_item(u"d_"+dtype)
+                        set_id_d = db_store.get_id_for(u"d_"+dtype)
+                        #set_id_d=set_dict.setdefault(u"d_"+dtype,len(set_dict))
+                        arrays.setdefault(set_id_d,set()).add((dep,gov))
+
+                        db_store.store_a_vocab_item(u"d_anyrel")
+                        set_id_d = db_store.get_id_for(u"d_anyrel")
+                        #set_id_d=set_dict.setdefault(u"d_anyrel",len(set_dict))
+                        arrays.setdefault(set_id_d,set()).add((dep,gov))
+
 
 
 
