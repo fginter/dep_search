@@ -167,7 +167,7 @@ def map_set_id(args, db, qobj):
 
 def query(query_fields):
 
-    print >> sys.stderr, 'query fields:', query_fields
+    #print >> sys.stderr, 'query fields:', query_fields
     """
     query_fields: A list of strings describing the data to fetch
           Each string names a set to retrieve
@@ -245,10 +245,11 @@ def get_url(comments):
     return None
 
 def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict, set_count):
+
     start = time.time()
     db=db_util.DB()
-    
     db.open(solr_url, db_name)
+
     print >> sys.stderr, 'q_fields',query_obj.query_fields
     rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args, solr_or_groups = map_set_id(query_obj.query_fields, db, query_obj)
     #print rarest, c_args_s, s_args_s, c_args_m, s_args_m, just_all_set_ids, types, optional, solr_args 
@@ -263,8 +264,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
     #import pdb;pdb.set_trace()
 
     from solr_query_thread import SolrQuery
-    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, "http://localhost:8983/solr/dep_search")
-    print solr_q.get_solr_query()
+    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, "http://localhost:8983/solr/dep_search")#, q_obj=q_obj)
+    #print solr_q.get_solr_query()
 
     tree_id_queue = solr_q.get_queue()
 
@@ -272,26 +273,29 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
     while (not solr_q.finished or not tree_id_queue.empty()):
         res = tree_id_queue.get()
         if res == -1:break
-        db.xset_tree_to_id(res)
-        res_set = q_obj.check_tree_id(res, db)    
+        try:
 
-        if len(res_set) > 0:
-            counter+=1
-            #Get the tree text:
-            tree_text = db.get_tree_text()
-            tree_lines=tree_text.split("\n")
-            if counter >= max_hits and max_hits > 0:
-                break
-            for r in res_set:
-                print "# visual-style   " + str(r + 1) + "      bgColor:lightgreen"
-                try:
-                    print "# hittoken:\t"+tree_lines[r] 
-                except:
-                    print '##', r
+            db.xset_tree_to_id(res)
+            res_set = q_obj.check_tree_id(res, db)    
+
+            if len(res_set) > 0:
+                counter+=1
+                #Get the tree text:
+                tree_text = db.get_tree_text()
+                tree_lines=tree_text.split("\n")
+                if counter >= max_hits and max_hits > 0:
+                    break
+                for r in res_set:
+                    print "# visual-style   " + str(r + 1) + "      bgColor:lightgreen"
+                    try:
+                        print "# hittoken:\t"+tree_lines[r] 
+                    except:
+                        pass#print '##', r
                 #hittoken once the tree is really here!
 
-            print tree_text
-            print 
+                print tree_text
+                print
+        except: pass 
 
     solr_q.kill()         
     print >> sys.stderr, "Found %d trees in %.3fs time"%(counter,time.time()-start)
@@ -311,6 +315,7 @@ def main(argv):
     parser.add_argument('search', nargs="?", default="parsubj",help='The name of the search to run (without .pyx), or a query expression. Default: %(default)s.')
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
+    parser.add_argument('-i', '--case', required=False, action='store_true',default=False, help='Case insensitive search.')
 
     args = parser.parse_args(argv[1:])
 
@@ -328,7 +333,7 @@ def main(argv):
 
         import hashlib
         m = hashlib.md5()
-        m.update(args.search)
+        m.update(args.search + str(args.case) + str(args.database))
 
         solr_url = args.solr
 
@@ -339,11 +344,17 @@ def main(argv):
         except:
             pass
 
+        dbs=glob.glob(args.database)
+        dbs.sort()
+
+        db=db_util.DB()
+        db.open(solr_url, dbs[0])
+
         temp_file_name = 'qry_' + m.hexdigest() + '.pyx'
         if not os.path.isfile(query_folder + temp_file_name):
             f = open('qry_' + m.hexdigest() + '.pyx', 'wt')
             try:
-                pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename)
+                pseudocode_ob.generate_and_write_search_code_from_expression(args.search, f, json_filename=json_filename, db=db, case=args.case)
             except Exception as e:
                 os.remove(temp_file_name)
                 raise e
@@ -389,6 +400,7 @@ def main(argv):
         #set_dict, set_count = pickle.load(inf)
         #inf.close()
 
+        
         total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)#, set_dict, set_count)
         #if total_hits >= args.max and args.max > 0:
         #    break

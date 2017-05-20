@@ -168,6 +168,7 @@ class SetManager():
         #Interrogate the nodes
         set_and_array_labels = []
         self.nodes = nodes
+        self.node_dict = node_dict
 
         for key in node_dict.keys():
             node = node_dict[key]
@@ -220,9 +221,7 @@ def generate_search_code(node, tag_list=[], val_dict={}):
     for l in generate_code(node, set_manager, node_dict, order_of_execution, tag_list=tag_list, val_dict=val_dict):
         lines.append(l)
 
-    
-
-
+    #import pdb; pdb.set_trace() 
     return lines
 
 def get_cinit_function(set_manager, max_len=2048):
@@ -265,11 +264,19 @@ def get_cinit_function(set_manager, max_len=2048):
 
         if set_manager.node_needs[key]['all_tokens'] and set_manager.node_needs[key]['or_group'] != None:
             org_has_all.append(set_manager.node_needs[key]['or_group'])
-    #
+
+    #has positive deprel
+    has_positive_deprel = False
+    for key in set_manager.node_dict.keys():
+        if not set_manager.node_dict[key].negs_above and set_manager.node_dict[key].deprel:
+            has_positive_deprel = True
     
 
 
     lines.append('        self.org_has_all = ' + str(org_has_all))
+    lines.append('        self.has_pdeprel = ' + str(has_positive_deprel))
+
+
 
     lines.append('        self.sets=<void**>malloc(' + str(len(load_list_set) + len(load_list_array)) + '*sizeof(void*))')
     lines.append('        self.set_types=<int*>malloc(' + str(len(load_list_set) + len(load_list_array)) + '*sizeof(int))')
@@ -394,6 +401,7 @@ def get_class_function(set_manager):
     lines.append(' ' * 4 + 'cdef public object query_fields')
     lines.append(' ' * 4 + 'cdef public object node_needs')
     lines.append(' ' * 4 + 'cdef public object org_has_all')
+    lines.append(' ' * 4 + 'cdef public object has_pdeprel')
 
     return lines
 
@@ -1113,10 +1121,13 @@ def main():
     write_cython_code(code_lines, open(filename + '.pyx', 'wt'))
 
 
-def generate_and_write_search_code_from_expression(expression, f, json_filename=''):
+def generate_and_write_search_code_from_expression(expression, f, json_filename='', db=None, case=False):
 
     import sys
     print >> sys.stderr, expression
+    print >> sys.stderr, 'db', db
+    print >> sys.stderr, 'case', case
+
 
     try:
         json_f = open(json_filename, 'rt')
@@ -1154,8 +1165,16 @@ def generate_and_write_search_code_from_expression(expression, f, json_filename=
     import sys
 
     nodes = e_parser.parse(expression.decode('utf8'))
+    db_fix_tags(nodes, db=db)
+    if case:
+        nodes = turn_into_caseless_2(nodes)[0]   
+
+ 
     fill_negs_above(nodes, negs_above=False)
     add_or_groups_to_nodes(nodes)
+    
+
+
     print >> sys.stderr, 'ps3orgs', nodes.to_unicode()
     code_lines = generate_search_code(nodes, tag_list=tag_list, val_dict=val_dict)
     write_cython_code(code_lines, f)

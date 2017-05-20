@@ -579,6 +579,138 @@ def check_or_group(group):
     #tag, lemma, token
     return True
 
+def db_fix_tags(node, db=None):
+
+    #Iterate over the nodes
+    for node in get_list_of_all_nodes(node):
+        #print node.to_unicode()
+        try:
+            if node.proplabel == '@CGTAG':
+                #print node.to_unicode()
+                if db != None:
+                    if not db.has_id(u'p_' + node.token_restriction) and not db.has_id(node.token_restriction):
+                        node.proplabel = ''
+        except:
+            pass
+
+def turn_into_caseless(node):
+
+     #deal with a node
+     #kids = node.get_kid_nodes()
+     #check if any of the kids fullfille criteria
+     #for kid in kids:
+     #kid_1
+     kids_dealt_with = []
+
+     if isinstance(node, SetNode_Token) and node.proplabel == '' and node.token_restriction != '_':
+         new_kid = get_node_with_lcor(node)
+         node = new_kid
+         return node         
+
+     try:
+     #if True: 
+         if isinstance(node.setnode1, SetNode_Token) and node.setnode1.proplabel == '' and node.token_restriction != '_':
+             new_kid = get_node_with_lcor(node.setnode1)
+             print 'new_kid', new_kid.to_unicode()
+             node.setnode1 = new_kid
+             kids_dealt_with.append(node.setnode1)
+         if isinstance(node.setnode2, SetNode_Token) and node.setnode2.proplabel == '' and node.token_restriction != '_':
+             new_kid = get_node_with_lcor(node.setnode2)
+             node.setnode2 = new_kid.to_unicode()
+             kids_dealt_with.append(node.setnode2)
+     except:
+         pass
+
+     import pdb;pdb.set_trace()
+     for kid in node.get_kid_nodes():
+         if kid not in kids_dealt_with:
+             turn_into_caseless(kid)
+
+     return node
+
+
+def turn_into_caseless_2(node):
+
+    new_nodes = []
+    n = get_list_of_all_nodes(node)[0]
+
+    if isinstance(get_list_of_all_nodes(node)[0], SetNode_Token) and n.proplabel == '' and n.token_restriction != '_':
+        new_kid = get_node_with_lcor(n)
+        return [new_kid]
+
+    for n in get_list_of_all_nodes(node):
+
+        try: 
+            if isinstance(n.setnode1, SetNode_Token) and n.setnode1.proplabel == '' and n.setnode1.token_restriction != '_':
+                new_kid = get_node_with_lcor(n.setnode1)
+                n.setnode1 = new_kid
+                kids_dealt_with.append(n.setnode1)
+                #import pdb;pdb.set_trace()
+        except: pass
+        try:
+            if isinstance(n.setnode2, SetNode_Token) and n.setnode2.proplabel == '' and n.setnode2.token_restriction != '_':
+                new_kid = get_node_with_lcor(n.setnode2)
+                n.setnode2 = new_kid
+                kids_dealt_with.append(n.setnode2)
+                #import pdb;pdb.set_trace()
+        except:pass
+        try:
+
+            if isinstance(n.index_node, SetNode_Token) and n.index_node.proplabel == '' and n.index_node.token_restriction != '_':
+                new_kid = get_node_with_lcor(n.index_node)
+                n.index_node = new_kid
+                kids_dealt_with.append(n.index_node)
+        except:pass
+        try:
+
+
+        ####self.deprels = [(deprel, setnode2)]
+
+
+            new_deprels = []
+            for dr, sn in n.deprels:
+
+
+                if isinstance(sn, SetNode_Token) and sn.proplabel == '' and sn.token_restriction != '_':
+                    new_kid = get_node_with_lcor(sn)
+                    sn = new_kid
+                    kids_dealt_with.append(n.index_node)
+                new_deprels.append((dr, sn))
+            n.deprels = new_deprels
+
+        except:pass
+        #traceback.print_exc()
+        new_nodes.append(n)
+  
+    return new_nodes
+
+
+
+def get_node_with_lcor(node):
+
+    #lc ver of of
+    lc_node = SetNode_Token(node.token_restriction.lower() + u'_lc')
+    lc_node.proplabel = node.proplabel
+    lc_node.extra_comments = node.extra_comments
+
+    #og
+    original_node = SetNode_Token(node.token_restriction)
+    original_node.proplabel = node.proplabel
+    original_node.extra_comments = node.extra_comments
+    or_node = SetNode_Or(lc_node, original_node)
+
+    return or_node
+
+def get_list_of_all_nodes(node, node_list=[]):
+
+    node_list.append(node)
+    kids = node.get_kid_nodes()
+    for kid in kids:
+        get_list_of_all_nodes(kid, node_list=node_list)
+
+    return node_list
+
+
 def fill_negs_above(node, negs_above=False):
 
     #Am I negated?
@@ -666,9 +798,15 @@ if __name__=="__main__":
         log = logging.getLogger()
         ebin = e_parser.parse(expression.decode('utf8'), debug=0)
         print ebin.to_unicode()
-
+        db_fix_tags(ebin)
         print 'ORGS'
         fill_negs_above(ebin, negs_above=False)
         for g in get_or_groups(ebin):
             print [t.to_unicode() for t in g]
         print 'END!'
+
+
+        ebin = turn_into_caseless_2(ebin)[0]
+        print ebin.to_unicode()
+
+
