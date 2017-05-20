@@ -126,6 +126,8 @@
     <field name="source" type="string" indexed="true" stored="true"/>
     <field name="lang" type="string" docValues="true" indexed="true" stored="true"/>
     <field name="url" type="string" docValues="true" indexed="true" stored="true"/>
+    <field name="metatags" type="string" indexed="true" stored="true" multiValued="true" docValues="false" />
+
     
     <field name="lemmas" type="text_ws_gap1" docValues="false" indexed="true" stored="true"/>
     <field name="lemmas_lcase" type="text_ws_lc_gap1" docValues="false" indexed="true" stored="true"/>
