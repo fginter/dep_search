@@ -58,9 +58,9 @@ class SolrQuery():
                 terms.append(u'+lemmas:"%s"'%match.group(3))
             elif match.group(1)==u"token":
                 if not self.case:
-                    terms.append(u'+words:"%s"'%match.group(3))
+                    terms.append(u'words:"%s"'%match.group(3))
                 else:
-                    terms.append(u'+words_lcase:"%s"'%match.group(3))
+                    terms.append(u'words_lcase:"%s"'%match.group(3))
 
         or_terms = []
         for group in self.or_groups.values():
@@ -84,9 +84,9 @@ class SolrQuery():
                 elif match.group(1)==u"token":
 
                     if not self.case:
-                        g_terms.append(u'+words:"%s"'%match.group(3))
+                        g_terms.append(u'words:"%s"'%match.group(3))
                     else:
-                        g_terms.append(u'+words_lcase:"%s"'%match.group(3))
+                        g_terms.append(u'words_lcase:"%s"'%match.group(3))
 
             or_terms.append(u'(' + u' OR '.join(g_terms)  + u')')
 
@@ -95,6 +95,9 @@ class SolrQuery():
             qry += u' AND '
         if len(or_terms) > 0:
             qry += u' AND '.join(or_terms)
+
+        if len(qry) < 1: qry += 'words:*'
+
             
         return qry
 
