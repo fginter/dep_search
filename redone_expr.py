@@ -633,6 +633,7 @@ def turn_into_caseless_2(node):
 
     new_nodes = []
     n = get_list_of_all_nodes(node)[0]
+    kids_dealt_with = []
 
     if isinstance(get_list_of_all_nodes(node)[0], SetNode_Token) and n.proplabel == '' and n.token_restriction != '_':
         new_kid = get_node_with_lcor(n)
@@ -670,16 +671,16 @@ def turn_into_caseless_2(node):
             new_deprels = []
             for dr, sn in n.deprels:
 
-
                 if isinstance(sn, SetNode_Token) and sn.proplabel == '' and sn.token_restriction != '_':
                     new_kid = get_node_with_lcor(sn)
                     sn = new_kid
-                    kids_dealt_with.append(n.index_node)
+                    kids_dealt_with.append(sn)
                 new_deprels.append((dr, sn))
             n.deprels = new_deprels
 
         except:pass
-        #traceback.print_exc()
+            #import traceback
+            #traceback.print_exc()
         new_nodes.append(n)
   
     return new_nodes

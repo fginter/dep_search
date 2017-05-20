@@ -9,8 +9,9 @@ field_re=re.compile(ur"^(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 class SolrQuery():
 
 
-    def __init__(self,extras_dict, compulsory_items,or_groups, solr):
+    def __init__(self,extras_dict, compulsory_items,or_groups, solr, case):
 
+        self.case = case
         self.or_groups = or_groups
         self.extras_dict = extras_dict
         self.compulsory_items = compulsory_items
@@ -44,9 +45,6 @@ class SolrQuery():
         terms=[]
         for c in self.compulsory_items:
 
-            print >> sys.stderr, 'item', c
-
-
             match=field_re.match(c)
             assert match, ("Not a known field description", c)
             if match.group(1) in (u"gov",u"dep"):
@@ -59,14 +57,18 @@ class SolrQuery():
             elif match.group(1)==u"lemma":
                 terms.append(u'+lemmas:"%s"'%match.group(3))
             elif match.group(1)==u"token":
-                terms.append(u'+words:"%s"'%match.group(3))
+                if not self.case:
+                    terms.append(u'+words:"%s"'%match.group(3))
+                else:
+                    terms.append(u'+words_lcase:"%s"'%match.group(3))
 
         or_terms = []
         for group in self.or_groups.values():
             g_terms = []
             for item in group:
 
-                print >> sys.stderr, 'or_group_item', item
+                if item.endswith('_lc'): continue
+                if self.case: item = item.lower()
 
                 match=field_re.match(item)
                 assert match, ("Not a known field description", item)
@@ -80,8 +82,12 @@ class SolrQuery():
                 elif match.group(1)==u"lemma":
                     g_terms.append(u'lemmas:"%s"'%match.group(3))
                 elif match.group(1)==u"token":
-                    g_terms.append(u'words:"%s"'%match.group(3))
-            print >> sys.stderr, 'g_terms', g_terms
+
+                    if not self.case:
+                        g_terms.append(u'+words:"%s"'%match.group(3))
+                    else:
+                        g_terms.append(u'+words_lcase:"%s"'%match.group(3))
+
             or_terms.append(u'(' + u' OR '.join(g_terms)  + u')')
 
         qry=u" ".join(terms)
@@ -91,9 +97,6 @@ class SolrQuery():
             qry += u' AND '.join(or_terms)
             
         return qry
-
-
-
 
     def ids_from_solr_gen(self):
 

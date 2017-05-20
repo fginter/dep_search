@@ -47,12 +47,9 @@ def map_set_id(args, db, qobj):
     or_groups = defaultdict(list)
 
     for arg in args:
-
-        print >> sys.stderr, "arg:",arg
         compulsory = False
         it_is_set = True
         or_group_id = None
-
 
         if arg.startswith('!'):
             compulsory = True    
@@ -244,7 +241,7 @@ def get_url(comments):
             return c.split(u":",1)[1].strip()
     return None
 
-def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict, set_count):
+def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case):#,set_dict, set_count):
 
     start = time.time()
     db=db_util.DB()
@@ -264,7 +261,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context):#,set_dict,
     #import pdb;pdb.set_trace()
 
     from solr_query_thread import SolrQuery
-    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, "http://localhost:8983/solr/dep_search")#, q_obj=q_obj)
+    solr_q = SolrQuery(extras_dict, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case)#, q_obj=q_obj)
     #print solr_q.get_solr_query()
 
     tree_id_queue = solr_q.get_queue()
@@ -401,7 +398,7 @@ def main(argv):
         #inf.close()
 
         
-        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context)#, set_dict, set_count)
+        total_hits+=query_from_db(query_obj,d,sql_query,sql_args,args.max,args.context, args.case)#, set_dict, set_count)
         #if total_hits >= args.max and args.max > 0:
         #    break
     print >> sys.stderr, "Total number of hits:",total_hits
