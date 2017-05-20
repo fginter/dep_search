@@ -33,7 +33,7 @@ class SolrIDX(object):
     def commit(self,force=False):
         if force or len(self.documents)>=self.batch_size:
             try:
-                s=pysolr.Solr(self.solr_url,timeout=10)
+                s=pysolr.Solr(self.solr_url,timeout=600)
                 self.tree_count+=len(self.documents) #sum(len(d[u"_childDocuments_"]) for d in self.documents)
                 print >> sys.stderr, self.tree_count, "trees in Solr"
                 s.add(self.documents)
@@ -63,9 +63,7 @@ class SolrIDX(object):
         
         feats=set()
         words=[]
-        words_lcase=[]
         lemmas=[]
-        lemmas_lcase=[]
         relations=set()
 
         for cols in conllu:
@@ -73,11 +71,7 @@ class SolrIDX(object):
             if cols[FEATS]!=u"_":
                 feats|=set(cols[FEATS].split(u"|"))
             words.append(cols[FORM])
-            if cols[FORM].lower()!=cols[FORM]:
-                words_lcase.append(cols[FORM].lower())
             lemmas.append(cols[LEMMA])
-            if cols[LEMMA].lower()!=cols[LEMMA]:
-                lemmas_lcase.append(cols[LEMMA].lower())
             if cols[DEPREL]!=u"root":
                 relations.add(cols[DEPREL])
             if cols[DEPS]!=u"_":
@@ -88,13 +82,8 @@ class SolrIDX(object):
         d={}
         d[u"id"]=self.next_id()
         #d[u"words"]=u" ".join(words)
-        d[u"words"]=list(words)
-        if words_lcase:
-            d[u"words_lcase"]=u" ".join(words_lcase)
-        #d[u"lemmas"]=u" ".join(lemmas)
-        d[u"lemmas"]=lemmas
-        if lemmas_lcase:
-            d[u"lemmas_lcase"]=u" ".join(lemmas_lcase)
+        d[u"words"]=u" ".join(words)
+        d[u"lemmas"]=u" ".join(lemmas)
         if feats:
             d[u"feats"]=list(feats)
         if relations:
@@ -103,10 +92,6 @@ class SolrIDX(object):
         d[u"lang"]=self.lang
         d[u"source"]=self.source
 
-        #if not self.documents:
-        #    self.new_doc(u"unknown",u"unknown")
-
-        #self.documents[-1][u"_childDocuments_"].append(d)
         self.documents.append(d)
         self.commit()
         return d[u"id"]
