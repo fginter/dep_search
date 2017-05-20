@@ -49,13 +49,13 @@ class SolrQuery():
             assert match, ("Not a known field description", c)
             if match.group(1) in (u"gov",u"dep"):
                 if match.group(3)==u"anyrel":
-                   terms.append(u'+relations:*')
+                   terms.append(u'relations:*')
                 else:
-                   terms.append(u'+relations:"%s"'%match.group(3))
+                   terms.append(u'relations:"%s"'%match.group(3))
             elif match.group(1)==u"tag":
-                terms.append(u'+feats:"%s"'%match.group(3))
+                terms.append(u'feats:"%s"'%match.group(3))
             elif match.group(1)==u"lemma":
-                terms.append(u'+lemmas:"%s"'%match.group(3))
+                terms.append(u'lemmas:"%s"'%match.group(3))
             elif match.group(1)==u"token":
                 if not self.case:
                     terms.append(u'words:"%s"'%match.group(3))
@@ -90,13 +90,13 @@ class SolrQuery():
 
             or_terms.append(u'(' + u' OR '.join(g_terms)  + u')')
 
-        qry=u" ".join(terms)
+        qry=u" AND ".join(terms)
         if len(terms) > 0 and len(or_terms) > 0:
             qry += u' AND '
         if len(or_terms) > 0:
             qry += u' AND '.join(or_terms)
 
-        if len(qry) < 1: qry += 'words:*'
+        if len(qry) < 1: qry += '+words:*'
 
             
         return qry
@@ -122,4 +122,4 @@ class SolrQuery():
             hits +=1
             yield int(id)
 
-        print "Hits from solr:", hits, " in", time.time()-beg, "seconds"
+        print >> sys.stderr, "Hits from solr:", hits, " in", time.time()-beg, "seconds"
