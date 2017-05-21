@@ -259,7 +259,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
     #import pdb;pdb.set_trace()
 
     from solr_query_thread import SolrQuery
-    solr_q = SolrQuery(args.extra_solr_terms, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case)#, q_obj=q_obj)
+    solr_q = SolrQuery(args.extra_solr_terms, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case, q_obj)#, q_obj=q_obj)
     #print solr_q.get_solr_query()
 
     tree_id_queue = solr_q.get_queue()
