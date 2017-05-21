@@ -118,8 +118,7 @@ cdef class Py_Tree:
 
 
             #The Second layer
-            if line[DEPS]!=u"_":
-
+            if line[-2]!=u"_":
                 dep = t_idx
                 for xx in line[DEPS].split('|'):
 
@@ -127,7 +126,7 @@ cdef class Py_Tree:
                     govs = xx.split(':')[0].split('.')
                     for sgov in govs:
 
-                        gov = int(sgov)
+                        gov = int(sgov) - 1
                         dtype = ':'.join(xx.split(':')[1:])
                         if gov == -1:
                             continue
@@ -135,12 +134,12 @@ cdef class Py_Tree:
                         db_store.store_a_vocab_item(u"g_"+dtype)
                         set_id_g = db_store.get_id_for(u"g_"+dtype)
                         #set_id_g=set_dict.setdefault(u"g_"+dtype,len(set_dict))
-                        arrays.setdefault(set_id_g,set()).add((gov,dep))
+                        arrays.setdefault(set_id_g,set()).add((gov,t_idx))
 
                         db_store.store_a_vocab_item(u"g_anyrel")
                         set_id_g = db_store.get_id_for(u"g_anyrel")
                         #set_id_g=set_dict.setdefault(u"g_anyrel",len(set_dict))
-                        arrays.setdefault(set_id_g,set()).add((gov,dep))
+                        arrays.setdefault(set_id_g,set()).add((gov,t_idx))
 
                         db_store.store_a_vocab_item(u"d_"+dtype)
                         set_id_d = db_store.get_id_for(u"d_"+dtype)
