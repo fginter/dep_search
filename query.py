@@ -284,10 +284,10 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
                     print "# db_tree_id:",idx
                     print "# visual-style   " + str(r + 1) + "      bgColor:lightgreen"
                     try:
-                        print "# hittoken:\t"+tree_lines[r]
+                        print "# hittoken:\t"+tree_lines[r].encode('utf8')
                         its_a_hit = True 
                     except:
-                        pass#print '##', r
+                        pass#import traceback; traceback.print_exc()
                 #hittoken once the tree is really here!
                 if its_a_hit:
 
@@ -314,8 +314,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
                                 texts.append(u"# context-after: "+text)
                         print (u"\n".join(text for text in texts)).encode(u"utf-8")
 
-                    print tree_comms
-                    print hit
+                    print tree_comms.encode('utf8')
+                    print hit.encode('utf8')
                     print
                     counter += 1
 
@@ -327,7 +327,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
 
 
 
-        except: import traceback; traceback.print_exc()
+        except: pass#import traceback; traceback.print_exc()
 
     solr_q.kill()         
     print >> sys.stderr, "Found %d trees in %.3fs time"%(counter,time.time()-start)
