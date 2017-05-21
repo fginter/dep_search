@@ -172,11 +172,18 @@ cdef class DB:
          self.thisptr.get_count_for(<uint32_t>idx)
          return self.thisptr.get_count()
 
+    def get_tree_comms(self):
+        cdef Tree * tree  = self.thisptr.tree
+        cdef char * tree_text_data=tree.zipped_tree_text
+        result = [l for l in zlib.decompress(tree_text_data[:tree.zipped_tree_text_length]).decode('utf8').split(u'\n') if l.startswith(u'#')]
+        return '\n'.join(result)                
+
 
     def get_tree_text(self):
         cdef Tree * tree  = self.thisptr.tree
         cdef char * tree_text_data=tree.zipped_tree_text
-        return zlib.decompress(tree_text_data[:tree.zipped_tree_text_length])
+        result = [l for l in zlib.decompress(tree_text_data[:tree.zipped_tree_text_length]).decode('utf8').split(u'\n') if not l.startswith(u'#')]
+        return '\n'.join(result)         
     
 
 

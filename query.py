@@ -266,31 +266,68 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
 
     counter = 0
     while (not solr_q.finished or not tree_id_queue.empty()):
-        res = tree_id_queue.get()
-        if res == -1:break
+        idx = tree_id_queue.get()
+        if idx == -1:break
         try:
-            db.xset_tree_to_id(res)
-            res_set = q_obj.check_tree_id(res, db)    
+            db.xset_tree_to_id(idx)
+            res_set = q_obj.check_tree_id(idx, db)    
 
             if len(res_set) > 0:
-                counter+=1
                 #Get the tree text:
-                tree_text = db.get_tree_text()
-                tree_lines=tree_text.split("\n")
+                hit = db.get_tree_text()
+                tree_comms = db.get_tree_comms()
+                tree_lines=hit.split("\n")
                 if counter >= max_hits and max_hits > 0:
                     break
-                for r in res_set:
-                    print "# db_tree_id:",res
+                its_a_hit = False
+                for r in res_set:   
+                    print "# db_tree_id:",idx
                     print "# visual-style   " + str(r + 1) + "      bgColor:lightgreen"
                     try:
-                        print "# hittoken:\t"+tree_lines[r] 
+                        print "# hittoken:\t"+tree_lines[r]
+                        its_a_hit = True 
                     except:
                         pass#print '##', r
                 #hittoken once the tree is really here!
+                if its_a_hit:
 
-                print tree_text
-                print
-        except: pass 
+                    if args.context>0:
+                        hit_url=get_url(tree_comms)
+                        texts=[]
+                        # get +/- context sentences from db
+                        for i in range(idx-args.context,idx+args.context+1):
+                            if i==idx:
+                                data=hit
+                            else:
+                                db.xset_tree_to_id(i)
+                                data = db.get_tree_text()
+                                data_comment = db.get_tree_comms()
+
+                                if data is None or get_url(data_comment)!=hit_url:
+                                    continue
+                            text=u" ".join(t.split(u"\t",2)[1] for t in data.split(u"\n"))
+                            if i<idx:
+                                texts.append(u"# context-before: "+text)
+                            elif i==idx:
+                                texts.append(u"# context-hit: "+text)
+                            else:
+                                texts.append(u"# context-after: "+text)
+                        print (u"\n".join(text for text in texts)).encode(u"utf-8")
+
+                    print tree_comms
+                    print hit
+                    print
+                    counter += 1
+
+                ###
+                #Let's get the context, if such may be
+                #if args.context > 0:
+
+                #    for t_id in 
+
+
+
+        except: import traceback; traceback.print_exc()
 
     solr_q.kill()         
     print >> sys.stderr, "Found %d trees in %.3fs time"%(counter,time.time()-start)
