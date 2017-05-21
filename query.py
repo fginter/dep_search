@@ -269,7 +269,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
         idx = tree_id_queue.get()
         if idx == -1:break
         try:
-            db.xset_tree_to_id(idx)
+            err = db.xset_tree_to_id(idx)
+            if err != 0: continue
             res_set = q_obj.check_tree_id(idx, db)    
 
             if len(res_set) > 0:
@@ -318,14 +319,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
                     print hit.encode('utf8')
                     print
                     counter += 1
-
-                ###
-                #Let's get the context, if such may be
-                #if args.context > 0:
-
-                #    for t_id in 
-
-
+                    import pdb;pdb.set_trace()
 
         except: pass#import traceback; traceback.print_exc()
 
