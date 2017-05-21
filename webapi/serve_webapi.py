@@ -6,6 +6,7 @@ import glob
 import random
 import os.path
 import available_corpora
+from local_config import SOLR_URL
 
 DEFAULT_PORT=45678
 
@@ -37,14 +38,14 @@ MAXCONTEXT=10
 
 @app.route("/metadata",methods=["GET"],strict_slashes=False)
 def get_metadata():
-    corpora=available_corpora.get_corpora(os.path.join(THISDIR,"corpora.yaml"))
+    corpora=available_corpora.get_corpora(os.path.join(THISDIR,"corpora.yaml"),SOLR_URL)
     corpus_groups=available_corpora.get_corpus_groups(os.path.join(THISDIR,"corpus_groups.yaml"),corpora)
     res={"corpus_groups":corpus_groups}
     return json.dumps(res)
 
 @app.route("/",methods=["GET"])
 def run_query():
-    corpora=available_corpora.get_corpora(os.path.join(THISDIR,"corpora.yaml"))
+    corpora=available_corpora.get_corpora(os.path.join(THISDIR,"corpora.yaml"),SOLR_URL)
     if "search" not in flask.request.args:
         return flask.Response(help_response)
     retmax=int(flask.request.args.get("retmax",1000)) #default is 1000
