@@ -1,10 +1,10 @@
 -
   name: Finnish
-  corpora: UD_v13_Finnish$ PBV4 S24
+  corpora: UD_Finnish-v2.0 PBV4 S24
 
 -
-  name: UD ver 1.3
-  corpora: UD_.*-v13
+  name: UD ver 2.0
+  corpora: UD_.*-v2.0
 
 -
   name: UD dev branch
