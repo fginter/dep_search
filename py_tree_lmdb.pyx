@@ -64,7 +64,7 @@ cdef class Py_Tree:
 
         #print lines
         #I know, will fix
-        tree_text = u'\n'.join([u'\t'.join(l) for l in lines])
+        tree_text = '\n'.join(comments) + '\n' + u'\n'.join([u'\t'.join(l) for l in lines])
         #print tree_text
         tree_data_gz=zlib.compress(tree_text.encode('utf8'))  #json.dumps(tree_data)#json.dumps(tree_data)#zlib.compress(json.dumps(tree_data))
         
