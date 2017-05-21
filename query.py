@@ -269,7 +269,6 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
         res = tree_id_queue.get()
         if res == -1:break
         try:
-
             db.xset_tree_to_id(res)
             res_set = q_obj.check_tree_id(res, db)    
 
@@ -281,6 +280,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
                 if counter >= max_hits and max_hits > 0:
                     break
                 for r in res_set:
+                    print "# db_tree_id:",res
                     print "# visual-style   " + str(r + 1) + "      bgColor:lightgreen"
                     try:
                         print "# hittoken:\t"+tree_lines[r] 
