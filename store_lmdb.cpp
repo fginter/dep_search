@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <iostream>
 #include <iomanip>
+#include <errno.h>
 
 LMDB_Store::LMDB_Store() {
     op_count=0;
@@ -21,7 +22,7 @@ mode_t get_mode() {
 
 void report(const char* msg, int err) {
   if (err!=0) {
-    printf("%s: %s\n",msg,mdb_strerror(err));
+    fprintf(stderr,"%s: %s\n",msg,mdb_strerror(err));
   }
   else {
     printf("%s: OK\n",msg);
