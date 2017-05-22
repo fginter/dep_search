@@ -264,7 +264,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
         extra_params = {}
 
     from solr_query_thread import SolrQuery
-    solr_q = SolrQuery(args.extra_solr_terms, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case, q_obj, extra_params=extra_params)#, q_obj=q_obj)
+    solr_q = SolrQuery(args.extra_solr_term, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case, q_obj, extra_params=extra_params)#, q_obj=q_obj)
     #print solr_q.get_solr_query()
 
     tree_id_queue = solr_q.get_queue()
@@ -288,7 +288,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
                 its_a_hit = False
                 for r in res_set:   
                     print "# db_tree_id:",idx
-                    print "# visual-style   " + str(r + 1) + "      bgColor:lightgreen"
+                    print "# visual-style\t" + str(r + 1) + "\tbgColor:lightgreen"
                     try:
                         print "# hittoken:\t"+tree_lines[r].encode('utf8')
                         its_a_hit = True 
@@ -347,7 +347,7 @@ def main(argv):
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
     parser.add_argument('-i', '--case', required=False, action='store_true',default=False, help='Case insensitive search.')
-    parser.add_argument('--extra-solr-terms',default="",help="Extra restrictions on Solr - a string passed verbatim in the Solr query")
+    parser.add_argument('--extra-solr-term',default=[],action="append",help="Extra restrictions on Solr, strings passed verbatim in the Solr query, you can have several of these")
     parser.add_argument('--extra-solr-params',default="",help="Extra parameters on Solr - a dictionary passed verbatim in the Solr request")
 
     args = parser.parse_args(argv[1:])
