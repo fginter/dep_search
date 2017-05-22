@@ -23,13 +23,14 @@ ID,FORM,LEMMA,UPOS,XPOS,FEATS,HEAD,DEPREL,DEPS,MISC=range(10)
 
 symbs=re.compile(ur"[^A-Za-z0-9_]",re.U)
 
-def read_conll(inp,maxsent=0):
+def read_conll(inp,maxsent=0,skipfirst=0):
     """ Read conll format file and yield one sentence at a time as a list of lists of columns. If inp is a string it will be interpreted as fi
 lename, otherwise as open file for reading in unicode"""
     if isinstance(inp,basestring):
         f=codecs.open(inp,u"rt",u"utf-8")
     else:
         f=codecs.getreader("utf-8")(inp) # read inp directly
+    count_yielded=0
     count=0
     sent=[]
     comments=[]
@@ -38,8 +39,10 @@ lename, otherwise as open file for reading in unicode"""
         if not line:
             if sent:
                 count+=1
-                yield sent, comments
-                if maxsent!=0 and count>=maxsent:
+                if count>skipfirst:
+                    count_yielded+=1
+                    yield sent, comments
+                if maxsent!=0 and count_yielded>=maxsent:
                     break
                 sent=[]
                 comments=[]
@@ -84,6 +87,7 @@ if __name__=="__main__":
 
     parser = argparse.ArgumentParser(description='Train')
     parser.add_argument('-d', '--dir', required=True, help='Directory name to save the index. Will be wiped and recreated.')
+    parser.add_argument('--skip-first', type=int, default=0, help='How many sentences to skip before starting the indexing? 0 for none. default: %(default)d')
     parser.add_argument('--max', type=int, default=0, help='How many sentences to read from stdin? 0 for all. default: %(default)d')
     parser.add_argument('--wipe', default=False, action="store_true", help='Wipe the target directory before building the index.')
     parser.add_argument('--solr', default="http://localhost:8983/solr/dep_search",help='Solr url. default: %(default)s')
@@ -101,7 +105,7 @@ if __name__=="__main__":
 
     solr_idx=solr_index.SolrIDX(args)
         
-    src_data=read_conll(sys.stdin, args.max)
+    src_data=read_conll(sys.stdin, args.max, args.skip_first)
     set_dict={}
     lengths=0
     counter=0
@@ -112,7 +116,6 @@ if __name__=="__main__":
     tree_id=0
     from collections import Counter
     setarr_count = Counter([])
-
 
 
     print

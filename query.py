@@ -288,7 +288,7 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
                 its_a_hit = False
                 for r in res_set:   
                     print "# db_tree_id:",idx
-                    print "# visual-style   " + str(r + 1) + "      bgColor:lightgreen"
+                    print "# visual-style\t" + str(r + 1) + "\tbgColor:lightgreen"
                     try:
                         print "# hittoken:\t"+tree_lines[r].encode('utf8')
                         its_a_hit = True 
