@@ -115,26 +115,30 @@ class SolrQuery():
 
     def ids_from_solr_gen(self):
 
-        qry= self.get_solr_query()
+        try:
 
-        print >> sys.stderr, "Solr qry", qry
-        #### XXX TODO How many rows?
-        beg=time.time()
-        params = {u"q":qry,u"wt":u"csv",u"rows":500000,u"fl":u"id",u"sort":u"id asc"}
-        if type(self.extra_params) == dict:
-            params.update(self.extra_params)
-        r=requests.get(self.solr+"/select",params=params, stream=True)
-        r_iter = r.iter_lines()
+            qry= self.get_solr_query()
 
-        #row_count=r.text.count(u"\n")-1 #how many lines? minus one header line
-        #cdef uint32_t *id_array=<uint32_t *>malloc(row_count*sizeof(uint32_t))
-        #r_txt=StringIO.StringIO(r.text)
-        col_name=r_iter.next() #column name
-        assert col_name==u"id", repr(col_name)
-        hits = 0
-        for idx,id in enumerate(r_iter):
-            #assert idx<row_count, (idx,row_count)
-            hits +=1
-            yield int(id)
+            print >> sys.stderr, "Solr qry", qry.encode('utf8')
+            #### XXX TODO How many rows?
+            beg=time.time()
+            params = {u"q":qry,u"wt":u"csv",u"rows":500000,u"fl":u"id",u"sort":u"id asc"}
+            if type(self.extra_params) == dict:
+                params.update(self.extra_params)
+            r=requests.get(self.solr+"/select",params=params, stream=True)
+            r_iter = r.iter_lines()
+
+            #row_count=r.text.count(u"\n")-1 #how many lines? minus one header line
+            #cdef uint32_t *id_array=<uint32_t *>malloc(row_count*sizeof(uint32_t))
+            #r_txt=StringIO.StringIO(r.text)
+            col_name=r_iter.next() #column name
+            assert col_name==u"id", repr(col_name)
+            hits = 0
+            for idx,id in enumerate(r_iter):
+                #assert idx<row_count, (idx,row_count)
+                hits +=1
+                yield int(id)
+        except:
+            import traceback; traceback.print_exc()
 
         print >> sys.stderr, "Hits from solr:", hits, " in", time.time()-beg, "seconds"
