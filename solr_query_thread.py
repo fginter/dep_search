@@ -8,9 +8,10 @@ from multiprocessing import Process, Queue
 field_re=re.compile(ur"^(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 class SolrQuery():
 
+    def __init__(self,extra_term, compulsory_items,or_groups, solr, case, q_obj, extra_params={}):
 
-    def __init__(self,extra_term, compulsory_items,or_groups, solr, case):
-
+        self.q_obj = q_obj
+        self.extra_params = extra_params
         self.case = case
         self.or_groups = or_groups
         self.extra_term = extra_term #extra solr term
@@ -51,7 +52,11 @@ class SolrQuery():
             assert match, ("Not a known field description", c)
             if match.group(1) in (u"gov",u"dep"):
                 if match.group(3)==u"anyrel":
-                   terms.append(u'relations:*')
+                    if self.q_obj.has_pdeprel:
+                        terms.append(u'relations:*')
+                    else: 
+                        terms.append(u'words:*')
+
                 else:
                    terms.append(u'relations:"%s"'%match.group(3))
             elif match.group(1)==u"tag":
@@ -76,7 +81,12 @@ class SolrQuery():
                 assert match, ("Not a known field description", item)
                 if match.group(1) in (u"gov",u"dep"):
                     if match.group(3)==u"anyrel":
-                       g_terms.append(u'relations:*')
+                        if self.q_obj.has_pdeprel:
+                            g_terms.append(u'relations:*')
+                        else: 
+                            g_terms.append(u'words:*')
+
+                       #g_terms.append(u'relations:*')
                     else:
                        g_terms.append(u'relations:"%s"'%match.group(3))
                 elif match.group(1)==u"tag":
@@ -110,7 +120,10 @@ class SolrQuery():
         print >> sys.stderr, "Solr qry", qry
         #### XXX TODO How many rows?
         beg=time.time()
-        r=requests.get(self.solr+"/select",params={u"q":qry,u"wt":u"csv",u"rows":500000,u"fl":u"id",u"sort":u"id asc"}, stream=True)
+        params = {u"q":qry,u"wt":u"csv",u"rows":500000,u"fl":u"id",u"sort":u"id asc"}
+        if type(self.extra_params) == dict:
+            params.update(self.extra_params)
+        r=requests.get(self.solr+"/select",params=params, stream=True)
         r_iter = r.iter_lines()
 
         #row_count=r.text.count(u"\n")-1 #how many lines? minus one header line

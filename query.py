@@ -3,6 +3,7 @@
 import time
 import sys
 import os
+import ast
 
 THISDIR=os.path.dirname(os.path.abspath(__file__))
 os.chdir(THISDIR)
@@ -257,9 +258,13 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
 
 
     #import pdb;pdb.set_trace()
+    try:
+        extra_params= ast.literal_eval(args.extra_solr_params)
+    except:
+        extra_params = {}
 
     from solr_query_thread import SolrQuery
-    solr_q = SolrQuery(args.extra_solr_terms, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case, q_obj)#, q_obj=q_obj)
+    solr_q = SolrQuery(args.extra_solr_terms, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case, q_obj, extra_params=extra_params)#, q_obj=q_obj)
     #print solr_q.get_solr_query()
 
     tree_id_queue = solr_q.get_queue()
@@ -300,7 +305,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
                             if i==idx:
                                 data=hit
                             else:
-                                db.xset_tree_to_id(i)
+                                err = db.xset_tree_to_id(i)
+                                if err != 0: continue
                                 data = db.get_tree_text()
                                 data_comment = db.get_tree_comms()
 
@@ -319,7 +325,6 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
                     print hit.encode('utf8')
                     print
                     counter += 1
-                    import pdb;pdb.set_trace()
 
         except: pass#import traceback; traceback.print_exc()
 
@@ -343,6 +348,7 @@ def main(argv):
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
     parser.add_argument('-i', '--case', required=False, action='store_true',default=False, help='Case insensitive search.')
     parser.add_argument('--extra-solr-terms',default="",help="Extra restrictions on Solr - a string passed verbatim in the Solr query")
+    parser.add_argument('--extra-solr-params',default="",help="Extra parameters on Solr - a dictionary passed verbatim in the Solr request")
 
     args = parser.parse_args(argv[1:])
 
