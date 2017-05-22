@@ -8,13 +8,13 @@ from multiprocessing import Process, Queue
 field_re=re.compile(ur"^(gov|dep|token|lemma|tag)_(a|s)_(.*)$",re.U)
 class SolrQuery():
 
-    def __init__(self,extra_term, compulsory_items,or_groups, solr, case, q_obj, extra_params={}):
+    def __init__(self,extra_terms, compulsory_items,or_groups, solr, case, q_obj, extra_params={}):
 
         self.q_obj = q_obj
         self.extra_params = extra_params
         self.case = case
         self.or_groups = or_groups
-        self.extra_term = extra_term #extra solr term
+        self.extra_terms = extra_terms #extra solr terms
         self.compulsory_items = compulsory_items
         self.solr = solr
         self.tree_id_queue = Queue()
@@ -41,11 +41,16 @@ class SolrQuery():
         self.process.terminate()
 
 
-    def get_solr_query(self):
+    def get_solr_query(self,skip_source=False):
+        """If skip_source is set to True, then extra terms are filtered to remove source"""
 
         terms=[]
-        if self.extra_term.strip():
-            terms.append(self.extra_term)
+        for et in self.extra_terms:
+            if not et.strip():
+                continue
+            if skip_source and et.startswith("+source"):
+                continue
+            terms.append(et)
         for c in self.compulsory_items:
 
             match=field_re.match(c)
