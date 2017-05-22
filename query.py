@@ -347,7 +347,7 @@ def main(argv):
     parser.add_argument('--context', required=False, action="store", default=0, type=int, metavar='N', help='Print the context (+/- N sentences) as comment. Default: %(default)d.')
     parser.add_argument('--keep_query', required=False, action='store_true',default=False, help='Do not delete the compiled query after completing the search.')
     parser.add_argument('-i', '--case', required=False, action='store_true',default=False, help='Case insensitive search.')
-    parser.add_argument('--extra-solr-terms',default="",help="Extra restrictions on Solr - a string passed verbatim in the Solr query")
+    parser.add_argument('--extra-solr-term',default=[],action="append",help="Extra restrictions on Solr, strings passed verbatim in the Solr query, you can have several of these")
     parser.add_argument('--extra-solr-params',default="",help="Extra parameters on Solr - a dictionary passed verbatim in the Solr request")
 
     args = parser.parse_args(argv[1:])
