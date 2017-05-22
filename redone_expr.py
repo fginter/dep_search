@@ -695,7 +695,7 @@ def get_node_with_lcor(node):
     lc_node.extra_comments = node.extra_comments
 
     #og
-    original_node = SetNode_Token(node.token_restriction)
+    original_node = SetNode_Token(node.token_restriction.lower())
     original_node.proplabel = node.proplabel
     original_node.extra_comments = node.extra_comments
     or_node = SetNode_Or(lc_node, original_node)
