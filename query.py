@@ -8,6 +8,7 @@ import ast
 THISDIR=os.path.dirname(os.path.abspath(__file__))
 os.chdir(THISDIR)
 
+import json
 import subprocess
 import cPickle as pickle
 import sqlite3
@@ -265,6 +266,8 @@ def query_from_db(q_obj,db_name,sql_query,sql_args,max_hits,context, case,args):
 
     from solr_query_thread import SolrQuery
     solr_q = SolrQuery(args.extra_solr_term, [item[1:] for item in solr_args if item.startswith('!')], solr_or_groups, solr_url, case, q_obj, extra_params=extra_params)#, q_obj=q_obj)
+    sources=solr_q.get_source_stats()
+    print "# SourceStats :", json.dumps(sources)
     #print solr_q.get_solr_query()
 
     tree_id_queue = solr_q.get_queue()
