@@ -18,7 +18,7 @@ The [documentation of the query language is here](http://bionlp.utu.fi/searchexp
 
 ## API and Web application
 
-`dep_search` also includes a Web API built using Python Flask which lets you query your treebanks using simple HTTP requests, and a Web application which gives you a browser-based interface which renders the trees. These power the main dep_search web interface at [http://bionlp-www.utu.fi/dep_search/] but you can also run them locally.
+`dep_search` also includes a Web API built using Python Flask which lets you query your treebanks using simple HTTP requests, and a Web application which gives you a browser-based interface which renders the trees. These power the main dep_search web interface at <http://bionlp-www.utu.fi/dep_search/> but you can also run them locally.
 
 * Set up the API [instructions](webapi.html)
 * Run the web application [instructions](webui.html)

@@ -26,11 +26,11 @@ All you need is to cat a treebank in the [`CoNLL-U` format](http://universaldepe
 cat example_en.conllu | python build_index.py --wipe -d example_en_db
 ```
 
-which will create a directory `example_en_db` with the treebank index.
+which will create a directory `example_en_db` with the treebank index. You can re-index your treebank with the above command at any point, and you do not need to re-start the API for the changes to take effect.
 
-# Telling dep_search API where the treebank is
+# Tell the dep_search API where to find your treebanks
 
-This involves two files: `corpora.yaml` tells about every indexed treebank and `corpus_groups.yaml` tells how the treebanks group together, to build the hierarchical treebank selection menu on the main page. These files are under the `webapi` directory of dep_search. Below you can find simple examples, but we keep the full files in GitHub - go have a look [here](https://github.com/fginter/dep_search/blob/master/webapi/corpora.yaml) and [here](https://github.com/fginter/dep_search/blob/master/webapi/corpus_groups.yaml).
+This involves two files: `corpora.yaml` tells about every indexed treebank and `corpus_groups.yaml` tells how the treebanks group together, to build the hierarchical treebank selection menu on the main page. These files are under the `webapi` directory of dep_search. Below you can find simple examples, but we keep the full files in GitHub - go have a look [here](https://github.com/fginter/dep_search/blob/master/webapi/corpora.yaml) and [here](https://github.com/fginter/dep_search/blob/master/webapi/corpus_groups.yaml) for some advanced functionality.
 
 ## corpora.yaml
 
@@ -42,11 +42,11 @@ english_demo:
   name: "Small English demo corpus"
 ```
 
-Here `english_demo` is a handle which is used in the API requests, `paths` is where the index is located locally, and `name` is shown in the corpus selection drop-down in the web application.
+Here `english_demo` is a handle which is used in the API requests, `paths` is where the index is located locally, and `name` is shown in the corpus selection drop-down in the web application. You do not need to re-start the API when you add new corpora.
 
 ## corpus_groups.yaml
 
-This file groups the corpora into logical groups. Currently it is used to group the corpora for the corpus selection drop-down in the web application.
+This file groups the corpora into logical groups. Currently it is used to group the corpora for the corpus selection drop-down in the web application. You do not need to re-start the API when you add new corpus groups.
 
 ```
 -
@@ -68,10 +68,10 @@ By default, this will serve the API at all interfaces, port `45678`. You can cha
 
 ## Under nginx
 
-This happens in two parts:
+Running under the nginx web server happens in two parts:
 
-1. Launch the dep_search webapi using `uwsgi` and tell it to talk over a unix socket.
-2. Tell the `nginx` web server where this socket is.
+1. Launch the dep_search webapi through `uwsgi` and tell it to talk over a unix socket.
+2. Tell the `nginx` web server where this socket is so it can direct the traffic there.
 
 ### uWSGI socket
 
