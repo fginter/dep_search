@@ -1,7 +1,7 @@
 # Setup
 name: "dep_search"
 tagline: "Large-scale parsebank search tool"
-baseurl: ""
+baseurl: "/dep_search"
 
 # Gems
 gems:
