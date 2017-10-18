@@ -23,4 +23,10 @@ The [documentation of the query language is here](http://bionlp.utu.fi/searchexp
 * Set up the API [instructions](webapi.html)
 * Run the web application [instructions](webui.html)
 
+# Citations
 
+If you use dep_search in your research, please cite papers:
+
+J. Luotolahti & J. Kanerva & S. Pyysalo & F. Ginter. SETS: Scalable and Efficient Tree Search in Dependency Graphs. Proceedings of the 2015 Conference of the North American Chapter of the Association for Computational Linguistics: Demonstrations. 2015
+
+J. Luotolahti & J. Kanerva & F. Ginter. Dep_search: Efficient Search Tool for Large Dependency Parsebanks. Proceedings of the 21st Nordic Conference on Computational Linguistics (NoDaLiDa). 2017
