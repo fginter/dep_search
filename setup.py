@@ -1,8 +1,13 @@
-from distutils.core import setup
+from distutils.core import setup, Extension
 from Cython.Build import cythonize
 
-setup(ext_modules = cythonize(
-          "db_util.pyx",                 # our Cython source
-          language="c++",             # generate C++ code
-          libraries=["sqlite3"],
-     ))
+setup(
+     ext_modules=cythonize(
+          Extension(
+               "db_util",
+               ["db_util.pyx"],
+               language="c++",
+               libraries=["sqlite3"],
+          )
+     )
+)
